@@ -8,9 +8,13 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "postinstall": "electron-builder install-app-deps",
+    "rebuild:node": "npm rebuild better-sqlite3",
+    "rebuild:electron": "electron-rebuild -f -w better-sqlite3",
+    "test": "npm run rebuild:node && vitest",
+    "test:run": "npm run rebuild:node && vitest run && npm run rebuild:electron",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "npm rebuild better-sqlite3 && tsx prisma/seed.ts && electron-rebuild -f -w better-sqlite3"
+    "db:seed": "npm run rebuild:node && tsx prisma/seed.ts && npm run rebuild:electron"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
@@ -26,6 +30,10 @@
     "@prisma/adapter-better-sqlite3": "^7.4.0",
     "@prisma/client": "^7.4.0",
     "@tailwindcss/vite": "^4.1.18",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
@@ -34,12 +42,14 @@
     "electron": "^40.4.1",
     "electron-builder": "^26.7.0",
     "electron-vite": "^5.0.0",
+    "jsdom": "^28.1.0",
     "prisma": "^7.4.0",
     "shadcn": "^3.8.5",
     "tailwindcss": "^4.1.18",
     "tsx": "^4.21.0",
     "tw-animate-css": "^1.4.0",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18"
   }
 }
