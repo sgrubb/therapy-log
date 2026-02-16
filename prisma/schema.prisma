@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum SessionDay {
+  Monday
+  Tuesday
+  Wednesday
+  Thursday
+  Friday
+  Saturday
+  Sunday
+}
+
+enum Outcome {
+  Improved
+  NoChange
+  Declined
+  DataUnavailable
+}
+
+enum SessionStatus {
+  Scheduled
+  Attended
+  DNA
+  Cancelled
+  Rescheduled
+}
+
+enum SessionType {
+  AssessmentChild
+  AssessmentParentFamily
+  Child
+  Parent
+  Family
+  CheckIn
+  ProfessionalsMeeting
+  Other
+}
+
+enum DeliveryMethod {
+  FaceToFace
+  Online
+  Telephone
+  Email
+}
+
+enum MissedReason {
+  Illness
+  Holiday
+  ExamPeriod
+  AnnualLeave
+  SchoolTransition
+  NoShow
+  Other
+}
+
+model Therapist {
+  id         Int       @id @default(autoincrement())
+  first_name String
+  last_name  String
+  is_admin   Boolean   @default(false)
+  clients    Client[]
+  sessions   Session[]
+}
+
+model Client {
+  id              Int         @id @default(autoincrement())
+  hospital_number String      @unique
+  first_name      String
+  last_name       String
+  dob             DateTime
+  address         String?
+  phone           String?
+  email           String?
+  session_day     SessionDay?
+  session_time    String?
+  therapist_id    Int
+  therapist       Therapist   @relation(fields: [therapist_id], references: [id])
+  is_closed       Boolean     @default(false)
+  pre_score       Float?
+  post_score      Float?
+  outcome         Outcome?
+  notes           String?
+  sessions        Session[]
+}
+
+model Session {
+  id              Int            @id @default(autoincrement())
+  client_id       Int
+  client          Client         @relation(fields: [client_id], references: [id])
+  therapist_id    Int
+  therapist       Therapist      @relation(fields: [therapist_id], references: [id])
+  scheduled_at    DateTime
+  occurred_at     DateTime?
+  status          SessionStatus
+  session_type    SessionType
+  delivery_method DeliveryMethod
+  missed_reason   MissedReason?
+  notes           String?
+}
