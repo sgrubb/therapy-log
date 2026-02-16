@@ -2,41 +2,57 @@ import path from "node:path";
 import { app, BrowserWindow, ipcMain } from "electron";
 import { PrismaClient } from "../generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import dotenv from "dotenv";
 import { registerIpcHandlers } from "./ipc-handlers";
+import { resolveDatabaseUrl } from "./db-path";
 
-const adapter = new PrismaBetterSqlite3({
-  url: `file:${path.join(app.getPath("userData"), "therapy-log.db")}`,
-});
-const prisma = new PrismaClient({ adapter });
+if (!app.isPackaged) {
+  dotenv.config();
+}
 
 let win: BrowserWindow | null = null;
 
-const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
-const DIST_PATH = path.join(import.meta.dirname, "../dist");
+function createPrismaClient(): PrismaClient | null {
+  const databaseUrl = resolveDatabaseUrl();
+  if (!databaseUrl) {
+    return null;
+  }
+
+  const adapter = new PrismaBetterSqlite3({ url: databaseUrl });
+  return new PrismaClient({ adapter });
+}
+
+const prisma = createPrismaClient();
 
 async function createWindow() {
   win = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
-      preload: path.join(import.meta.dirname, "preload.mjs"),
+      preload: path.join(__dirname, "../preload/preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
     },
   });
 
-  if (VITE_DEV_SERVER_URL) {
-    await win.loadURL(VITE_DEV_SERVER_URL);
+  if (process.env["ELECTRON_RENDERER_URL"]) {
+    await win.loadURL(process.env["ELECTRON_RENDERER_URL"]);
     win.webContents.openDevTools();
   } else {
-    await win.loadFile(path.join(DIST_PATH, "index.html"));
+    await win.loadFile(path.join(__dirname, "../renderer/index.html"));
   }
 }
 
 async function bootstrap() {
   await app.whenReady();
 
-  registerIpcHandlers(ipcMain, prisma);
+  if (prisma) {
+    registerIpcHandlers(ipcMain, prisma);
+  }
+
+  // TODO (Phase 6): If prisma is null (no config.json in production),
+  // show the first-run setup screen instead of the main app window.
+
   await createWindow();
 
   app.on("activate", () => {
@@ -52,7 +68,7 @@ async function bootstrap() {
   });
 
   app.on("before-quit", async () => {
-    await prisma.$disconnect();
+    await prisma?.$disconnect();
   });
 }
 

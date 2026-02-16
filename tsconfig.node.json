@@ -13,7 +13,8 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "types": ["electron-vite/node"]
   },
-  "include": ["vite.config.ts", "electron"]
+  "include": ["electron.vite.config.ts", "electron"]
 }

@@ -1,45 +1,23 @@
-import { useEffect, useState } from "react";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
+import { TherapistProvider } from "@/context/TherapistContext";
+import AppLayout from "@/components/AppLayout";
+import ClientsPage from "@/pages/ClientsPage";
+import SessionsPage from "@/pages/SessionsPage";
+import TherapistsPage from "@/pages/TherapistsPage";
 
-enum AppStatus {
-  Loading = 'loading',
-  Ready = 'ready',
-  Error = 'error',
-}
-
-const STATUS_DISPLAY: Record<AppStatus, string> = {
-  [AppStatus.Loading]: "Loading\u2026",
-  [AppStatus.Ready]: "Connected",
-  [AppStatus.Error]: "Could not reach database",
-};
-
-function App() {
-  const [status, setStatus] = useState<AppStatus>(AppStatus.Loading);
-  const [therapistCount, setTherapistCount] = useState(0);
-
-  useEffect(() => {
-    async function init() {
-      try {
-        const therapists = await window.electronAPI.invoke("therapist:list");
-        setTherapistCount(therapists.length);
-        setStatus(AppStatus.Ready);
-      } catch {
-        setStatus(AppStatus.Error);
-      }
-    }
-    init();
-  }, []);
-
-  const displayText =
-    status === AppStatus.Ready
-      ? `${STATUS_DISPLAY[status]} \u2014 ${therapistCount} therapist(s) found`
-      : STATUS_DISPLAY[status];
-
+export default function App() {
   return (
-    <main style={{ padding: "2rem", fontFamily: "system-ui, sans-serif" }}>
-      <h1>Therapy Log</h1>
-      <p>{displayText}</p>
-    </main>
+    <TherapistProvider>
+      <HashRouter>
+        <Routes>
+          <Route element={<AppLayout />}>
+            <Route path="/clients" element={<ClientsPage />} />
+            <Route path="/sessions" element={<SessionsPage />} />
+            <Route path="/therapists" element={<TherapistsPage />} />
+            <Route path="*" element={<Navigate to="/clients" replace />} />
+          </Route>
+        </Routes>
+      </HashRouter>
+    </TherapistProvider>
   );
 }
-
-export default App;
