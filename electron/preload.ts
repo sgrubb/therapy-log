@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { IpcApi, IpcChannel } from "./ipc-api";
+import type { IpcApi, IpcChannel } from "./types/ipc";
 
 const api = {
   invoke<C extends IpcChannel>(

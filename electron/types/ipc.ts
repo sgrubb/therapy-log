@@ -3,7 +3,9 @@ import type {
   Client,
   Session,
   Prisma,
-} from "../generated/prisma/client";
+} from "../../generated/prisma/client";
+import type { ClientGetPayload } from "../../generated/prisma/models/Client";
+import type { SessionGetPayload } from "../../generated/prisma/models/Session";
 
 // ── Query / Mutation payloads ──────────────────────────────────────────
 
@@ -21,8 +23,14 @@ export type IpcApi = {
   };
 
   // Clients
-  "client:list": { args: void; result: Client[] };
-  "client:get": { args: number; result: Client | null };
+  "client:list": {
+    args: void;
+    result: ClientGetPayload<{ include: { therapist: true } }>[];
+  };
+  "client:get": {
+    args: number;
+    result: ClientGetPayload<{ include: { therapist: true } }> | null;
+  };
   "client:create": {
     args: Prisma.ClientUncheckedCreateInput;
     result: Client;
@@ -33,8 +41,16 @@ export type IpcApi = {
   };
 
   // Sessions
-  "session:list": { args: void; result: Session[] };
-  "session:get": { args: number; result: Session | null };
+  "session:list": {
+    args: void;
+    result: SessionGetPayload<{ include: { client: true; therapist: true } }>[];
+  };
+  "session:get": {
+    args: number;
+    result: SessionGetPayload<{
+      include: { client: true; therapist: true };
+    }> | null;
+  };
   "session:create": {
     args: Prisma.SessionUncheckedCreateInput;
     result: Session;

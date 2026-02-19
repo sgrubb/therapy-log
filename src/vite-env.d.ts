@@ -1,9 +1,9 @@
 /// <reference types="vite/client" />
 
-import type { ElectronApi } from "../electron/preload";
+import type { ElectronAPI } from "@/types/ipc";
 
 declare global {
   interface Window {
-    electronAPI: ElectronApi;
+    electronAPI: ElectronAPI;
   }
 }

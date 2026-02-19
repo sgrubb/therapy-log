@@ -5,7 +5,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Therapist } from "../../generated/prisma/client";
+import { ipc } from "@/lib/ipc";
+import type { Therapist } from "@/types/ipc";
 
 interface TherapistContextValue {
   therapists: Therapist[];
@@ -27,7 +28,7 @@ export function TherapistProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function fetchTherapists() {
       try {
-        const list = await window.electronAPI.invoke("therapist:list");
+        const list = await ipc.listTherapists();
         setTherapists(list);
       } catch (err) {
         console.error("Failed to fetch therapists:", err);
