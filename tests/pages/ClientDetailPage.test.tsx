@@ -45,6 +45,10 @@ const mockSessions = [
   },
 ];
 
+function wrapped<T>(data: T) {
+  return { success: true, data };
+}
+
 const mockInvoke = vi.fn();
 
 beforeEach(() => {
@@ -59,11 +63,13 @@ function renderDetailPage(clientOverride?: Partial<typeof mockClient> | null) {
       ? null
       : { ...mockClient, ...clientOverride };
 
+  const notFound = { success: false, error: { code: "NOT_FOUND", message: "The requested record was not found." } };
+  
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") return Promise.resolve(mockTherapists);
-    if (channel === "client:get") return Promise.resolve(clientData);
-    if (channel === "session:list") return Promise.resolve(mockSessions);
-    return Promise.resolve(null);
+    if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+    if (channel === "client:get") return Promise.resolve(clientData === null ? notFound : wrapped(clientData));
+    if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
+    return Promise.resolve(wrapped(null));
   });
 
   return render(
@@ -122,10 +128,10 @@ describe("ClientDetailPage", () => {
 
   it("shows no sessions message when session list is empty", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
-      if (channel === "client:get") return Promise.resolve(mockClient);
-      if (channel === "session:list") return Promise.resolve([]);
-      return Promise.resolve(null);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
+      if (channel === "session:list") return Promise.resolve(wrapped([]));
+      return Promise.resolve(wrapped(null));
     });
 
     render(
@@ -222,10 +228,10 @@ describe("ClientDetailPage", () => {
     });
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
-      if (channel === "client:get") return clientPromise;
-      if (channel === "session:list") return Promise.resolve(mockSessions);
-      return Promise.resolve(null);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") return clientPromise.then((data) => wrapped(data));
+      if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
+      return Promise.resolve(wrapped(null));
     });
 
     render(
@@ -246,10 +252,10 @@ describe("ClientDetailPage", () => {
 
   it("navigates to /clients when fetch throws", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "client:get") return Promise.reject(new Error("Network error"));
-      if (channel === "session:list") return Promise.resolve([]);
-      return Promise.resolve(null);
+      if (channel === "session:list") return Promise.resolve(wrapped([]));
+      return Promise.resolve(wrapped(null));
     });
 
     render(
@@ -279,11 +285,11 @@ describe("ClientDetailPage", () => {
     };
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
-      if (channel === "client:get") return Promise.resolve(mockClient);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
       if (channel === "session:list")
-        return Promise.resolve([...mockSessions, otherClientSession]);
-      return Promise.resolve(null);
+        return Promise.resolve(wrapped([...mockSessions, otherClientSession]));
+      return Promise.resolve(wrapped(null));
     });
 
     render(
@@ -310,12 +316,12 @@ describe("ClientDetailPage", () => {
     };
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
-      if (channel === "client:get") return Promise.resolve(mockClient);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
       // older session comes first in the array but should sort to second row
       if (channel === "session:list")
-        return Promise.resolve([olderSession, ...mockSessions]);
-      return Promise.resolve(null);
+        return Promise.resolve(wrapped([olderSession, ...mockSessions]));
+      return Promise.resolve(wrapped(null));
     });
 
     render(

@@ -12,7 +12,7 @@ const mockInvoke = vi.fn();
 beforeEach(() => {
   localStorage.clear();
   mockInvoke.mockReset();
-  mockInvoke.mockResolvedValue(mockTherapists);
+  mockInvoke.mockResolvedValue({ success: true, data: mockTherapists });
   window.electronAPI = { invoke: mockInvoke } as never;
 });
 

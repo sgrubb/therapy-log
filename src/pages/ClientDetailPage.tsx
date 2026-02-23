@@ -31,10 +31,6 @@ export default function ClientDetailPage() {
           ipc.getClient(Number(id)),
           ipc.listSessions(),
         ]);
-        if (!clientData) {
-          navigate("/clients");
-          return;
-        }
         setClient(clientData);
         setSessions(
           sessionData

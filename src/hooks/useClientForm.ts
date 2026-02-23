@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { ipc } from "@/lib/ipc";
+import { ipc, IpcError } from "@/lib/ipc";
 import { clientFormSchema } from "@/schemas/forms";
 import { SessionDay, Outcome } from "@/types/enums";
 
@@ -61,10 +61,6 @@ export function useClientForm(clientId?: number) {
       setFormState("loading");
       try {
         const client = await ipc.getClient(clientId!);
-        if (!client) {
-          navigate("/clients");
-          return;
-        }
         setForm({
           first_name: client.first_name,
           last_name: client.last_name,
@@ -146,8 +142,7 @@ export function useClientForm(clientId?: number) {
         navigate(`/clients/${created.id}`);
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("Unique constraint") || msg.includes("P2002")) {
+      if (err instanceof IpcError && err.code === "UNIQUE_CONSTRAINT") {
         setSaveError("A client with this hospital number already exists.");
       } else {
         setSaveError("Failed to save client. Please try again.");

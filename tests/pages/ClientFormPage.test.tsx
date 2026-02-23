@@ -68,6 +68,10 @@ const mockClient = {
   notes: null,
 };
 
+function wrapped<T>(data: T) {
+  return { success: true, data };
+}
+
 const mockInvoke = vi.fn();
 
 beforeEach(() => {
@@ -78,8 +82,8 @@ beforeEach(() => {
 
 function renderNewForm() {
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") return Promise.resolve(mockTherapists);
-    return Promise.resolve(null);
+    if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+    return Promise.resolve(wrapped(null));
   });
 
   return render(
@@ -99,9 +103,9 @@ function renderNewForm() {
 
 function renderEditForm() {
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") return Promise.resolve(mockTherapists);
-    if (channel === "client:get") return Promise.resolve(mockClient);
-    return Promise.resolve(null);
+    if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+    if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
+    return Promise.resolve(wrapped(null));
   });
 
   return render(
@@ -216,9 +220,9 @@ describe("ClientFormPage — new client", () => {
 
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
-      if (channel === "client:create") return Promise.resolve(created);
-      return Promise.resolve(null);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:create") return Promise.resolve(wrapped(created));
+      return Promise.resolve(wrapped(null));
     });
 
     await waitFor(() => screen.getByLabelText(/first name/i));
@@ -255,14 +259,13 @@ describe("ClientFormPage — new client", () => {
 
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "client:create")
-        return Promise.reject(
-          new Error(
-            "Unique constraint failed on the fields: (`hospital_number`)",
-          ),
-        );
-      return Promise.resolve(null);
+        return Promise.resolve({
+          success: false,
+          error: { code: "UNIQUE_CONSTRAINT", message: "A record with this value already exists." },
+        });
+      return Promise.resolve(wrapped(null));
     });
 
     await waitFor(() => screen.getByLabelText(/first name/i));
@@ -298,10 +301,13 @@ describe("ClientFormPage — new client", () => {
     const user = userEvent.setup();
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "client:create")
-        return Promise.reject(new Error("Internal server error"));
-      return Promise.resolve(null);
+        return Promise.resolve({
+          success: false,
+          error: { code: "UNKNOWN", message: "An unexpected error occurred." },
+        });
+      return Promise.resolve(wrapped(null));
     });
 
     await waitFor(() => screen.getByLabelText(/first name/i));
@@ -328,9 +334,9 @@ describe("ClientFormPage — new client", () => {
 
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
-      if (channel === "client:create") return Promise.resolve(created);
-      return Promise.resolve(null);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:create") return Promise.resolve(wrapped(created));
+      return Promise.resolve(wrapped(null));
     });
 
     await waitFor(() => screen.getByLabelText(/first name/i));
@@ -389,9 +395,9 @@ describe("ClientFormPage — new client", () => {
 
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
-      if (channel === "client:create") return savePromise;
-      return Promise.resolve(null);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:create") return savePromise.then((data) => wrapped(data));
+      return Promise.resolve(wrapped(null));
     });
 
     await waitFor(() => screen.getByLabelText(/first name/i));
@@ -434,10 +440,10 @@ describe("ClientFormPage — edit client", () => {
 
     // Override mock after initial load so client:update is handled correctly
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
-      if (channel === "client:get") return Promise.resolve(mockClient);
-      if (channel === "client:update") return Promise.resolve(mockClient);
-      return Promise.resolve(null);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
+      if (channel === "client:update") return Promise.resolve(wrapped(mockClient));
+      return Promise.resolve(wrapped(null));
     });
 
     const firstNameInput = screen.getByLabelText(/first name/i);
@@ -504,11 +510,14 @@ describe("ClientFormPage — edit client", () => {
     await waitFor(() => screen.getByLabelText(/first name/i));
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
-      if (channel === "client:get") return Promise.resolve(mockClient);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
       if (channel === "client:update")
-        return Promise.reject(new Error("Internal server error"));
-      return Promise.resolve(null);
+        return Promise.resolve({
+          success: false,
+          error: { code: "UNKNOWN", message: "An unexpected error occurred." },
+        });
+      return Promise.resolve(wrapped(null));
     });
 
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
@@ -522,9 +531,9 @@ describe("ClientFormPage — edit client", () => {
 
   it("navigates to /clients when client is not found", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
-      if (channel === "client:get") return Promise.resolve(null);
-      return Promise.resolve(null);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") return Promise.resolve({ success: false, error: { code: "NOT_FOUND", message: "The requested record was not found." } });
+      return Promise.resolve(wrapped(null));
     });
 
     render(
@@ -547,10 +556,10 @@ describe("ClientFormPage — edit client", () => {
 
   it("navigates to /clients when client fetch throws", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "client:get")
         return Promise.reject(new Error("Network error"));
-      return Promise.resolve(null);
+      return Promise.resolve(wrapped(null));
     });
 
     render(
@@ -578,9 +587,9 @@ describe("ClientFormPage — edit client", () => {
     });
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
-      if (channel === "client:get") return clientPromise;
-      return Promise.resolve(null);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") return clientPromise.then((data) => wrapped(data));
+      return Promise.resolve(wrapped(null));
     });
 
     render(

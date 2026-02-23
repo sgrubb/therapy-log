@@ -1,5 +1,7 @@
+import { useState, useEffect } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import TherapistSelector from "@/components/TherapistSelector";
+import { ipc } from "@/lib/ipc";
 
 const NAV_ITEMS = [
   { to: "/clients", label: "Clients" },
@@ -8,6 +10,20 @@ const NAV_ITEMS = [
 ] as const;
 
 export default function AppLayout() {
+  const [version, setVersion] = useState<string>("");
+
+  useEffect(() => {
+    async function fetchVersion() {
+      try {
+        const v = await ipc.getVersion();
+        setVersion(v);
+      } catch {
+        // Version display is non-critical; silently skip on failure
+      }
+    }
+    fetchVersion();
+  }, []);
+
   return (
     <div className="flex h-screen">
       {/* Sidebar */}
@@ -32,6 +48,11 @@ export default function AppLayout() {
             </NavLink>
           ))}
         </nav>
+        {version && (
+          <div className="p-4">
+            <p className="text-xs text-muted-foreground">TherapyLog v{version}</p>
+          </div>
+        )}
       </aside>
 
       {/* Main area */}

@@ -5,8 +5,10 @@ import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import dotenv from "dotenv";
 import { registerIpcHandlers } from "./ipc-handlers";
 import { resolveDatabaseUrl } from "./db-path";
+import log from "./lib/logger";
+import { IS_DEV } from "./lib/config";
 
-if (!app.isPackaged) {
+if (IS_DEV) {
   dotenv.config();
 }
 
@@ -18,8 +20,13 @@ function createPrismaClient(): PrismaClient | null {
     return null;
   }
 
-  const adapter = new PrismaBetterSqlite3({ url: databaseUrl });
-  return new PrismaClient({ adapter });
+  try {
+    const adapter = new PrismaBetterSqlite3({ url: databaseUrl });
+    return new PrismaClient({ adapter });
+  } catch (err) {
+    log.error("Failed to create Prisma client:", err);
+    return null;
+  }
 }
 
 const prisma = createPrismaClient();
@@ -44,16 +51,24 @@ async function createWindow() {
 }
 
 async function bootstrap() {
+  log.info(`TherapyLog ${app.getVersion()} starting (${IS_DEV ? "dev" : "prod"})`);
+
   await app.whenReady();
+  
+  ipcMain.handle("app:version", (): string => app.getVersion());
 
   if (prisma) {
     registerIpcHandlers(ipcMain, prisma);
+    log.info("IPC handlers registered");
+  } else {
+    log.warn("Prisma client unavailable — IPC handlers not registered");
   }
 
   // TODO (Phase 6): If prisma is null (no config.json in production),
   // show the first-run setup screen instead of the main app window.
 
   await createWindow();
+  log.info("Main window created");
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -68,8 +83,12 @@ async function bootstrap() {
   });
 
   app.on("before-quit", async () => {
+    log.info("App shutting down");
     await prisma?.$disconnect();
   });
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+  log.error("Bootstrap failed:", err);
+  app.quit();
+});

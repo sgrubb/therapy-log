@@ -7,57 +7,78 @@ import type {
 import type { ClientGetPayload } from "../../generated/prisma/models/Client";
 import type { SessionGetPayload } from "../../generated/prisma/models/Session";
 
+// ── Structured error types ─────────────────────────────────────────────────
+
+export type IpcErrorCode =
+  | "UNIQUE_CONSTRAINT"
+  | "NOT_FOUND"
+  | "FOREIGN_KEY"
+  | "VALIDATION"
+  | "UNKNOWN";
+
+export interface IpcError {
+  code: IpcErrorCode;
+  message: string;
+}
+
+export type IpcResponse<T> =
+  | { success: true; data: T }
+  | { success: false; error: IpcError };
+
 // ── Query / Mutation payloads ──────────────────────────────────────────
 
 export type IpcApi = {
+  // App
+  "app:version": { args: void; result: string };
+
   // Therapists
-  "therapist:list": { args: void; result: Therapist[] };
-  "therapist:get": { args: number; result: Therapist | null };
+  "therapist:list": { args: void; result: IpcResponse<Therapist[]> };
+  "therapist:get": { args: number; result: IpcResponse<Therapist> };
   "therapist:create": {
     args: Prisma.TherapistCreateInput;
-    result: Therapist;
+    result: IpcResponse<Therapist>;
   };
   "therapist:update": {
     args: { id: number; data: Prisma.TherapistUpdateInput };
-    result: Therapist;
+    result: IpcResponse<Therapist>;
   };
 
   // Clients
   "client:list": {
     args: void;
-    result: ClientGetPayload<{ include: { therapist: true } }>[];
+    result: IpcResponse<ClientGetPayload<{ include: { therapist: true } }>[]>;
   };
   "client:get": {
     args: number;
-    result: ClientGetPayload<{ include: { therapist: true } }> | null;
+    result: IpcResponse<ClientGetPayload<{ include: { therapist: true } }>>;
   };
   "client:create": {
     args: Prisma.ClientUncheckedCreateInput;
-    result: Client;
+    result: IpcResponse<Client>;
   };
   "client:update": {
     args: { id: number; data: Prisma.ClientUncheckedUpdateInput };
-    result: Client;
+    result: IpcResponse<Client>;
   };
 
   // Sessions
   "session:list": {
     args: void;
-    result: SessionGetPayload<{ include: { client: true; therapist: true } }>[];
+    result: IpcResponse<SessionGetPayload<{ include: { client: true; therapist: true } }>[]>;
   };
   "session:get": {
     args: number;
-    result: SessionGetPayload<{
+    result: IpcResponse<SessionGetPayload<{
       include: { client: true; therapist: true };
-    }> | null;
+    }>>;
   };
   "session:create": {
     args: Prisma.SessionUncheckedCreateInput;
-    result: Session;
+    result: IpcResponse<Session>;
   };
   "session:update": {
     args: { id: number; data: Prisma.SessionUncheckedUpdateInput };
-    result: Session;
+    result: IpcResponse<Session>;
   };
 };
 

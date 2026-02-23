@@ -89,6 +89,10 @@ const mockClients = [
   },
 ];
 
+function wrapped<T>(data: T) {
+  return { success: true, data };
+}
+
 const mockInvoke = vi.fn();
 
 beforeEach(() => {
@@ -96,9 +100,9 @@ beforeEach(() => {
   mockInvoke.mockReset();
   window.electronAPI = { invoke: mockInvoke } as never;
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") return Promise.resolve(mockTherapists);
-    if (channel === "client:list") return Promise.resolve(mockClients);
-    return Promise.resolve([]);
+    if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+    if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
+    return Promise.resolve(wrapped([]));
   });
 });
 
@@ -252,9 +256,9 @@ describe("ClientsPage", () => {
     });
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
-      if (channel === "client:list") return clientsPromise;
-      return Promise.resolve([]);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:list") return clientsPromise.then((data) => wrapped(data));
+      return Promise.resolve(wrapped([]));
     });
 
     renderClientsPage();
@@ -266,9 +270,9 @@ describe("ClientsPage", () => {
 
   it("renders without crashing when client:list fails", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "client:list") return Promise.reject(new Error("DB error"));
-      return Promise.resolve([]);
+      return Promise.resolve(wrapped([]));
     });
 
     renderClientsPage();
@@ -353,10 +357,10 @@ describe("ClientsPage", () => {
 
   it("shows empty state when status filter yields no results", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(mockTherapists);
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
       // only Tom (closed) — default "open" filter will hide him
-      if (channel === "client:list") return Promise.resolve([mockClients[1]]);
-      return Promise.resolve([]);
+      if (channel === "client:list") return Promise.resolve(wrapped([mockClients[1]]));
+      return Promise.resolve(wrapped([]));
     });
 
     renderClientsPage();
