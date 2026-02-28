@@ -153,10 +153,7 @@ export default function ClientFormPage() {
           <Field label="Session Day" error={err("session_day")}>
             <Select
               value={form.session_day ?? ""}
-              onValueChange={(v) => {
-                set("session_day", v as SessionDay);
-                markTouched("session_day");
-              }}
+              onValueChange={(v) => set("session_day", v as SessionDay)}
             >
               <SelectTrigger
                 aria-label="Session day"
@@ -187,10 +184,7 @@ export default function ClientFormPage() {
           <Field label="Therapist *" error={err("therapist_id")}>
             <Select
               value={form.therapist_id}
-              onValueChange={(v) => {
-                set("therapist_id", v);
-                markTouched("therapist_id");
-              }}
+              onValueChange={(v) => set("therapist_id", v)}
             >
               <SelectTrigger
                 aria-label="Therapist"
@@ -234,10 +228,7 @@ export default function ClientFormPage() {
           <Field label="Outcome" error={err("outcome")}>
             <Select
               value={form.outcome ?? ""}
-              onValueChange={(v) => {
-                set("outcome", v as Outcome);
-                markTouched("outcome");
-              }}
+              onValueChange={(v) => set("outcome", v as Outcome)}
             >
               <SelectTrigger
                 aria-label="Outcome"

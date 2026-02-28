@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SessionDay, Outcome } from "@/types/enums";
+import { SessionDay, Outcome, SessionType, DeliveryMethod, SessionStatus, MissedReason } from "@/types/enums";
 
 const sessionDayValues = Object.values(SessionDay) as [
   SessionDay,
@@ -44,5 +44,48 @@ export const clientFormSchema = z
         message: "At least one of phone or email is required.",
         path: ["email"],
       });
+    }
+  });
+
+const sessionTypeValues = Object.values(SessionType) as [SessionType, ...SessionType[]];
+const deliveryMethodValues = Object.values(DeliveryMethod) as [DeliveryMethod, ...DeliveryMethod[]];
+const sessionStatusValues = Object.values(SessionStatus) as [SessionStatus, ...SessionStatus[]];
+const missedReasonValues = Object.values(MissedReason) as [MissedReason, ...MissedReason[]];
+
+export const sessionFormSchema = z
+  .object({
+    client_id: z.string().min(1, "Client is required."),
+    therapist_id: z.string().min(1, "Therapist is required."),
+    date: z.string().min(1, "Date is required."),
+    time: z.string().optional().or(z.literal("")),
+    session_type: z.enum(sessionTypeValues, "Session type is required."),
+    delivery_method: z.enum(deliveryMethodValues, "Delivery method is required."),
+    status: z.enum(sessionStatusValues, "Status is required."),
+    missed_reason: z.enum(missedReasonValues).optional().or(z.literal("")),
+    notes: z
+      .string()
+      .max(1000, "Notes must be 1000 characters or fewer.")
+      .optional()
+      .or(z.literal("")),
+  })
+  .superRefine((data, ctx) => {
+    if (data.status && data.status !== SessionStatus.Attended && !data.missed_reason) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Reason is required when session is not attended.",
+        path: ["missed_reason"],
+      });
+    }
+    if (data.date) {
+      const d = new Date(data.date);
+      const oneYearFromNow = new Date();
+      oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+      if (!isNaN(d.getTime()) && d > oneYearFromNow) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Date cannot be more than 1 year in the future.",
+          path: ["date"],
+        });
+      }
     }
   });

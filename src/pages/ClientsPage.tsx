@@ -51,27 +51,19 @@ export default function ClientsPage() {
   );
 
   const filtered = useMemo(() => {
-    let result = clients;
-
-    if (statusFilter === "open") result = result.filter((c) => !c.is_closed);
-    if (statusFilter === "closed") result = result.filter((c) => c.is_closed);
-
-    if (therapistFilter !== "all") {
-      result = result.filter(
-        (c) => c.therapist_id === Number(therapistFilter),
+    const searchQuery = search.trim().toLowerCase();
+    return clients
+      .filter((c) =>
+        statusFilter === "open" ? !c.is_closed
+        : statusFilter === "closed" ? c.is_closed
+        : true
+      )
+      .filter((c) => therapistFilter === "all" || c.therapist_id === Number(therapistFilter))
+      .filter((c) =>
+        !searchQuery ||
+        `${c.first_name} ${c.last_name}`.toLowerCase().includes(searchQuery) ||
+        c.hospital_number.toLowerCase().includes(searchQuery)
       );
-    }
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (c) =>
-          `${c.first_name} ${c.last_name}`.toLowerCase().includes(q) ||
-          c.hospital_number.toLowerCase().includes(q),
-      );
-    }
-
-    return result;
   }, [clients, statusFilter, therapistFilter, search]);
 
   const sorted = useMemo(() => {
@@ -103,44 +95,60 @@ export default function ClientsPage() {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Input
-          placeholder="Search name or hospital number…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-        >
-          <SelectTrigger className="w-36" aria-label="Status filter">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="open">Open</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
-            <SelectItem value="all">All</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={therapistFilter} onValueChange={setTherapistFilter}>
-          <SelectTrigger className="w-52" aria-label="Therapist filter">
-            <SelectValue placeholder="All therapists" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All therapists</SelectItem>
-            {sortedTherapists.map((t) => (
-              <SelectItem key={t.id} value={t.id.toString()}>
-                {t.first_name} {t.last_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <label className="text-muted-foreground flex flex-col gap-1 text-xs">
+          Search
+          <Input
+            placeholder="Search name or hospital number…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="max-w-sm"
+          />
+        </label>
+        <label className="text-muted-foreground flex flex-col gap-1 text-xs">
+          Status
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+          >
+            <SelectTrigger className="w-36" aria-label="Status filter">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="open">Open</SelectItem>
+              <SelectItem value="closed">Closed</SelectItem>
+              <SelectItem value="all">All</SelectItem>
+            </SelectContent>
+          </Select>
+        </label>
+        <label className="text-muted-foreground flex flex-col gap-1 text-xs">
+          Therapist
+          <Select value={therapistFilter} onValueChange={setTherapistFilter}>
+            <SelectTrigger className="w-52" aria-label="Therapist filter">
+              <SelectValue placeholder="All therapists" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All therapists</SelectItem>
+              {sortedTherapists.map((t) => (
+                <SelectItem key={t.id} value={t.id.toString()}>
+                  {t.first_name} {t.last_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </label>
       </div>
 
       {loading ? (
         <p className="text-muted-foreground text-sm">Loading…</p>
       ) : (
-        <table className="w-full text-sm">
+        <table className="w-full table-fixed text-sm">
+          <colgroup>
+            <col className="w-[28%]" />
+            <col className="w-[18%]" />
+            <col className="w-[28%]" />
+            <col className="w-[16%]" />
+            <col className="w-[10%]" />
+          </colgroup>
           <thead>
             <tr className="text-muted-foreground border-b text-left">
               <th className="py-2 pr-4 font-medium">Name</th>

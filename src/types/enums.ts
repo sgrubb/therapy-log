@@ -43,6 +43,17 @@ export const SessionType = {
 } as const;
 export type SessionType = (typeof SessionType)[keyof typeof SessionType];
 
+export const SESSION_TYPE_NAMES: Record<SessionType, string> = {
+  AssessmentChild: "Assessment (Child)",
+  AssessmentParentFamily: "Assessment (Parent/Family)",
+  Child: "Child",
+  Parent: "Parent",
+  Family: "Family",
+  CheckIn: "Check-In",
+  ProfessionalsMeeting: "Professionals Meeting",
+  Other: "Other",
+};
+
 export const DeliveryMethod = {
   FaceToFace: "FaceToFace",
   Online: "Online",
@@ -50,6 +61,13 @@ export const DeliveryMethod = {
   Email: "Email",
 } as const;
 export type DeliveryMethod = (typeof DeliveryMethod)[keyof typeof DeliveryMethod];
+
+export const DELIVERY_METHOD_NAMES: Record<DeliveryMethod, string> = {
+  FaceToFace: "Face to Face",
+  Online: "Online",
+  Telephone: "Telephone",
+  Email: "Email",
+};
 
 export const MissedReason = {
   Illness: "Illness",
@@ -61,3 +79,13 @@ export const MissedReason = {
   Other: "Other",
 } as const;
 export type MissedReason = (typeof MissedReason)[keyof typeof MissedReason];
+
+export const MISSED_REASON_NAMES: Record<MissedReason, string> = {
+  Illness: "Illness",
+  Holiday: "Holiday",
+  ExamPeriod: "Exam Period",
+  AnnualLeave: "Annual Leave",
+  SchoolTransition: "School Transition",
+  NoShow: "No Show",
+  Other: "Other",
+};

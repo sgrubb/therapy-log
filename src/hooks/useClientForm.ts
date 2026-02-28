@@ -89,8 +89,7 @@ export function useClientForm(clientId?: number) {
 
   const set = <K extends keyof FormFields>(field: K, value: FormFields[K]) => {
     setForm((prev) => {
-      const next = { ...prev };
-      next[field] = value;
+      const next = { ...prev, [field]: value };
       return next;
     });
     if (errors[field]) {
@@ -105,15 +104,15 @@ export function useClientForm(clientId?: number) {
     if (result.success) {
       setErrors((prev) => ({ ...prev, [fieldKey]: undefined }));
     } else {
-      const fieldErrors = result.error.flatten().fieldErrors;
+      const tree = z.treeifyError(result.error);
       setErrors((prev) => ({
         ...prev,
-        [fieldKey]: fieldErrors[fieldKey]?.[0],
+        [fieldKey]: tree.properties?.[fieldKey]?.errors?.[0],
       }));
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
 
     const allFields = Object.keys(EMPTY) as (keyof FormFields)[];
@@ -121,11 +120,10 @@ export function useClientForm(clientId?: number) {
 
     const result = clientFormSchema.safeParse(form);
     if (!result.success) {
-      const flatErrors = result.error.flatten().fieldErrors;
-      const errs: FieldErrors = {};
-      for (const field of allFields) {
-        errs[field] = flatErrors[field]?.[0];
-      }
+      const tree = z.treeifyError(result.error);
+      const errs = Object.fromEntries(
+        allFields.map((field) => [field, tree.properties?.[field]?.errors?.[0]])
+      ) as FieldErrors;
       setErrors(errs);
       return;
     }
