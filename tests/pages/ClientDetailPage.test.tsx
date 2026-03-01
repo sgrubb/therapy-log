@@ -3,44 +3,7 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import ClientDetailPage from "@/pages/ClientDetailPage";
-import { wrapped, mockTherapists, errorResponse } from "../helpers/test-helpers";
-
-const mockClient = {
-  id: 1,
-  first_name: "Jane",
-  last_name: "Smith",
-  hospital_number: "HN001",
-  therapist_id: 1,
-  therapist: mockTherapists[0],
-  session_day: "Monday",
-  is_closed: false,
-  dob: new Date("2000-01-01T00:00:00.000Z"),
-  address: null,
-  phone: "07700900001",
-  email: null,
-  session_time: null,
-  pre_score: null,
-  post_score: null,
-  outcome: null,
-  notes: null,
-};
-
-const mockSessions = [
-  {
-    id: 1,
-    client_id: 1,
-    therapist_id: 1,
-    scheduled_at: new Date("2026-03-15T10:00:00.000Z"),
-    occurred_at: new Date("2026-03-15T10:00:00.000Z"),
-    status: "Attended",
-    session_type: "Child",
-    delivery_method: "FaceToFace",
-    missed_reason: null,
-    notes: null,
-    client: mockClient,
-    therapist: mockTherapists[0],
-  },
-];
+import { wrapped, mockTherapists, mockClient, mockSessions, errorResponse } from "../helpers/ipc-mocks";
 
 const mockInvoke = vi.fn();
 
@@ -189,12 +152,12 @@ describe("ClientDetailPage", () => {
   });
 
   it("shows dash for null optional fields", async () => {
-    // mockClient has null: session_time, email, address, pre_score, post_score, outcome
+    // mockClient has null: email, pre_score, post_score, outcome
     renderDetailPage();
     await waitFor(() => screen.getByText("Jane Smith"));
 
     const dashes = screen.getAllByText("—");
-    expect(dashes.length).toBe(6);
+    expect(dashes.length).toBe(4);
   });
 
   it("renders notes section when client has notes", async () => {
@@ -270,7 +233,6 @@ describe("ClientDetailPage", () => {
   it("only shows sessions belonging to the current client", async () => {
     const otherClientSession = {
       ...mockSessions[0],
-      id: 99,
       client_id: 99,
       session_type: "Parent",
     };
@@ -300,9 +262,7 @@ describe("ClientDetailPage", () => {
   it("renders sessions newest first", async () => {
     const olderSession = {
       ...mockSessions[0],
-      id: 2,
       scheduled_at: new Date("2025-01-10T10:00:00.000Z"),
-      occurred_at: new Date("2025-01-10T10:00:00.000Z"),
       session_type: "Parent",
     };
 
@@ -328,7 +288,7 @@ describe("ClientDetailPage", () => {
     await waitFor(() => screen.getByText("Child"));
 
     const dataRows = screen.getAllByRole("row").slice(1); // skip header
-    expect(dataRows[0]).toHaveTextContent("Child"); // newer: 2026-03-15
+    expect(dataRows[0]).toHaveTextContent("Child"); // newer: 2026-03-10
     expect(dataRows[1]).toHaveTextContent("Parent"); // older: 2025-01-10
   });
 

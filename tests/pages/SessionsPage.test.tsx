@@ -3,88 +3,9 @@ import { render, screen, waitFor, fireEvent, within } from "@testing-library/rea
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import SessionsPage from "@/pages/SessionsPage";
-import { wrapped, mockTherapists, mockClientBase } from "../helpers/test-helpers";
+import { wrapped, mockTherapists, mockSessions } from "../helpers/ipc-mocks";
 
-vi.mock("@/components/ui/select", () => ({
-  Select: ({
-    value,
-    onValueChange,
-    children,
-  }: {
-    value?: string;
-    onValueChange?: (v: string) => void;
-    children: React.ReactNode;
-  }) => (
-    <select
-      value={value ?? ""}
-      onChange={(e) => onValueChange?.(e.target.value)}
-    >
-      {children}
-    </select>
-  ),
-  SelectTrigger: () => null,
-  SelectValue: () => null,
-  SelectContent: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
-  SelectItem: ({
-    value,
-    children,
-  }: {
-    value: string;
-    children: React.ReactNode;
-  }) => <option value={value}>{children}</option>,
-  SelectLabel: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
-  SelectSeparator: () => null,
-  SelectScrollUpButton: () => null,
-  SelectScrollDownButton: () => null,
-}));
-
-const mockSessions = [
-  {
-    id: 1,
-    client_id: 1,
-    therapist_id: 1,
-    scheduled_at: new Date("2024-03-10T10:00:00.000Z"),
-    occurred_at: null,
-    status: "Attended",
-    session_type: "Child",
-    delivery_method: "FaceToFace",
-    missed_reason: null,
-    notes: null,
-    client: {
-      ...mockClientBase,
-      id: 1,
-      first_name: "Jane",
-      last_name: "Smith",
-      therapist_id: 1,
-    },
-    therapist: mockTherapists[0],
-  },
-  {
-    id: 2,
-    client_id: 2,
-    therapist_id: 2,
-    scheduled_at: new Date("2024-02-20T14:00:00.000Z"),
-    occurred_at: null,
-    status: "DNA",
-    session_type: "Parent",
-    delivery_method: "Online",
-    missed_reason: "Illness",
-    notes: null,
-    client: {
-      ...mockClientBase,
-      id: 2,
-      first_name: "Tom",
-      last_name: "Jones",
-      therapist_id: 2,
-      hospital_number: "HN002",
-    },
-    therapist: mockTherapists[1],
-  },
-];
+vi.mock("@/components/ui/select");
 
 const mockInvoke = vi.fn();
 
@@ -161,8 +82,8 @@ describe("SessionsPage", () => {
     await waitFor(() => screen.getByText("Jane Smith"));
 
     const rows = screen.getAllByRole("row").slice(1); // skip header
-    expect(rows[0]).toHaveTextContent("Jane Smith"); // 2024-03-10
-    expect(rows[1]).toHaveTextContent("Tom Jones");  // 2024-02-20
+    expect(rows[0]).toHaveTextContent("Jane Smith"); // 2026-03-10
+    expect(rows[1]).toHaveTextContent("Tom Jones");  // 2026-02-20
   });
 
   it("shows loading state while fetching sessions", async () => {
@@ -251,7 +172,7 @@ describe("SessionsPage", () => {
     await waitFor(() => screen.getByText("Tom Jones"));
 
     fireEvent.change(screen.getByLabelText("From date"), {
-      target: { value: "2024-03-01" },
+      target: { value: "2026-03-01" },
     });
 
     await waitFor(() => {
@@ -265,7 +186,7 @@ describe("SessionsPage", () => {
     await waitFor(() => screen.getByText("Jane Smith"));
 
     fireEvent.change(screen.getByLabelText("To date"), {
-      target: { value: "2024-02-28" },
+      target: { value: "2026-02-28" },
     });
 
     await waitFor(() => {

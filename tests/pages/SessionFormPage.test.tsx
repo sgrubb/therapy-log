@@ -4,79 +4,9 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import SessionFormPage from "@/pages/SessionFormPage";
-import { wrapped, mockTherapists, mockClientBase, errorResponse } from "../helpers/test-helpers";
+import { wrapped, mockTherapists, mockClients, mockSession, errorResponse } from "../helpers/ipc-mocks";
 
-vi.mock("@/components/ui/select", () => ({
-  Select: ({
-    value,
-    onValueChange,
-    children,
-  }: {
-    value?: string;
-    onValueChange?: (v: string) => void;
-    children: React.ReactNode;
-  }) => (
-    <select
-      value={value ?? ""}
-      onChange={(e) => onValueChange?.(e.target.value)}
-    >
-      {children}
-    </select>
-  ),
-  SelectTrigger: () => null,
-  SelectValue: () => null,
-  SelectContent: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
-  SelectItem: ({
-    value,
-    children,
-  }: {
-    value: string;
-    children: React.ReactNode;
-  }) => <option value={value}>{children}</option>,
-  SelectLabel: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
-  SelectSeparator: () => null,
-  SelectScrollUpButton: () => null,
-  SelectScrollDownButton: () => null,
-}));
-
-const mockClients = [
-  {
-    ...mockClientBase,
-    id: 1,
-    first_name: "Jane",
-    last_name: "Smith",
-    therapist_id: 1,
-    therapist: mockTherapists[0],
-  },
-  {
-    ...mockClientBase,
-    id: 2,
-    first_name: "Tom",
-    last_name: "Jones",
-    therapist_id: 2,
-    therapist: mockTherapists[1],
-    hospital_number: "HN002",
-  },
-];
-
-const mockSession = {
-  id: 1,
-  client_id: 1,
-  therapist_id: 1,
-  scheduled_at: new Date("2024-03-10T10:00:00.000Z"),
-  occurred_at: null,
-  status: "Attended",
-  session_type: "Child",
-  delivery_method: "FaceToFace",
-  missed_reason: null,
-  notes: "Some notes",
-  client: mockClients[0],
-  therapist: mockTherapists[0],
-};
+vi.mock("@/components/ui/select");
 
 const mockInvoke = vi.fn();
 
@@ -109,10 +39,11 @@ function renderNewForm() {
 }
 
 function renderEditForm() {
+  const editSession = { ...mockSession, notes: "Some notes" };
   mockInvoke.mockImplementation((channel: string) => {
     if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
     if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
-    if (channel === "session:get") return Promise.resolve(wrapped(mockSession));
+    if (channel === "session:get") return Promise.resolve(wrapped(editSession));
     return Promise.resolve(wrapped(null));
   });
 
@@ -245,7 +176,7 @@ describe("SessionFormPage — new session", () => {
 
     fireEvent.change(getClientSelect(), { target: { value: "1" } });
     fireEvent.change(getTherapistSelect(), { target: { value: "1" } });
-    fireEvent.change(screen.getByLabelText(/^date/i), { target: { value: "2024-01-01" } });
+    fireEvent.change(screen.getByLabelText(/^date/i), { target: { value: "2026-01-01" } });
     fireEvent.change(getSessionTypeSelect(), { target: { value: "Child" } });
     fireEvent.change(getDeliveryMethodSelect(), { target: { value: "FaceToFace" } });
     fireEvent.change(getStatusSelect(), { target: { value: "DNA" } });
@@ -261,20 +192,18 @@ describe("SessionFormPage — new session", () => {
   });
 
   it("calls session:create with correct payload and navigates to /sessions", async () => {
-    const createdSession = { ...mockSession, id: 99 };
-
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
-      if (channel === "session:create") return Promise.resolve(wrapped(createdSession));
+      if (channel === "session:create") return Promise.resolve(wrapped(mockSession));
       return Promise.resolve(wrapped(null));
     });
 
     await waitFor(() => screen.getByLabelText(/^date/i));
 
     fireEvent.change(getClientSelect(), { target: { value: "1" } });
-    fireEvent.change(screen.getByLabelText(/^date/i), { target: { value: "2024-01-01" } });
+    fireEvent.change(screen.getByLabelText(/^date/i), { target: { value: "2026-01-01" } });
     fireEvent.change(getSessionTypeSelect(), { target: { value: "Child" } });
     fireEvent.change(getDeliveryMethodSelect(), { target: { value: "FaceToFace" } });
     fireEvent.change(getStatusSelect(), { target: { value: "Attended" } });
@@ -312,7 +241,7 @@ describe("SessionFormPage — new session", () => {
     await waitFor(() => screen.getByLabelText(/^date/i));
 
     fireEvent.change(getClientSelect(), { target: { value: "1" } });
-    fireEvent.change(screen.getByLabelText(/^date/i), { target: { value: "2024-01-01" } });
+    fireEvent.change(screen.getByLabelText(/^date/i), { target: { value: "2026-01-01" } });
     fireEvent.change(getSessionTypeSelect(), { target: { value: "Child" } });
     fireEvent.change(getDeliveryMethodSelect(), { target: { value: "FaceToFace" } });
     fireEvent.change(getStatusSelect(), { target: { value: "Attended" } });
@@ -381,7 +310,7 @@ describe("SessionFormPage — new session", () => {
     await waitFor(() => screen.getByLabelText(/^date/i));
 
     fireEvent.change(getClientSelect(), { target: { value: "1" } });
-    fireEvent.change(screen.getByLabelText(/^date/i), { target: { value: "2024-01-01" } });
+    fireEvent.change(screen.getByLabelText(/^date/i), { target: { value: "2026-01-01" } });
     fireEvent.change(getSessionTypeSelect(), { target: { value: "Child" } });
     fireEvent.change(getDeliveryMethodSelect(), { target: { value: "FaceToFace" } });
     fireEvent.change(getStatusSelect(), { target: { value: "Attended" } });
@@ -392,7 +321,7 @@ describe("SessionFormPage — new session", () => {
       expect(screen.getByRole("button", { name: /saving/i })).toBeDisabled();
     });
 
-    resolveSave({ ...mockSession, id: 99 });
+    resolveSave(mockSession);
   });
 });
 
@@ -411,7 +340,7 @@ describe("SessionFormPage — edit session", () => {
   it("pre-populates all fields from existing session data", async () => {
     renderEditForm();
     await waitFor(() => {
-      expect(screen.getByLabelText(/^date/i)).toHaveValue("2024-03-10");
+      expect(screen.getByLabelText(/^date/i)).toHaveValue("2026-03-10");
       expect(screen.getByLabelText(/time/i)).toHaveValue("10:00");
       expect(getClientSelect()).toHaveValue("1");
       expect(getTherapistSelect()).toHaveValue("1");

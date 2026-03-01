@@ -3,87 +3,9 @@ import { render, screen, waitFor, fireEvent, within } from "@testing-library/rea
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import ClientsPage from "@/pages/ClientsPage";
-import { wrapped, mockTherapists } from "../helpers/test-helpers";
+import { wrapped, mockTherapists, mockClients } from "../helpers/ipc-mocks";
 
-// Replace Radix Select with native <select> so filter interactions are testable.
-// SelectTrigger returns null; Select itself renders the native combobox.
-vi.mock("@/components/ui/select", () => ({
-  Select: ({
-    value,
-    onValueChange,
-    children,
-  }: {
-    value?: string;
-    onValueChange?: (v: string) => void;
-    children: React.ReactNode;
-  }) => (
-    <select
-      value={value ?? ""}
-      onChange={(e) => onValueChange?.(e.target.value)}
-    >
-      {children}
-    </select>
-  ),
-  SelectTrigger: () => null,
-  SelectValue: () => null,
-  SelectContent: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
-  SelectItem: ({
-    value,
-    children,
-  }: {
-    value: string;
-    children: React.ReactNode;
-  }) => <option value={value}>{children}</option>,
-  SelectLabel: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
-  SelectSeparator: () => null,
-  SelectScrollUpButton: () => null,
-  SelectScrollDownButton: () => null,
-}));
-
-const mockClients = [
-  {
-    id: 1,
-    first_name: "Jane",
-    last_name: "Smith",
-    hospital_number: "HN001",
-    therapist_id: 1,
-    therapist: mockTherapists[0],
-    session_day: "Monday",
-    is_closed: false,
-    dob: new Date("2000-01-01T00:00:00.000Z"),
-    address: null,
-    phone: "07700900001",
-    email: null,
-    session_time: null,
-    pre_score: null,
-    post_score: null,
-    outcome: null,
-    notes: null,
-  },
-  {
-    id: 2,
-    first_name: "Tom",
-    last_name: "Jones",
-    hospital_number: "HN002",
-    therapist_id: 2,
-    therapist: mockTherapists[1],
-    session_day: null,
-    is_closed: true,
-    dob: new Date("1995-05-10T00:00:00.000Z"),
-    address: null,
-    phone: null,
-    email: "tom@example.com",
-    session_time: null,
-    pre_score: null,
-    post_score: null,
-    outcome: null,
-    notes: null,
-  },
-];
+vi.mock("@/components/ui/select");
 
 const mockInvoke = vi.fn();
 

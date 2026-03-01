@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { TherapistProvider, useTherapist } from "@/context/TherapistContext";
-import { wrapped, mockTherapists } from "../helpers/test-helpers";
+import { wrapped, mockTherapists } from "../helpers/ipc-mocks";
 
 const mockInvoke = vi.fn();
 

@@ -4,65 +4,9 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import ClientFormPage from "@/pages/ClientFormPage";
-import { wrapped, mockTherapists, errorResponse } from "../helpers/test-helpers";
+import { wrapped, mockTherapists, mockClient, errorResponse } from "../helpers/ipc-mocks";
 
-// Replace Radix Select with native <select> so form interactions are testable.
-vi.mock("@/components/ui/select", () => ({
-  Select: ({
-    value,
-    onValueChange,
-    children,
-  }: {
-    value?: string;
-    onValueChange?: (v: string) => void;
-    children: React.ReactNode;
-  }) => (
-    <select
-      value={value ?? ""}
-      onChange={(e) => onValueChange?.(e.target.value)}
-    >
-      {children}
-    </select>
-  ),
-  SelectTrigger: () => null,
-  SelectValue: () => null,
-  SelectContent: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
-  SelectItem: ({
-    value,
-    children,
-  }: {
-    value: string;
-    children: React.ReactNode;
-  }) => <option value={value}>{children}</option>,
-  SelectLabel: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
-  SelectSeparator: () => null,
-  SelectScrollUpButton: () => null,
-  SelectScrollDownButton: () => null,
-}));
-
-const mockClient = {
-  id: 1,
-  first_name: "Jane",
-  last_name: "Smith",
-  hospital_number: "HN001",
-  therapist_id: 1,
-  therapist: mockTherapists[0],
-  session_day: "Monday",
-  is_closed: false,
-  dob: new Date("2000-01-15T00:00:00.000Z"),
-  address: "123 Main St",
-  phone: "07700900001",
-  email: null,
-  session_time: "10:00",
-  pre_score: null,
-  post_score: null,
-  outcome: null,
-  notes: null,
-};
+vi.mock("@/components/ui/select");
 
 const mockInvoke = vi.fn();
 
@@ -208,12 +152,10 @@ describe("ClientFormPage — new client", () => {
 
   it("calls client:create with correct payload and navigates to detail", async () => {
     const user = userEvent.setup();
-    const created = { ...mockClient, id: 99 };
-
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:create") return Promise.resolve(wrapped(created));
+      if (channel === "client:create") return Promise.resolve(wrapped(mockClient));
       return Promise.resolve(wrapped(null));
     });
 
@@ -316,12 +258,10 @@ describe("ClientFormPage — new client", () => {
 
   it("submits successfully with email only (no phone)", async () => {
     const user = userEvent.setup();
-    const created = { ...mockClient, id: 99 };
-
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:create") return Promise.resolve(wrapped(created));
+      if (channel === "client:create") return Promise.resolve(wrapped(mockClient));
       return Promise.resolve(wrapped(null));
     });
 
@@ -401,7 +341,7 @@ describe("ClientFormPage — new client", () => {
       expect(screen.getByRole("button", { name: /saving/i })).toBeDisabled();
     });
 
-    resolveSave({ ...mockClient, id: 99 });
+    resolveSave(mockClient);
   });
 });
 

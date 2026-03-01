@@ -3,28 +3,7 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import SessionDetailPage from "@/pages/SessionDetailPage";
-import { wrapped, mockTherapists, mockClientBase, errorResponse } from "../helpers/test-helpers";
-
-const mockSession = {
-  id: 1,
-  client_id: 1,
-  therapist_id: 1,
-  scheduled_at: new Date("2024-03-10T10:00:00.000Z"),
-  occurred_at: null,
-  status: "Attended",
-  session_type: "Child",
-  delivery_method: "FaceToFace",
-  missed_reason: null,
-  notes: null,
-  client: {
-    ...mockClientBase,
-    id: 1,
-    first_name: "Jane",
-    last_name: "Smith",
-    therapist_id: 1,
-  },
-  therapist: mockTherapists[0],
-};
+import { wrapped, mockTherapists, mockSession, errorResponse } from "../helpers/ipc-mocks";
 
 const mockInvoke = vi.fn();
 
