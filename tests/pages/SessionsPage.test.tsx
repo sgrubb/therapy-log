@@ -332,4 +332,156 @@ describe("SessionsPage", () => {
       expect(screen.getByTestId("session-form")).toBeInTheDocument();
     });
   });
+
+  describe("column sorting", () => {
+    it("sorts by date ascending when Date header is clicked", async () => {
+      renderSessionsPage();
+      await waitFor(() => screen.getByText("Jane Smith"));
+
+      fireEvent.click(screen.getByRole("columnheader", { name: /date/i }));
+
+      const rows = screen.getAllByRole("row").slice(1);
+      expect(rows[0]).toHaveTextContent("Tom Jones");  // Feb 2024
+      expect(rows[1]).toHaveTextContent("Jane Smith"); // Mar 2024
+    });
+
+    it("reverses sort direction when the same header is clicked again", async () => {
+      renderSessionsPage();
+      await waitFor(() => screen.getByText("Jane Smith"));
+
+      fireEvent.click(screen.getByRole("columnheader", { name: /date/i }));
+      fireEvent.click(screen.getByRole("columnheader", { name: /date/i }));
+
+      const rows = screen.getAllByRole("row").slice(1);
+      expect(rows[0]).toHaveTextContent("Jane Smith"); // back to desc
+      expect(rows[1]).toHaveTextContent("Tom Jones");
+    });
+
+    it("sorts by client last name ascending when Client header is clicked", async () => {
+      renderSessionsPage();
+      await waitFor(() => screen.getByText("Jane Smith"));
+
+      fireEvent.click(screen.getByRole("columnheader", { name: /client/i }));
+
+      const rows = screen.getAllByRole("row").slice(1);
+      expect(rows[0]).toHaveTextContent("Tom Jones");  // Jones < Smith
+      expect(rows[1]).toHaveTextContent("Jane Smith");
+    });
+
+    it("sorts by status ascending when Status header is clicked", async () => {
+      renderSessionsPage();
+      await waitFor(() => screen.getByText("Jane Smith"));
+
+      fireEvent.click(screen.getByRole("columnheader", { name: /status/i }));
+
+      const rows = screen.getAllByRole("row").slice(1);
+      expect(rows[0]).toHaveTextContent("Jane Smith"); // Attended < DNA
+      expect(rows[1]).toHaveTextContent("Tom Jones");
+    });
+
+    it("resets to ascending when a different column header is clicked", async () => {
+      renderSessionsPage();
+      await waitFor(() => screen.getByText("Jane Smith"));
+
+      // Sort date ascending
+      fireEvent.click(screen.getByRole("columnheader", { name: /date/i }));
+      // Now switch to client — should be ascending (Jones before Smith)
+      fireEvent.click(screen.getByRole("columnheader", { name: /client/i }));
+
+      const rows = screen.getAllByRole("row").slice(1);
+      expect(rows[0]).toHaveTextContent("Tom Jones");
+      expect(rows[1]).toHaveTextContent("Jane Smith");
+    });
+
+    it("shows ↓ on the Date header by default and ↑ after clicking", async () => {
+      renderSessionsPage();
+      await waitFor(() => screen.getByText("Jane Smith"));
+
+      const dateHeader = screen.getByRole("columnheader", { name: /date/i });
+      expect(dateHeader).toHaveTextContent("↓");
+
+      fireEvent.click(dateHeader);
+      expect(dateHeader).toHaveTextContent("↑");
+    });
+
+    it("moves the sort indicator to the newly clicked column", async () => {
+      renderSessionsPage();
+      await waitFor(() => screen.getByText("Jane Smith"));
+
+      fireEvent.click(screen.getByRole("columnheader", { name: /client/i }));
+
+      expect(screen.getByRole("columnheader", { name: /client/i })).toHaveTextContent("↑");
+      expect(screen.getByRole("columnheader", { name: /date/i })).not.toHaveTextContent("↑");
+      expect(screen.getByRole("columnheader", { name: /date/i })).not.toHaveTextContent("↓");
+    });
+  });
+
+  describe("Show mine checkbox", () => {
+    it("does not show the checkbox when no therapist is selected", async () => {
+      renderSessionsPage();
+      await waitFor(() => screen.getByText("Jane Smith"));
+
+      expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    });
+
+    it("shows the checkbox when a therapist is selected in context", async () => {
+      localStorage.setItem("selectedTherapistId", "1");
+      renderSessionsPage();
+      await waitFor(() => screen.getByText("Jane Smith"));
+
+      expect(screen.getByRole("checkbox")).toBeInTheDocument();
+    });
+
+    it("checking Mine filters sessions to the selected therapist", async () => {
+      localStorage.setItem("selectedTherapistId", "1");
+      renderSessionsPage();
+      await waitFor(() => screen.getByText("Jane Smith"));
+
+      fireEvent.click(screen.getByRole("checkbox"));
+
+      await waitFor(() => {
+        expect(screen.getByText("Jane Smith")).toBeInTheDocument();
+        expect(screen.queryByText("Tom Jones")).not.toBeInTheDocument();
+      });
+    });
+
+    it("unchecking Mine resets the filter to show all sessions", async () => {
+      localStorage.setItem("selectedTherapistId", "1");
+      renderSessionsPage();
+      await waitFor(() => screen.getByText("Jane Smith"));
+
+      fireEvent.click(screen.getByRole("checkbox"));
+      await waitFor(() => expect(screen.queryByText("Tom Jones")).not.toBeInTheDocument());
+
+      fireEvent.click(screen.getByRole("checkbox"));
+      await waitFor(() => {
+        expect(screen.getByText("Jane Smith")).toBeInTheDocument();
+        expect(screen.getByText("Tom Jones")).toBeInTheDocument();
+      });
+    });
+
+    it("checkbox becomes checked when therapist dropdown is set to the selected therapist", async () => {
+      localStorage.setItem("selectedTherapistId", "1");
+      renderSessionsPage();
+      await waitFor(() => screen.getByText("Jane Smith"));
+
+      expect(screen.getByRole("checkbox")).not.toBeChecked();
+
+      fireEvent.change(getTherapistFilterSelect(), { target: { value: "1" } });
+
+      await waitFor(() => expect(screen.getByRole("checkbox")).toBeChecked());
+    });
+
+    it("checkbox becomes unchecked when therapist dropdown is changed away from selected therapist", async () => {
+      localStorage.setItem("selectedTherapistId", "1");
+      renderSessionsPage();
+      await waitFor(() => screen.getByText("Jane Smith"));
+
+      fireEvent.click(screen.getByRole("checkbox"));
+      await waitFor(() => expect(screen.getByRole("checkbox")).toBeChecked());
+
+      fireEvent.change(getTherapistFilterSelect(), { target: { value: "all" } });
+      await waitFor(() => expect(screen.getByRole("checkbox")).not.toBeChecked());
+    });
+  });
 });

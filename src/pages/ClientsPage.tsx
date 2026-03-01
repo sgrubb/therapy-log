@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTherapist } from "@/context/TherapistContext";
 import { ipc } from "@/lib/ipc";
 import type { ClientWithTherapist } from "@/types/ipc";
+import { useClientFilters } from "@/hooks/useClientFilters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,31 +14,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type StatusFilter = "open" | "closed" | "all";
-type ClientSortKey = "name" | "hospital_number" | "therapist" | "session_day" | "status";
-
 export default function ClientsPage() {
   const navigate = useNavigate();
-  const { therapists, selectedTherapistId } = useTherapist();
 
   const [clients, setClients] = useState<ClientWithTherapist[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("open");
-  const [therapistFilter, setTherapistFilter] = useState("all");
-  const [sortKey, setSortKey] = useState<ClientSortKey>("name");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-
-  const showMine = selectedTherapistId !== null && therapistFilter === String(selectedTherapistId);
-
-  function handleSort(key: ClientSortKey) {
-    if (key === sortKey) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  }
 
   useEffect(() => {
     async function load() {
@@ -54,51 +34,14 @@ export default function ClientsPage() {
     load();
   }, []);
 
-  const sortedTherapists = useMemo(
-    () =>
-      [...therapists].sort((a, b) =>
-        `${a.last_name} ${a.first_name}`.localeCompare(
-          `${b.last_name} ${b.first_name}`,
-        ),
-      ),
-    [therapists],
-  );
-
-  const filtered = useMemo(() => {
-    const searchQuery = search.trim().toLowerCase();
-    return clients
-      .filter((c) =>
-        statusFilter === "open" ? !c.is_closed
-        : statusFilter === "closed" ? c.is_closed
-        : true
-      )
-      .filter((c) => therapistFilter === "all" || c.therapist_id === Number(therapistFilter))
-      .filter((c) =>
-        !searchQuery ||
-        `${c.first_name} ${c.last_name}`.toLowerCase().includes(searchQuery) ||
-        c.hospital_number.toLowerCase().includes(searchQuery)
-      );
-  }, [clients, statusFilter, therapistFilter, search]);
-
-  const sorted = useMemo(() => {
-    return [...filtered].sort((a, b) => {
-      const cmp = (() => {
-        switch (sortKey) {
-          case "name": return `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`);
-          case "hospital_number": return a.hospital_number.localeCompare(b.hospital_number);
-          case "therapist": return `${a.therapist.last_name} ${a.therapist.first_name}`.localeCompare(`${b.therapist.last_name} ${b.therapist.first_name}`);
-          case "session_day": return (a.session_day ?? "").localeCompare(b.session_day ?? "");
-          case "status": return Number(a.is_closed) - Number(b.is_closed);
-        }
-      })();
-      return sortDir === "asc" ? cmp : -cmp;
-    });
-  }, [filtered, sortKey, sortDir]);
-
-  function sortIndicator(key: ClientSortKey) {
-    if (sortKey !== key) return null;
-    return <span className="ml-1 text-xs">{sortDir === "asc" ? "↑" : "↓"}</span>;
-  }
+  const {
+    search, setSearch,
+    statusFilter, setStatusFilter,
+    therapistFilter, setTherapistFilter,
+    handleSort, sortIndicator,
+    sorted, sortedTherapists,
+    showMine, selectedTherapistId,
+  } = useClientFilters(clients);
 
   return (
     <div className="space-y-4">
@@ -121,7 +64,7 @@ export default function ClientsPage() {
           Status
           <Select
             value={statusFilter}
-            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+            onValueChange={(v) => setStatusFilter(v as "open" | "closed" | "all")}
           >
             <SelectTrigger className="w-36" aria-label="Status filter">
               <SelectValue />
@@ -170,7 +113,8 @@ export default function ClientsPage() {
       {loading ? (
         <p className="text-muted-foreground text-sm">Loading…</p>
       ) : (
-        <table className="w-full table-fixed text-sm">
+        <div className="min-w-0 overflow-x-auto">
+        <table className="min-w-[580px] w-full table-fixed text-sm">
           <colgroup>
             <col className="w-[28%]" />
             <col className="w-[18%]" />
@@ -221,16 +165,14 @@ export default function ClientsPage() {
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td
-                  colSpan={5}
-                  className="text-muted-foreground py-6 text-center"
-                >
+                <td colSpan={5} className="text-muted-foreground py-6 text-center">
                   No clients found.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );

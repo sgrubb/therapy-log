@@ -56,7 +56,7 @@ export default function AppLayout() {
       </aside>
 
       {/* Main area */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         {/* Header */}
         <header className="flex items-center justify-end border-b px-6 py-3">
           <TherapistSelector />
