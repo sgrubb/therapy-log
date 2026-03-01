@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useTherapist } from "@/context/TherapistContext";
 import type { SessionWithRelations } from "@/types/ipc";
 import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/types/enums";
+import { useSortableTable } from "@/hooks/useSortableTable";
 
 type SessionSortKey = "scheduled_at" | "client" | "therapist" | "session_type" | "status" | "delivery_method";
 
@@ -13,24 +14,10 @@ export function useSessionFilters(sessions: SessionWithRelations[]) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFromFilter, setDateFromFilter] = useState("");
   const [dateToFilter, setDateToFilter] = useState("");
-  const [sortKey, setSortKey] = useState<SessionSortKey>("scheduled_at");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const { sortKey, sortDir, handleSort, sortIndicator } = useSortableTable<SessionSortKey>("scheduled_at", "desc");
 
   const showMine = selectedTherapistId !== null && therapistFilter === String(selectedTherapistId);
-
-  function handleSort(key: SessionSortKey) {
-    if (key === sortKey) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  }
-
-  function sortIndicator(key: SessionSortKey) {
-    if (sortKey !== key) return null;
-    return <span className="ml-1 text-xs">{sortDir === "asc" ? "↑" : "↓"}</span>;
-  }
 
   const sortedTherapists = useMemo(
     () =>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTherapist } from "@/context/TherapistContext";
 import type { ClientWithTherapist } from "@/types/ipc";
+import { useSortableTable } from "@/hooks/useSortableTable";
 
 type ClientSortKey = "name" | "hospital_number" | "therapist" | "session_day" | "status";
 
@@ -10,24 +11,10 @@ export function useClientFilters(clients: ClientWithTherapist[]) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"open" | "closed" | "all">("open");
   const [therapistFilter, setTherapistFilter] = useState("all");
-  const [sortKey, setSortKey] = useState<ClientSortKey>("name");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const { sortKey, sortDir, handleSort, sortIndicator } = useSortableTable<ClientSortKey>("name");
 
   const showMine = selectedTherapistId !== null && therapistFilter === String(selectedTherapistId);
-
-  function handleSort(key: ClientSortKey) {
-    if (key === sortKey) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  }
-
-  function sortIndicator(key: ClientSortKey) {
-    if (sortKey !== key) return null;
-    return <span className="ml-1 text-xs">{sortDir === "asc" ? "↑" : "↓"}</span>;
-  }
 
   const sortedTherapists = useMemo(
     () =>

@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { z } from "zod";
+import type { z } from "zod";
 import { ipc, IpcError } from "@/lib/ipc";
 import { clientFormSchema } from "@/schemas/forms";
 import { SessionDay, Outcome } from "@/types/enums";
+import { useFormState } from "@/hooks/useFormState";
 
 export type FormFields = z.input<typeof clientFormSchema>;
 export type FieldErrors = Partial<Record<keyof FormFields, string>>;
-type FormState = "idle" | "loading" | "saving" | "error";
 
 const EMPTY: FormFields = {
   first_name: "",
@@ -49,11 +49,16 @@ export function useClientForm(clientId?: number) {
   const navigate = useNavigate();
   const isEdit = clientId !== undefined;
 
-  const [form, setForm] = useState<FormFields>(EMPTY);
-  const [errors, setErrors] = useState<FieldErrors>({});
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [formState, setFormState] = useState<FormState>("idle");
-  const [touched, setTouched] = useState<Set<string>>(new Set());
+  const {
+    form, setForm,
+    errors,
+    saveError, setSaveError,
+    formState, setFormState,
+    touched,
+    clearFieldError,
+    markTouched,
+    validate,
+  } = useFormState(clientFormSchema, EMPTY);
 
   useEffect(() => {
     if (!isEdit || clientId === undefined) return;
@@ -88,46 +93,13 @@ export function useClientForm(clientId?: number) {
   }, [clientId, isEdit, navigate]);
 
   const set = <K extends keyof FormFields>(field: K, value: FormFields[K]) => {
-    setForm((prev) => {
-      const next = { ...prev, [field]: value };
-      return next;
-    });
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
-    }
+    setForm((prev) => ({ ...prev, [field]: value }));
+    clearFieldError(field);
   };
-
-  function markTouched(field: string) {
-    setTouched((prev) => new Set(prev).add(field));
-    const result = clientFormSchema.safeParse(form);
-    const fieldKey = field as keyof FormFields;
-    if (result.success) {
-      setErrors((prev) => ({ ...prev, [fieldKey]: undefined }));
-    } else {
-      const tree = z.treeifyError(result.error);
-      setErrors((prev) => ({
-        ...prev,
-        [fieldKey]: tree.properties?.[fieldKey]?.errors?.[0],
-      }));
-    }
-  }
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-
-    const allFields = Object.keys(EMPTY) as (keyof FormFields)[];
-    setTouched(new Set(allFields));
-
-    const result = clientFormSchema.safeParse(form);
-    if (!result.success) {
-      const tree = z.treeifyError(result.error);
-      const errs = Object.fromEntries(
-        allFields.map((field) => [field, tree.properties?.[field]?.errors?.[0]])
-      ) as FieldErrors;
-      setErrors(errs);
-      return;
-    }
-
+    if (!validate()) return;
     setFormState("saving");
     setSaveError(null);
     try {
