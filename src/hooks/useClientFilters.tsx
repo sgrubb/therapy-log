@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useTherapist } from "@/context/TherapistContext";
 import type { ClientWithTherapist } from "@/types/ipc";
 import { useSortableTable } from "@/hooks/useSortableTable";
+import { sortableName } from "@/lib/utils";
 
 type ClientSortKey = "name" | "hospital_number" | "therapist" | "session_day" | "status";
 
@@ -17,10 +18,7 @@ export function useClientFilters(clients: ClientWithTherapist[]) {
   const showMine = selectedTherapistId !== null && therapistFilter === String(selectedTherapistId);
 
   const sortedTherapists = useMemo(
-    () =>
-      [...therapists].sort((a, b) =>
-        `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`),
-      ),
+    () => [...therapists].sort((a, b) => sortableName(a).localeCompare(sortableName(b))),
     [therapists],
   );
 
@@ -41,11 +39,16 @@ export function useClientFilters(clients: ClientWithTherapist[]) {
       .sort((a, b) => {
         const cmp = (() => {
           switch (sortKey) {
-            case "name": return `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`);
-            case "hospital_number": return a.hospital_number.localeCompare(b.hospital_number);
-            case "therapist": return `${a.therapist.last_name} ${a.therapist.first_name}`.localeCompare(`${b.therapist.last_name} ${b.therapist.first_name}`);
-            case "session_day": return (a.session_day ?? "").localeCompare(b.session_day ?? "");
-            case "status": return Number(a.is_closed) - Number(b.is_closed);
+            case "name":
+              return sortableName(a).localeCompare(sortableName(b));
+            case "hospital_number":
+              return a.hospital_number.localeCompare(b.hospital_number);
+            case "therapist":
+              return sortableName(a.therapist).localeCompare(sortableName(b.therapist));
+            case "session_day":
+              return (a.session_day ?? "").localeCompare(b.session_day ?? "");
+            case "status":
+              return Number(a.is_closed) - Number(b.is_closed);
           }
         })();
         return sortDir === "asc" ? cmp : -cmp;

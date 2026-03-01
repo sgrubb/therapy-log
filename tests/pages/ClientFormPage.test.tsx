@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import ClientFormPage from "@/pages/ClientFormPage";
+import { wrapped, mockTherapists } from "../helpers/test-helpers";
 
 // Replace Radix Select with native <select> so form interactions are testable.
 vi.mock("@/components/ui/select", () => ({
@@ -43,11 +44,6 @@ vi.mock("@/components/ui/select", () => ({
   SelectScrollDownButton: () => null,
 }));
 
-const mockTherapists = [
-  { id: 1, first_name: "Alice", last_name: "Morgan", is_admin: true },
-  { id: 2, first_name: "Bob", last_name: "Chen", is_admin: false },
-];
-
 const mockClient = {
   id: 1,
   first_name: "Jane",
@@ -67,10 +63,6 @@ const mockClient = {
   outcome: null,
   notes: null,
 };
-
-function wrapped<T>(data: T) {
-  return { success: true, data };
-}
 
 const mockInvoke = vi.fn();
 

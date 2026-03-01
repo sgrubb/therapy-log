@@ -3,6 +3,7 @@ import { render, screen, waitFor, fireEvent, within } from "@testing-library/rea
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import ClientsPage from "@/pages/ClientsPage";
+import { wrapped, mockTherapists } from "../helpers/test-helpers";
 
 // Replace Radix Select with native <select> so filter interactions are testable.
 // SelectTrigger returns null; Select itself renders the native combobox.
@@ -42,11 +43,6 @@ vi.mock("@/components/ui/select", () => ({
   SelectScrollUpButton: () => null,
   SelectScrollDownButton: () => null,
 }));
-
-const mockTherapists = [
-  { id: 1, first_name: "Alice", last_name: "Morgan", is_admin: true },
-  { id: 2, first_name: "Bob", last_name: "Chen", is_admin: false },
-];
 
 const mockClients = [
   {
@@ -88,10 +84,6 @@ const mockClients = [
     notes: null,
   },
 ];
-
-function wrapped<T>(data: T) {
-  return { success: true, data };
-}
 
 const mockInvoke = vi.fn();
 

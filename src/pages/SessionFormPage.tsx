@@ -15,8 +15,9 @@ import {
 import type { ClientWithTherapist } from "@/types/ipc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Field } from "@/components/ui/field";
+import { SaveErrorAlert } from "@/components/ui/save-error-alert";
 import {
   Select,
   SelectContent,
@@ -24,24 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1">
-      <Label>{label}</Label>
-      {children}
-      {error && <p className="text-destructive text-sm">{error}</p>}
-    </div>
-  );
-}
 
 export default function SessionFormPage() {
   const { id } = useParams<{ id?: string }>();
@@ -52,15 +35,14 @@ export default function SessionFormPage() {
 
   const {
     form,
-    errors,
     formState,
     saveError,
-    touched,
     isEdit,
     set,
     setClient,
     handleSubmit,
     markTouched,
+    getError,
   } = useSessionForm(id !== undefined ? Number(id) : undefined);
 
   useEffect(() => {
@@ -74,9 +56,6 @@ export default function SessionFormPage() {
     }
     load();
   }, []);
-
-  const err = (field: keyof typeof errors) =>
-    touched.has(field) ? errors[field] : undefined;
 
   // Sort: current therapist's clients first, then alphabetically
   const sortedClients = [...clients].sort((a, b) => {
@@ -105,24 +84,17 @@ export default function SessionFormPage() {
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-        {saveError && (
-          <div
-            role="alert"
-            className="border-destructive bg-destructive/10 text-destructive rounded-md border p-3 text-sm"
-          >
-            {saveError}
-          </div>
-        )}
+        <SaveErrorAlert message={saveError} />
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Client *" error={err("client_id")}>
+          <Field label="Client *" error={getError("client_id")}>
             <Select
               value={form.client_id}
               onValueChange={(v) => setClient(v, clients)}
             >
               <SelectTrigger
                 aria-label="Client"
-                aria-invalid={!!err("client_id")}
+                aria-invalid={!!getError("client_id")}
                 onBlur={() => markTouched("client_id")}
               >
                 <SelectValue placeholder="Select client…" />
@@ -137,14 +109,14 @@ export default function SessionFormPage() {
             </Select>
           </Field>
 
-          <Field label="Therapist *" error={err("therapist_id")}>
+          <Field label="Therapist *" error={getError("therapist_id")}>
             <Select
               value={form.therapist_id}
               onValueChange={(v) => set("therapist_id", v)}
             >
               <SelectTrigger
                 aria-label="Therapist"
-                aria-invalid={!!err("therapist_id")}
+                aria-invalid={!!getError("therapist_id")}
                 onBlur={() => markTouched("therapist_id")}
               >
                 <SelectValue placeholder="Select therapist…" />
@@ -159,18 +131,18 @@ export default function SessionFormPage() {
             </Select>
           </Field>
 
-          <Field label="Date *" error={err("date")}>
+          <Field label="Date *" error={getError("date")}>
             <Input
               type="date"
               aria-label="Date"
               value={form.date}
               onChange={(e) => set("date", e.target.value)}
               onBlur={() => markTouched("date")}
-              aria-invalid={!!err("date")}
+              aria-invalid={!!getError("date")}
             />
           </Field>
 
-          <Field label="Time" error={err("time")}>
+          <Field label="Time" error={getError("time")}>
             <Input
               type="time"
               aria-label="Time"
@@ -180,14 +152,14 @@ export default function SessionFormPage() {
             />
           </Field>
 
-          <Field label="Session Type *" error={err("session_type")}>
+          <Field label="Session Type *" error={getError("session_type")}>
             <Select
               value={form.session_type}
               onValueChange={(v) => set("session_type", v as SessionType)}
             >
               <SelectTrigger
                 aria-label="Session type"
-                aria-invalid={!!err("session_type")}
+                aria-invalid={!!getError("session_type")}
                 onBlur={() => markTouched("session_type")}
               >
                 <SelectValue placeholder="Select type…" />
@@ -202,14 +174,14 @@ export default function SessionFormPage() {
             </Select>
           </Field>
 
-          <Field label="Delivery Method *" error={err("delivery_method")}>
+          <Field label="Delivery Method *" error={getError("delivery_method")}>
             <Select
               value={form.delivery_method}
               onValueChange={(v) => set("delivery_method", v as DeliveryMethod)}
             >
               <SelectTrigger
                 aria-label="Delivery method"
-                aria-invalid={!!err("delivery_method")}
+                aria-invalid={!!getError("delivery_method")}
                 onBlur={() => markTouched("delivery_method")}
               >
                 <SelectValue placeholder="Select method…" />
@@ -224,14 +196,14 @@ export default function SessionFormPage() {
             </Select>
           </Field>
 
-          <Field label="Status *" error={err("status")}>
+          <Field label="Status *" error={getError("status")}>
             <Select
               value={form.status}
               onValueChange={(v) => set("status", v as SessionStatus)}
             >
               <SelectTrigger
                 aria-label="Status"
-                aria-invalid={!!err("status")}
+                aria-invalid={!!getError("status")}
                 onBlur={() => markTouched("status")}
               >
                 <SelectValue placeholder="Select status…" />
@@ -247,14 +219,14 @@ export default function SessionFormPage() {
           </Field>
 
           {showMissedReason && (
-            <Field label="Missed Reason *" error={err("missed_reason")}>
+            <Field label="Missed Reason *" error={getError("missed_reason")}>
               <Select
                 value={form.missed_reason ?? ""}
                 onValueChange={(v) => set("missed_reason", v as MissedReason)}
               >
                 <SelectTrigger
                   aria-label="Missed reason"
-                  aria-invalid={!!err("missed_reason")}
+                  aria-invalid={!!getError("missed_reason")}
                   onBlur={() => markTouched("missed_reason")}
                 >
                   <SelectValue placeholder="Select reason…" />
@@ -273,7 +245,7 @@ export default function SessionFormPage() {
 
         <Field
           label={`Notes (${(form.notes ?? "").length}/1000)`}
-          error={err("notes")}
+          error={getError("notes")}
         >
           <Textarea
             aria-label="Notes"
@@ -281,7 +253,7 @@ export default function SessionFormPage() {
             onChange={(e) => set("notes", e.target.value)}
             onBlur={() => markTouched("notes")}
             rows={4}
-            aria-invalid={!!err("notes")}
+            aria-invalid={!!getError("notes")}
           />
         </Field>
 

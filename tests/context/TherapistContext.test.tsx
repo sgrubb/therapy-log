@@ -1,18 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { TherapistProvider, useTherapist } from "@/context/TherapistContext";
-
-const mockTherapists = [
-  { id: 1, first_name: "Alice", last_name: "Morgan", is_admin: true },
-  { id: 2, first_name: "Bob", last_name: "Chen", is_admin: false },
-];
+import { wrapped, mockTherapists } from "../helpers/test-helpers";
 
 const mockInvoke = vi.fn();
 
 beforeEach(() => {
   localStorage.clear();
   mockInvoke.mockReset();
-  mockInvoke.mockResolvedValue({ success: true, data: mockTherapists });
+  mockInvoke.mockResolvedValue(wrapped(mockTherapists));
   window.electronAPI = { invoke: mockInvoke } as never;
 });
 

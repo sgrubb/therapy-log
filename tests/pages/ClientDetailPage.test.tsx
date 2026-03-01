@@ -3,10 +3,7 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import ClientDetailPage from "@/pages/ClientDetailPage";
-
-const mockTherapists = [
-  { id: 1, first_name: "Alice", last_name: "Morgan", is_admin: true },
-];
+import { wrapped, mockTherapists } from "../helpers/test-helpers";
 
 const mockClient = {
   id: 1,
@@ -44,10 +41,6 @@ const mockSessions = [
     therapist: mockTherapists[0],
   },
 ];
-
-function wrapped<T>(data: T) {
-  return { success: true, data };
-}
 
 const mockInvoke = vi.fn();
 

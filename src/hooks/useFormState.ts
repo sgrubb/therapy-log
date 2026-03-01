@@ -13,7 +13,7 @@ export function useFormState<F extends Record<string, unknown>>(
   const [formState, setFormState] = useState<FormState>("idle");
   const [touched, setTouched] = useState<Set<string>>(new Set());
 
-  function clearFieldError(field: keyof F) {
+  function clearError(field: keyof F) {
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
@@ -53,14 +53,17 @@ export function useFormState<F extends Record<string, unknown>>(
     return true;
   }
 
+  function getError(field: keyof F) {
+    return touched.has(field as string) ? errors[field] : undefined;
+  }
+
   return {
     form, setForm,
-    errors,
     saveError, setSaveError,
     formState, setFormState,
-    touched,
-    clearFieldError,
+    clearError,
     markTouched,
     validate,
+    getError,
   };
 }

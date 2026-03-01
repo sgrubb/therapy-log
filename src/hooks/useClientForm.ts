@@ -7,7 +7,6 @@ import { SessionDay, Outcome } from "@/types/enums";
 import { useFormState } from "@/hooks/useFormState";
 
 export type FormFields = z.input<typeof clientFormSchema>;
-export type FieldErrors = Partial<Record<keyof FormFields, string>>;
 
 const EMPTY: FormFields = {
   first_name: "",
@@ -51,13 +50,12 @@ export function useClientForm(clientId?: number) {
 
   const {
     form, setForm,
-    errors,
     saveError, setSaveError,
     formState, setFormState,
-    touched,
-    clearFieldError,
+    clearError,
     markTouched,
     validate,
+    getError,
   } = useFormState(clientFormSchema, EMPTY);
 
   useEffect(() => {
@@ -94,7 +92,7 @@ export function useClientForm(clientId?: number) {
 
   const set = <K extends keyof FormFields>(field: K, value: FormFields[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    clearFieldError(field);
+    clearError(field);
   };
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
@@ -123,13 +121,12 @@ export function useClientForm(clientId?: number) {
 
   return {
     form,
-    errors,
     formState,
     saveError,
-    touched,
     isEdit,
     set,
     handleSubmit,
     markTouched,
+    getError,
   };
 }

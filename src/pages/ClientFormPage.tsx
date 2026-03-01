@@ -4,8 +4,9 @@ import { useClientForm } from "@/hooks/useClientForm";
 import { SessionDay, Outcome } from "@/types/enums";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Field } from "@/components/ui/field";
+import { SaveErrorAlert } from "@/components/ui/save-error-alert";
 import {
   Select,
   SelectContent,
@@ -14,24 +15,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1">
-      <Label>{label}</Label>
-      {children}
-      {error && <p className="text-destructive text-sm">{error}</p>}
-    </div>
-  );
-}
-
 export default function ClientFormPage() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
@@ -39,18 +22,14 @@ export default function ClientFormPage() {
 
   const {
     form,
-    errors,
     formState,
     saveError,
-    touched,
     isEdit,
     set,
     handleSubmit,
     markTouched,
+    getError,
   } = useClientForm(id !== undefined ? Number(id) : undefined);
-
-  const err = (field: keyof typeof errors) =>
-    touched.has(field) ? errors[field] : undefined;
 
   if (formState === "loading") {
     return <p className="text-muted-foreground text-sm">Loading…</p>;
@@ -63,47 +42,40 @@ export default function ClientFormPage() {
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-        {saveError && (
-          <div
-            role="alert"
-            className="border-destructive bg-destructive/10 text-destructive rounded-md border p-3 text-sm"
-          >
-            {saveError}
-          </div>
-        )}
+        <SaveErrorAlert message={saveError} />
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="First Name *" error={err("first_name")}>
+          <Field label="First Name *" error={getError("first_name")}>
             <Input
               id="first_name"
               aria-label="First name"
               value={form.first_name}
               onChange={(e) => set("first_name", e.target.value)}
               onBlur={() => markTouched("first_name")}
-              aria-invalid={!!err("first_name")}
+              aria-invalid={!!getError("first_name")}
             />
           </Field>
-          <Field label="Last Name *" error={err("last_name")}>
+          <Field label="Last Name *" error={getError("last_name")}>
             <Input
               id="last_name"
               aria-label="Last name"
               value={form.last_name}
               onChange={(e) => set("last_name", e.target.value)}
               onBlur={() => markTouched("last_name")}
-              aria-invalid={!!err("last_name")}
+              aria-invalid={!!getError("last_name")}
             />
           </Field>
-          <Field label="Hospital Number *" error={err("hospital_number")}>
+          <Field label="Hospital Number *" error={getError("hospital_number")}>
             <Input
               id="hospital_number"
               aria-label="Hospital number"
               value={form.hospital_number}
               onChange={(e) => set("hospital_number", e.target.value)}
               onBlur={() => markTouched("hospital_number")}
-              aria-invalid={!!err("hospital_number")}
+              aria-invalid={!!getError("hospital_number")}
             />
           </Field>
-          <Field label="Date of Birth *" error={err("dob")}>
+          <Field label="Date of Birth *" error={getError("dob")}>
             <Input
               id="dob"
               type="date"
@@ -111,12 +83,12 @@ export default function ClientFormPage() {
               value={form.dob}
               onChange={(e) => set("dob", e.target.value)}
               onBlur={() => markTouched("dob")}
-              aria-invalid={!!err("dob")}
+              aria-invalid={!!getError("dob")}
             />
           </Field>
         </div>
 
-        <Field label="Address" error={err("address")}>
+        <Field label="Address" error={getError("address")}>
           <Textarea
             aria-label="Address"
             value={form.address ?? ""}
@@ -127,7 +99,7 @@ export default function ClientFormPage() {
         </Field>
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Phone" error={err("phone")}>
+          <Field label="Phone" error={getError("phone")}>
             <Input
               id="phone"
               type="tel"
@@ -135,10 +107,10 @@ export default function ClientFormPage() {
               value={form.phone ?? ""}
               onChange={(e) => set("phone", e.target.value)}
               onBlur={() => markTouched("phone")}
-              aria-invalid={!!err("phone")}
+              aria-invalid={!!getError("phone")}
             />
           </Field>
-          <Field label="Email" error={err("email")}>
+          <Field label="Email" error={getError("email")}>
             <Input
               id="email"
               type="email"
@@ -146,11 +118,11 @@ export default function ClientFormPage() {
               value={form.email ?? ""}
               onChange={(e) => set("email", e.target.value)}
               onBlur={() => markTouched("email")}
-              aria-invalid={!!err("email")}
+              aria-invalid={!!getError("email")}
             />
           </Field>
 
-          <Field label="Session Day" error={err("session_day")}>
+          <Field label="Session Day" error={getError("session_day")}>
             <Select
               value={form.session_day ?? ""}
               onValueChange={(v) => set("session_day", v as SessionDay)}
@@ -171,7 +143,7 @@ export default function ClientFormPage() {
             </Select>
           </Field>
 
-          <Field label="Session Time" error={err("session_time")}>
+          <Field label="Session Time" error={getError("session_time")}>
             <Input
               type="time"
               aria-label="Session time"
@@ -181,14 +153,14 @@ export default function ClientFormPage() {
             />
           </Field>
 
-          <Field label="Therapist *" error={err("therapist_id")}>
+          <Field label="Therapist *" error={getError("therapist_id")}>
             <Select
               value={form.therapist_id}
               onValueChange={(v) => set("therapist_id", v)}
             >
               <SelectTrigger
                 aria-label="Therapist"
-                aria-invalid={!!err("therapist_id")}
+                aria-invalid={!!getError("therapist_id")}
                 onBlur={() => markTouched("therapist_id")}
               >
                 <SelectValue placeholder="Select therapist…" />
@@ -205,7 +177,7 @@ export default function ClientFormPage() {
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          <Field label="Pre Score" error={err("pre_score")}>
+          <Field label="Pre Score" error={getError("pre_score")}>
             <Input
               type="number"
               step="0.1"
@@ -215,7 +187,7 @@ export default function ClientFormPage() {
               onBlur={() => markTouched("pre_score")}
             />
           </Field>
-          <Field label="Post Score" error={err("post_score")}>
+          <Field label="Post Score" error={getError("post_score")}>
             <Input
               type="number"
               step="0.1"
@@ -225,7 +197,7 @@ export default function ClientFormPage() {
               onBlur={() => markTouched("post_score")}
             />
           </Field>
-          <Field label="Outcome" error={err("outcome")}>
+          <Field label="Outcome" error={getError("outcome")}>
             <Select
               value={form.outcome ?? ""}
               onValueChange={(v) => set("outcome", v as Outcome)}
@@ -249,7 +221,7 @@ export default function ClientFormPage() {
 
         <Field
           label={`Notes (${(form.notes ?? "").length}/1000)`}
-          error={err("notes")}
+          error={getError("notes")}
         >
           <Textarea
             aria-label="Notes"
@@ -257,7 +229,7 @@ export default function ClientFormPage() {
             onChange={(e) => set("notes", e.target.value)}
             onBlur={() => markTouched("notes")}
             rows={4}
-            aria-invalid={!!err("notes")}
+            aria-invalid={!!getError("notes")}
           />
         </Field>
 

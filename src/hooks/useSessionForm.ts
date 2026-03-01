@@ -9,7 +9,6 @@ import type { ClientWithTherapist } from "@/types/ipc";
 import { useFormState } from "@/hooks/useFormState";
 
 export type FormFields = z.input<typeof sessionFormSchema>;
-export type FieldErrors = Partial<Record<keyof FormFields, string>>;
 
 const EMPTY: FormFields = {
   client_id: "",
@@ -43,13 +42,12 @@ export function useSessionForm(sessionId?: number) {
 
   const {
     form, setForm,
-    errors,
     saveError, setSaveError,
     formState, setFormState,
-    touched,
-    clearFieldError,
+    clearError,
     markTouched,
     validate,
+    getError,
   } = useFormState(sessionFormSchema, EMPTY);
 
   useEffect(() => {
@@ -87,7 +85,7 @@ export function useSessionForm(sessionId?: number) {
       }
       return next;
     });
-    clearFieldError(field);
+    clearError(field);
   };
 
   function setClient(clientId: string, clients: ClientWithTherapist[]) {
@@ -97,8 +95,8 @@ export function useSessionForm(sessionId?: number) {
       client_id: clientId,
       therapist_id: prev.therapist_id || (client ? client.therapist_id.toString() : ""),
     }));
-    clearFieldError("client_id");
-    clearFieldError("therapist_id");
+    clearError("client_id");
+    clearError("therapist_id");
   }
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
@@ -123,14 +121,13 @@ export function useSessionForm(sessionId?: number) {
 
   return {
     form,
-    errors,
     formState,
     saveError,
-    touched,
     isEdit,
     set,
     setClient,
     handleSubmit,
     markTouched,
+    getError,
   };
 }

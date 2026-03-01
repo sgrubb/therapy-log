@@ -3,6 +3,7 @@ import { useTherapist } from "@/context/TherapistContext";
 import type { SessionWithRelations } from "@/types/ipc";
 import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/types/enums";
 import { useSortableTable } from "@/hooks/useSortableTable";
+import { sortableName } from "@/lib/utils";
 
 type SessionSortKey = "scheduled_at" | "client" | "therapist" | "session_type" | "status" | "delivery_method";
 
@@ -20,10 +21,7 @@ export function useSessionFilters(sessions: SessionWithRelations[]) {
   const showMine = selectedTherapistId !== null && therapistFilter === String(selectedTherapistId);
 
   const sortedTherapists = useMemo(
-    () =>
-      [...therapists].sort((a, b) =>
-        `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`),
-      ),
+    () => [...therapists].sort((a, b) => sortableName(a).localeCompare(sortableName(b))),
     [therapists],
   );
 
@@ -54,12 +52,20 @@ export function useSessionFilters(sessions: SessionWithRelations[]) {
       .sort((a, b) => {
         const cmp = (() => {
           switch (sortKey) {
-            case "scheduled_at": return a.scheduled_at.getTime() - b.scheduled_at.getTime();
-            case "client": return `${a.client.last_name} ${a.client.first_name}`.localeCompare(`${b.client.last_name} ${b.client.first_name}`);
-            case "therapist": return `${a.therapist.last_name} ${a.therapist.first_name}`.localeCompare(`${b.therapist.last_name} ${b.therapist.first_name}`);
-            case "session_type": return (SESSION_TYPE_NAMES[a.session_type] ?? a.session_type).localeCompare(SESSION_TYPE_NAMES[b.session_type] ?? b.session_type);
-            case "status": return a.status.localeCompare(b.status);
-            case "delivery_method": return (DELIVERY_METHOD_NAMES[a.delivery_method] ?? a.delivery_method).localeCompare(DELIVERY_METHOD_NAMES[b.delivery_method] ?? b.delivery_method);
+            case "scheduled_at":
+              return a.scheduled_at.getTime() - b.scheduled_at.getTime();
+            case "client":
+              return sortableName(a.client).localeCompare(sortableName(b.client));
+            case "therapist":
+              return sortableName(a.therapist).localeCompare(sortableName(b.therapist));
+            case "session_type":
+              return (SESSION_TYPE_NAMES[a.session_type] ?? a.session_type)
+                .localeCompare(SESSION_TYPE_NAMES[b.session_type] ?? b.session_type);
+            case "status":
+              return a.status.localeCompare(b.status);
+            case "delivery_method":
+              return (DELIVERY_METHOD_NAMES[a.delivery_method] ?? a.delivery_method)
+                .localeCompare(DELIVERY_METHOD_NAMES[b.delivery_method] ?? b.delivery_method);
           }
         })();
         return sortDir === "asc" ? cmp : -cmp;
