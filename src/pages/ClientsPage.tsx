@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 
 type StatusFilter = "open" | "closed" | "all";
+type ClientSortKey = "name" | "hospital_number" | "therapist" | "session_day" | "status";
 
 export default function ClientsPage() {
   const navigate = useNavigate();
@@ -25,6 +26,19 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("open");
   const [therapistFilter, setTherapistFilter] = useState("all");
+  const [sortKey, setSortKey] = useState<ClientSortKey>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const showMine = selectedTherapistId !== null && therapistFilter === String(selectedTherapistId);
+
+  function handleSort(key: ClientSortKey) {
+    if (key === sortKey) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -67,25 +81,24 @@ export default function ClientsPage() {
   }, [clients, statusFilter, therapistFilter, search]);
 
   const sorted = useMemo(() => {
-    const nameOf = (c: ClientWithTherapist) =>
-      `${c.last_name} ${c.first_name}`.toLowerCase();
+    return [...filtered].sort((a, b) => {
+      const cmp = (() => {
+        switch (sortKey) {
+          case "name": return `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`);
+          case "hospital_number": return a.hospital_number.localeCompare(b.hospital_number);
+          case "therapist": return `${a.therapist.last_name} ${a.therapist.first_name}`.localeCompare(`${b.therapist.last_name} ${b.therapist.first_name}`);
+          case "session_day": return (a.session_day ?? "").localeCompare(b.session_day ?? "");
+          case "status": return Number(a.is_closed) - Number(b.is_closed);
+        }
+      })();
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [filtered, sortKey, sortDir]);
 
-    if (therapistFilter !== "all") {
-      return [...filtered].sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
-    }
-
-    if (selectedTherapistId !== null) {
-      const mine = filtered
-        .filter((c) => c.therapist_id === selectedTherapistId)
-        .sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
-      const others = filtered
-        .filter((c) => c.therapist_id !== selectedTherapistId)
-        .sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
-      return [...mine, ...others];
-    }
-
-    return [...filtered].sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
-  }, [filtered, therapistFilter, selectedTherapistId]);
+  function sortIndicator(key: ClientSortKey) {
+    if (sortKey !== key) return null;
+    return <span className="ml-1 text-xs">{sortDir === "asc" ? "↑" : "↓"}</span>;
+  }
 
   return (
     <div className="space-y-4">
@@ -120,8 +133,24 @@ export default function ClientsPage() {
             </SelectContent>
           </Select>
         </label>
-        <label className="text-muted-foreground flex flex-col gap-1 text-xs">
-          Therapist
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground text-xs">Therapist</span>
+            {selectedTherapistId !== null && (
+              <label className="text-muted-foreground mr-4 flex cursor-pointer items-center gap-1.5 text-xs">
+                Mine
+                <input
+                  type="checkbox"
+                  checked={showMine}
+                  onChange={(e) =>
+                    setTherapistFilter(
+                      e.target.checked ? String(selectedTherapistId) : "all",
+                    )
+                  }
+                />
+              </label>
+            )}
+          </div>
           <Select value={therapistFilter} onValueChange={setTherapistFilter}>
             <SelectTrigger className="w-52" aria-label="Therapist filter">
               <SelectValue placeholder="All therapists" />
@@ -135,7 +164,7 @@ export default function ClientsPage() {
               ))}
             </SelectContent>
           </Select>
-        </label>
+        </div>
       </div>
 
       {loading ? (
@@ -151,11 +180,21 @@ export default function ClientsPage() {
           </colgroup>
           <thead>
             <tr className="text-muted-foreground border-b text-left">
-              <th className="py-2 pr-4 font-medium">Name</th>
-              <th className="py-2 pr-4 font-medium">Hospital No.</th>
-              <th className="py-2 pr-4 font-medium">Therapist</th>
-              <th className="py-2 pr-4 font-medium">Session Day</th>
-              <th className="py-2 font-medium">Status</th>
+              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("name")}>
+                Name{sortIndicator("name")}
+              </th>
+              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("hospital_number")}>
+                Hospital No.{sortIndicator("hospital_number")}
+              </th>
+              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("therapist")}>
+                Therapist{sortIndicator("therapist")}
+              </th>
+              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("session_day")}>
+                Session Day{sortIndicator("session_day")}
+              </th>
+              <th className="hover:text-foreground cursor-pointer select-none py-2 font-medium" onClick={() => handleSort("status")}>
+                Status{sortIndicator("status")}
+              </th>
             </tr>
           </thead>
           <tbody>

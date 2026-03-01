@@ -14,6 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+type SessionSortKey = "scheduled_at" | "client" | "therapist" | "session_type" | "status" | "delivery_method";
+
 function formatDate(d: Date): string {
   return d.toLocaleDateString("en-GB", {
     day: "2-digit",
@@ -24,7 +26,7 @@ function formatDate(d: Date): string {
 
 export default function SessionsPage() {
   const navigate = useNavigate();
-  const { therapists } = useTherapist();
+  const { therapists, selectedTherapistId } = useTherapist();
 
   const [sessions, setSessions] = useState<SessionWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +35,19 @@ export default function SessionsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFromFilter, setDateFromFilter] = useState("");
   const [dateToFilter, setDateToFilter] = useState("");
+  const [sortKey, setSortKey] = useState<SessionSortKey>("scheduled_at");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const showMine = selectedTherapistId !== null && therapistFilter === String(selectedTherapistId);
+
+  function handleSort(key: SessionSortKey) {
+    if (key === sortKey) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -82,8 +97,25 @@ export default function SessionsPage() {
       .filter((s) => statusFilter === "all" || s.status === statusFilter)
       .filter((s) => !from || s.scheduled_at >= from)
       .filter((s) => !to || s.scheduled_at <= to)
-      .sort((a, b) => b.scheduled_at.getTime() - a.scheduled_at.getTime());
-  }, [sessions, clientFilter, therapistFilter, statusFilter, dateFromFilter, dateToFilter]);
+      .sort((a, b) => {
+        const cmp = (() => {
+          switch (sortKey) {
+            case "scheduled_at": return a.scheduled_at.getTime() - b.scheduled_at.getTime();
+            case "client": return `${a.client.last_name} ${a.client.first_name}`.localeCompare(`${b.client.last_name} ${b.client.first_name}`);
+            case "therapist": return `${a.therapist.last_name} ${a.therapist.first_name}`.localeCompare(`${b.therapist.last_name} ${b.therapist.first_name}`);
+            case "session_type": return (SESSION_TYPE_NAMES[a.session_type] ?? a.session_type).localeCompare(SESSION_TYPE_NAMES[b.session_type] ?? b.session_type);
+            case "status": return a.status.localeCompare(b.status);
+            case "delivery_method": return (DELIVERY_METHOD_NAMES[a.delivery_method] ?? a.delivery_method).localeCompare(DELIVERY_METHOD_NAMES[b.delivery_method] ?? b.delivery_method);
+          }
+        })();
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+  }, [sessions, clientFilter, therapistFilter, statusFilter, dateFromFilter, dateToFilter, sortKey, sortDir]);
+
+  function sortIndicator(key: SessionSortKey) {
+    if (sortKey !== key) return null;
+    return <span className="ml-1 text-xs">{sortDir === "asc" ? "↑" : "↓"}</span>;
+  }
 
   return (
     <div className="space-y-4">
@@ -110,8 +142,24 @@ export default function SessionsPage() {
           </Select>
         </label>
 
-        <label className="text-muted-foreground flex flex-col gap-1 text-xs">
-          Therapist
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground text-xs">Therapist</span>
+            {selectedTherapistId !== null && (
+              <label className="text-muted-foreground mr-4 flex cursor-pointer items-center gap-1.5 text-xs">
+                Mine
+                <input
+                  type="checkbox"
+                  checked={showMine}
+                  onChange={(e) =>
+                    setTherapistFilter(
+                      e.target.checked ? String(selectedTherapistId) : "all",
+                    )
+                  }
+                />
+              </label>
+            )}
+          </div>
           <Select value={therapistFilter} onValueChange={setTherapistFilter}>
             <SelectTrigger className="w-52" aria-label="Therapist filter">
               <SelectValue placeholder="All therapists" />
@@ -125,7 +173,7 @@ export default function SessionsPage() {
               ))}
             </SelectContent>
           </Select>
-        </label>
+        </div>
 
         <label className="text-muted-foreground flex flex-col gap-1 text-xs">
           Status
@@ -180,12 +228,24 @@ export default function SessionsPage() {
           </colgroup>
           <thead>
             <tr className="text-muted-foreground border-b text-left">
-              <th className="py-2 pr-4 font-medium">Date</th>
-              <th className="py-2 pr-4 font-medium">Client</th>
-              <th className="py-2 pr-4 font-medium">Therapist</th>
-              <th className="py-2 pr-4 font-medium">Type</th>
-              <th className="py-2 pr-4 font-medium">Status</th>
-              <th className="py-2 font-medium">Delivery</th>
+              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("scheduled_at")}>
+                Date{sortIndicator("scheduled_at")}
+              </th>
+              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("client")}>
+                Client{sortIndicator("client")}
+              </th>
+              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("therapist")}>
+                Therapist{sortIndicator("therapist")}
+              </th>
+              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("session_type")}>
+                Type{sortIndicator("session_type")}
+              </th>
+              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("status")}>
+                Status{sortIndicator("status")}
+              </th>
+              <th className="hover:text-foreground cursor-pointer select-none py-2 font-medium" onClick={() => handleSort("delivery_method")}>
+                Delivery{sortIndicator("delivery_method")}
+              </th>
             </tr>
           </thead>
           <tbody>
