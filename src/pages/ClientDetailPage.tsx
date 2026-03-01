@@ -4,15 +4,7 @@ import { ipc } from "@/lib/ipc";
 import type { ClientWithTherapist, SessionWithRelations } from "@/types/ipc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-muted-foreground text-xs">{label}</p>
-      <p className="text-sm font-medium">{value}</p>
-    </div>
-  );
-}
+import { InfoRow } from "@/components/ui/info-row";
 
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();

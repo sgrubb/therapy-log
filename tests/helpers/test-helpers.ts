@@ -2,6 +2,21 @@ export function wrapped<T>(data: T) {
   return { success: true, data };
 }
 
+export const errorResponse = {
+  notFound: {
+    success: false,
+    error: { code: "NOT_FOUND", message: "The requested record was not found." },
+  },
+  uniqueConstraint: {
+    success: false,
+    error: { code: "UNIQUE_CONSTRAINT", message: "A record with this value already exists." },
+  },
+  unknown: {
+    success: false,
+    error: { code: "UNKNOWN", message: "An unexpected error occurred." },
+  },
+};
+
 export const mockTherapists = [
   { id: 1, first_name: "Alice", last_name: "Morgan", is_admin: true },
   { id: 2, first_name: "Bob", last_name: "Chen", is_admin: false },

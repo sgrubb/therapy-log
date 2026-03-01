@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import ClientFormPage from "@/pages/ClientFormPage";
-import { wrapped, mockTherapists } from "../helpers/test-helpers";
+import { wrapped, mockTherapists, errorResponse } from "../helpers/test-helpers";
 
 // Replace Radix Select with native <select> so form interactions are testable.
 vi.mock("@/components/ui/select", () => ({
@@ -253,10 +253,7 @@ describe("ClientFormPage — new client", () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "client:create")
-        return Promise.resolve({
-          success: false,
-          error: { code: "UNIQUE_CONSTRAINT", message: "A record with this value already exists." },
-        });
+        return Promise.resolve(errorResponse.uniqueConstraint);
       return Promise.resolve(wrapped(null));
     });
 
@@ -295,10 +292,7 @@ describe("ClientFormPage — new client", () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "client:create")
-        return Promise.resolve({
-          success: false,
-          error: { code: "UNKNOWN", message: "An unexpected error occurred." },
-        });
+        return Promise.resolve(errorResponse.unknown);
       return Promise.resolve(wrapped(null));
     });
 
@@ -505,10 +499,7 @@ describe("ClientFormPage — edit client", () => {
       if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
       if (channel === "client:update")
-        return Promise.resolve({
-          success: false,
-          error: { code: "UNKNOWN", message: "An unexpected error occurred." },
-        });
+        return Promise.resolve(errorResponse.unknown);
       return Promise.resolve(wrapped(null));
     });
 
@@ -524,7 +515,7 @@ describe("ClientFormPage — edit client", () => {
   it("navigates to /clients when client is not found", async () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:get") return Promise.resolve({ success: false, error: { code: "NOT_FOUND", message: "The requested record was not found." } });
+      if (channel === "client:get") return Promise.resolve(errorResponse.notFound);
       return Promise.resolve(wrapped(null));
     });
 

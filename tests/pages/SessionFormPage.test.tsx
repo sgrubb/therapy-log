@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import SessionFormPage from "@/pages/SessionFormPage";
-import { wrapped, mockTherapists, mockClientBase } from "../helpers/test-helpers";
+import { wrapped, mockTherapists, mockClientBase, errorResponse } from "../helpers/test-helpers";
 
 vi.mock("@/components/ui/select", () => ({
   Select: ({
@@ -305,10 +305,7 @@ describe("SessionFormPage — new session", () => {
       if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
       if (channel === "session:create")
-        return Promise.resolve({
-          success: false,
-          error: { code: "UNKNOWN", message: "An unexpected error occurred." },
-        });
+        return Promise.resolve(errorResponse.unknown);
       return Promise.resolve(wrapped(null));
     });
 
@@ -494,10 +491,7 @@ describe("SessionFormPage — edit session", () => {
       if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
       if (channel === "session:get")
-        return Promise.resolve({
-          success: false,
-          error: { code: "NOT_FOUND", message: "The requested record was not found." },
-        });
+        return Promise.resolve(errorResponse.notFound);
       return Promise.resolve(wrapped(null));
     });
 

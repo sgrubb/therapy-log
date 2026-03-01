@@ -3,7 +3,7 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import ClientDetailPage from "@/pages/ClientDetailPage";
-import { wrapped, mockTherapists } from "../helpers/test-helpers";
+import { wrapped, mockTherapists, errorResponse } from "../helpers/test-helpers";
 
 const mockClient = {
   id: 1,
@@ -56,11 +56,9 @@ function renderDetailPage(clientOverride?: Partial<typeof mockClient> | null) {
       ? null
       : { ...mockClient, ...clientOverride };
 
-  const notFound = { success: false, error: { code: "NOT_FOUND", message: "The requested record was not found." } };
-  
   mockInvoke.mockImplementation((channel: string) => {
     if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-    if (channel === "client:get") return Promise.resolve(clientData === null ? notFound : wrapped(clientData));
+    if (channel === "client:get") return Promise.resolve(clientData === null ? errorResponse.notFound : wrapped(clientData));
     if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
     return Promise.resolve(wrapped(null));
   });
