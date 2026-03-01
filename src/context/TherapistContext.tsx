@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { ipc } from "@/lib/ipc";
+import log from "@/lib/logger";
 import type { Therapist } from "@/types/ipc";
 
 interface TherapistContextValue {
@@ -31,7 +32,7 @@ export function TherapistProvider({ children }: { children: ReactNode }) {
         const list = await ipc.listTherapists();
         setTherapists(list);
       } catch (err) {
-        console.error("Failed to fetch therapists:", err);
+        log.error("Failed to fetch therapists:", err);
       }
     }
     fetchTherapists();

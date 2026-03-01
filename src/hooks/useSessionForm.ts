@@ -2,12 +2,15 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { z } from "zod";
 import { ipc } from "@/lib/ipc";
+import log from "@/lib/logger";
 import { sessionFormSchema } from "@/schemas/forms";
 import { SessionStatus } from "@/types/enums";
 import type { SessionType, DeliveryMethod, MissedReason } from "@/types/enums";
 import type { ClientWithTherapist } from "@/types/ipc";
 import { useFormState } from "@/hooks/useFormState";
 
+// Field names mirror the database schema (snake_case) so they map directly
+// onto IPC payloads without a translation step.
 export type FormFields = z.input<typeof sessionFormSchema>;
 
 const EMPTY: FormFields = {
@@ -68,7 +71,7 @@ export function useSessionForm(sessionId?: number) {
           notes: session.notes ?? "",
         });
       } catch (err) {
-        console.error("Failed to load session:", err);
+        log.error("Failed to load session:", err);
         navigate("/sessions");
       } finally {
         setFormState("idle");

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { ipc } from "@/lib/ipc";
+import log from "@/lib/logger";
 import type { SessionWithRelations } from "@/types/ipc";
 import {
   SESSION_TYPE_NAMES,
@@ -26,7 +27,7 @@ export default function SessionDetailPage() {
         const data = await ipc.getSession(Number(id));
         setSession(data);
       } catch (err) {
-        console.error("Failed to load session:", err);
+        log.error("Failed to load session:", err);
       } finally {
         setLoading(false);
       }

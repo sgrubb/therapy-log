@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTherapist } from "@/context/TherapistContext";
 import { useSessionForm } from "@/hooks/useSessionForm";
 import { ipc } from "@/lib/ipc";
+import log from "@/lib/logger";
 import {
   SessionType,
   DeliveryMethod,
@@ -51,7 +52,7 @@ export default function SessionFormPage() {
         const data = await ipc.listClients();
         setClients(data);
       } catch (err) {
-        console.error("Failed to fetch clients:", err);
+        log.error("Failed to fetch clients:", err);
       }
     }
     load();

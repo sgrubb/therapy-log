@@ -2,10 +2,13 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { z } from "zod";
 import { ipc, IpcError } from "@/lib/ipc";
+import log from "@/lib/logger";
 import { clientFormSchema } from "@/schemas/forms";
 import { SessionDay, Outcome } from "@/types/enums";
 import { useFormState } from "@/hooks/useFormState";
 
+// Field names mirror the database schema (snake_case) so they map directly
+// onto IPC payloads without a translation step.
 export type FormFields = z.input<typeof clientFormSchema>;
 
 const EMPTY: FormFields = {
@@ -81,7 +84,7 @@ export function useClientForm(clientId?: number) {
           notes: client.notes ?? "",
         });
       } catch (err) {
-        console.error("Failed to load client:", err);
+        log.error("Failed to load client:", err);
         navigate("/clients");
       } finally {
         setFormState("idle");

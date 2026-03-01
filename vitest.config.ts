@@ -21,9 +21,10 @@ export default defineConfig({
           setupFiles: ["tests/test-setup.ts"],
         },
         resolve: {
-          alias: {
-            "@": resolve(__dirname, "src"),
-          },
+          alias: [
+            { find: "@/lib/logger", replacement: resolve(__dirname, "tests/helpers/logger-mock.ts") },
+            { find: "@", replacement: resolve(__dirname, "src") },
+          ],
         },
       },
     ],

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ipc } from "@/lib/ipc";
+import log from "@/lib/logger";
 import type { ClientWithTherapist, SessionWithRelations } from "@/types/ipc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,7 @@ export default function ClientDetailPage() {
             .sort((a, b) => b.scheduled_at.getTime() - a.scheduled_at.getTime()),
         );
       } catch (err) {
-        console.error("Failed to load client:", err);
+        log.error("Failed to load client:", err);
         navigate("/clients");
       } finally {
         setLoading(false);

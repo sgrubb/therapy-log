@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ipc } from "@/lib/ipc";
+import log from "@/lib/logger";
 import type { SessionWithRelations } from "@/types/ipc";
 import { SessionStatus, SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/types/enums";
 import { useSessionFilters } from "@/hooks/useSessionFilters";
@@ -34,7 +35,7 @@ export default function SessionsPage() {
         const data = await ipc.listSessions();
         setSessions(data);
       } catch (err) {
-        console.error("Failed to fetch sessions:", err);
+        log.error("Failed to fetch sessions:", err);
       } finally {
         setLoading(false);
       }

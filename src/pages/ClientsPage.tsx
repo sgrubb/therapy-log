@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ipc } from "@/lib/ipc";
+import log from "@/lib/logger";
 import type { ClientWithTherapist } from "@/types/ipc";
 import { useClientFilters } from "@/hooks/useClientFilters";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +27,7 @@ export default function ClientsPage() {
         const data = await ipc.listClients();
         setClients(data);
       } catch (err) {
-        console.error("Failed to fetch clients:", err);
+        log.error("Failed to fetch clients:", err);
       } finally {
         setLoading(false);
       }
