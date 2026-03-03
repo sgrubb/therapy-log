@@ -89,3 +89,19 @@ export const sessionFormSchema = z
       }
     }
   });
+
+export const therapistFormSchema = z.object({
+  first_name: z.string().min(1, "First name is required."),
+  last_name: z.string().min(1, "Last name is required."),
+  is_admin: z.boolean(),
+});
+
+export const closeClientSchema = z.object({
+  post_score: z.string().optional().or(z.literal("")),
+  outcome: z.enum(outcomeValues, "Outcome is required."),
+  closing_notes: z
+    .string()
+    .max(500, "Closing notes must be 500 characters or fewer.")
+    .optional()
+    .or(z.literal("")),
+});

@@ -1,0 +1,103 @@
+import { useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useTherapist } from "@/context/TherapistContext";
+import { useTherapistForm } from "@/hooks/useTherapistForm";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Field } from "@/components/ui/field";
+import { SaveErrorAlert } from "@/components/ui/save-error-alert";
+
+export default function TherapistFormPage() {
+  const { id } = useParams<{ id?: string }>();
+  const navigate = useNavigate();
+  const { therapists, selectedTherapistId } = useTherapist();
+
+  const selectedTherapist = therapists.find((t) => t.id === selectedTherapistId);
+  const isAdmin = selectedTherapist?.is_admin ?? false;
+  const therapistsLoaded = therapists.length > 0;
+
+  useEffect(() => {
+    if (therapistsLoaded && !isAdmin) {
+      navigate("/therapists", {
+        replace: true,
+        state: { error: "You do not have permission to manage therapists." },
+      });
+    }
+  }, [therapistsLoaded, isAdmin, navigate]);
+
+  const {
+    form,
+    formState,
+    saveError,
+    isEdit,
+    set,
+    handleSubmit,
+    markTouched,
+    getError,
+  } = useTherapistForm(id !== undefined ? Number(id) : undefined);
+
+  if (!therapistsLoaded || !isAdmin || formState === "loading") {
+    return <p className="text-muted-foreground text-sm">Loading…</p>;
+  }
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <h1 className="text-2xl font-semibold">
+        {isEdit ? "Edit Therapist" : "Add Therapist"}
+      </h1>
+
+      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+        <SaveErrorAlert message={saveError} />
+
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="First Name *" error={getError("first_name")}>
+            <Input
+              id="first_name"
+              aria-label="First name"
+              value={form.first_name}
+              onChange={(e) => set("first_name", e.target.value)}
+              onBlur={() => markTouched("first_name")}
+              aria-invalid={!!getError("first_name")}
+            />
+          </Field>
+          <Field label="Last Name *" error={getError("last_name")}>
+            <Input
+              id="last_name"
+              aria-label="Last name"
+              value={form.last_name}
+              onChange={(e) => set("last_name", e.target.value)}
+              onBlur={() => markTouched("last_name")}
+              aria-invalid={!!getError("last_name")}
+            />
+          </Field>
+        </div>
+
+        <Field label="Is Admin" error={getError("is_admin")}>
+          <input
+            type="checkbox"
+            aria-label="Is admin"
+            checked={form.is_admin}
+            onChange={(e) => set("is_admin", e.target.checked)}
+          />
+        </Field>
+
+        <div className="flex gap-3">
+          <Button type="submit" disabled={formState === "saving"}>
+            {formState === "saving"
+              ? "Saving…"
+              : isEdit
+                ? "Save Changes"
+                : "Add Therapist"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate("/therapists")}
+          >
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}

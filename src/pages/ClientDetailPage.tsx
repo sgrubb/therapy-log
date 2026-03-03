@@ -3,17 +3,23 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
 import type { ClientWithTherapist, SessionWithRelations } from "@/types/ipc";
+import { useTherapist } from "@/context/TherapistContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InfoRow } from "@/components/ui/info-row";
+import { CloseClientDialog } from "@/components/CloseClientDialog";
 
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { therapists: contextTherapists, selectedTherapistId } = useTherapist();
 
   const [client, setClient] = useState<ClientWithTherapist | null>(null);
   const [sessions, setSessions] = useState<SessionWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const selectedTherapist = contextTherapists.find((t) => t.id === selectedTherapistId);
+  const isAdmin = selectedTherapist?.is_admin ?? false;
 
   useEffect(() => {
     if (!id) return;
@@ -46,6 +52,10 @@ export default function ClientDetailPage() {
 
   if (!client) return null;
 
+  const canClose =
+    !client.is_closed &&
+    (isAdmin || selectedTherapistId === client.therapist_id);
+
   return (
     <div className="max-w-3xl space-y-6">
       {/* Header */}
@@ -65,12 +75,21 @@ export default function ClientDetailPage() {
             {client.is_closed ? "Closed" : "Open"}
           </Badge>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => navigate(`/clients/${id}/edit`)}
-        >
-          Edit
-        </Button>
+        <div className="flex gap-2">
+          {canClose && (
+            <CloseClientDialog
+              clientId={Number(id)}
+              client={client}
+              onSuccess={setClient}
+            />
+          )}
+          <Button
+            variant="outline"
+            onClick={() => navigate(`/clients/${id}/edit`)}
+          >
+            Edit
+          </Button>
+        </div>
       </div>
 
       {/* Info grid */}

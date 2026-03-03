@@ -1,9 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import ClientDetailPage from "@/pages/ClientDetailPage";
 import { wrapped, mockTherapists, mockClient, mockSessions, errorResponse } from "../helpers/ipc-mocks";
+
+vi.mock("@/components/ui/select");
 
 const mockInvoke = vi.fn();
 
@@ -296,5 +299,223 @@ describe("ClientDetailPage", () => {
     renderDetailPage();
     await waitFor(() => screen.getByText("Jane Smith"));
     expect(screen.getByRole("button", { name: /add session/i })).toBeDisabled();
+  });
+});
+
+// ── Close client ──────────────────────────────────────────────────────────────
+
+describe("ClientDetailPage — close client", () => {
+  it("shows Close Client button to the client's assigned therapist", async () => {
+    localStorage.setItem("selectedTherapistId", "1"); // Alice Morgan, therapist_id: 1
+    renderDetailPage(); // mockClient.therapist_id === 1
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /close client/i })).toBeInTheDocument();
+    });
+  });
+
+  it("shows Close Client button to an admin for any client", async () => {
+    localStorage.setItem("selectedTherapistId", "1"); // Alice Morgan, is_admin: true
+    renderDetailPage({ therapist_id: 2 }); // different therapist, but admin can still close
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /close client/i })).toBeInTheDocument();
+    });
+  });
+
+  it("hides Close Client button from a non-admin who is not the client's therapist", async () => {
+    localStorage.setItem("selectedTherapistId", "2"); // Bob Chen, is_admin: false
+    renderDetailPage({ therapist_id: 1 }); // client belongs to Alice, not Bob
+    await waitFor(() => screen.getByText("Jane Smith"));
+    expect(screen.queryByRole("button", { name: /close client/i })).not.toBeInTheDocument();
+  });
+
+  it("hides Close Client button when client is already closed", async () => {
+    localStorage.setItem("selectedTherapistId", "1");
+    renderDetailPage({ is_closed: true });
+    await waitFor(() => screen.getByText("Jane Smith"));
+    expect(screen.queryByRole("button", { name: /close client/i })).not.toBeInTheDocument();
+  });
+
+  it("hides Close Client button when no therapist is selected", async () => {
+    // no localStorage entry → selectedTherapistId null
+    renderDetailPage();
+    await waitFor(() => screen.getByText("Jane Smith"));
+    expect(screen.queryByRole("button", { name: /close client/i })).not.toBeInTheDocument();
+  });
+
+  it("opens the close client dialog when button is clicked", async () => {
+    localStorage.setItem("selectedTherapistId", "1");
+    renderDetailPage();
+    await waitFor(() => screen.getByRole("button", { name: /close client/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /close client/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /close client/i })).toBeInTheDocument();
+    });
+  });
+
+  it("shows outcome validation error when submitted without outcome", async () => {
+    localStorage.setItem("selectedTherapistId", "1");
+    renderDetailPage();
+    await waitFor(() => screen.getByRole("button", { name: /close client/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /close client/i }));
+    await waitFor(() => screen.getByRole("heading", { name: /close client/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /confirm close/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/outcome is required/i)).toBeInTheDocument();
+    });
+    expect(mockInvoke).not.toHaveBeenCalledWith("client:update", expect.anything());
+  });
+
+  it("submits close client and refreshes client data", async () => {
+    localStorage.setItem("selectedTherapistId", "1");
+    const closedClient = { ...mockClient, is_closed: true, outcome: "Improved" as const };
+
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
+      if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
+      if (channel === "client:update") return Promise.resolve(wrapped(closedClient));
+      return Promise.resolve(wrapped(null));
+    });
+
+    render(
+      <TherapistProvider>
+        <MemoryRouter initialEntries={["/clients/1"]}>
+          <Routes>
+            <Route path="/clients/:id" element={<ClientDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </TherapistProvider>,
+    );
+
+    await waitFor(() => screen.getByRole("button", { name: /close client/i }));
+    fireEvent.click(screen.getByRole("button", { name: /close client/i }));
+    await waitFor(() => screen.getByRole("heading", { name: /close client/i }));
+
+    // select outcome
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "Improved" } });
+
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") return Promise.resolve(wrapped(closedClient));
+      if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
+      if (channel === "client:update") return Promise.resolve(wrapped(closedClient));
+      return Promise.resolve(wrapped(null));
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /confirm close/i }));
+
+    await waitFor(() => {
+      expect(mockInvoke).toHaveBeenCalledWith(
+        "client:update",
+        expect.objectContaining({
+          data: expect.objectContaining({ is_closed: true, outcome: "Improved" }),
+        }),
+      );
+    });
+
+    // dialog should close and badge should update
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: /close client/i })).not.toBeInTheDocument();
+      expect(screen.getByText("Closed")).toBeInTheDocument();
+    });
+  });
+
+  it("appends closing notes to existing client notes", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("selectedTherapistId", "1");
+    const clientWithNotes = { ...mockClient, notes: "Existing notes." };
+    const closedClient = { ...clientWithNotes, is_closed: true, outcome: "Improved" as const };
+
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") return Promise.resolve(wrapped(clientWithNotes));
+      if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
+      if (channel === "client:update") return Promise.resolve(wrapped(closedClient));
+      return Promise.resolve(wrapped(null));
+    });
+
+    render(
+      <TherapistProvider>
+        <MemoryRouter initialEntries={["/clients/1"]}>
+          <Routes>
+            <Route path="/clients/:id" element={<ClientDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </TherapistProvider>,
+    );
+
+    await waitFor(() => screen.getByRole("button", { name: /close client/i }));
+    fireEvent.click(screen.getByRole("button", { name: /close client/i }));
+    await waitFor(() => screen.getByRole("heading", { name: /close client/i }));
+
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "Improved" } });
+    await user.type(screen.getByLabelText(/closing notes/i), "Discharge summary.");
+
+    fireEvent.click(screen.getByRole("button", { name: /confirm close/i }));
+
+    await waitFor(() => {
+      expect(mockInvoke).toHaveBeenCalledWith(
+        "client:update",
+        expect.objectContaining({
+          data: expect.objectContaining({
+            notes: "Existing notes.\n\nDischarge summary.",
+          }),
+        }),
+      );
+    });
+  });
+
+  it("shows error alert when close client fails", async () => {
+    localStorage.setItem("selectedTherapistId", "1");
+
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
+      if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
+      if (channel === "client:update") return Promise.resolve(errorResponse.unknown);
+      return Promise.resolve(wrapped(null));
+    });
+
+    render(
+      <TherapistProvider>
+        <MemoryRouter initialEntries={["/clients/1"]}>
+          <Routes>
+            <Route path="/clients/:id" element={<ClientDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </TherapistProvider>,
+    );
+
+    await waitFor(() => screen.getByRole("button", { name: /close client/i }));
+    fireEvent.click(screen.getByRole("button", { name: /close client/i }));
+    await waitFor(() => screen.getByRole("heading", { name: /close client/i }));
+
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "Improved" } });
+    fireEvent.click(screen.getByRole("button", { name: /confirm close/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/failed to close client/i);
+    });
+  });
+
+  it("dismisses dialog without submitting when Cancel is clicked", async () => {
+    localStorage.setItem("selectedTherapistId", "1");
+    renderDetailPage();
+
+    await waitFor(() => screen.getByRole("button", { name: /close client/i }));
+    fireEvent.click(screen.getByRole("button", { name: /close client/i }));
+    await waitFor(() => screen.getByRole("heading", { name: /close client/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: /close client/i })).not.toBeInTheDocument();
+    });
+    expect(mockInvoke).not.toHaveBeenCalledWith("client:update", expect.anything());
   });
 });
