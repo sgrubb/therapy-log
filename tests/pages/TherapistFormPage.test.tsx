@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import TherapistFormPage from "@/pages/TherapistFormPage";
-import { wrapped, mockTherapists, errorResponse } from "../helpers/ipc-mocks";
+import { wrapped, mockTherapists, errorResponse, MOCK_UPDATED_AT } from "../helpers/ipc-mocks";
 
 const mockInvoke = vi.fn();
 
@@ -209,6 +209,21 @@ describe("TherapistFormPage — new therapist", () => {
 
     resolveSave(mockTherapist);
   });
+
+  it("clears field error when user types in that field", async () => {
+    const user = userEvent.setup();
+    renderNewForm();
+    await waitFor(() => screen.getByRole("button", { name: /add therapist/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /add therapist/i }));
+    await waitFor(() => screen.getByText(/first name is required/i));
+
+    await user.type(screen.getByLabelText(/first name/i), "A");
+
+    await waitFor(() => {
+      expect(screen.queryByText(/first name is required/i)).not.toBeInTheDocument();
+    });
+  });
 });
 
 // ── Edit therapist ───────────────────────────────────────────────────────────
@@ -261,6 +276,202 @@ describe("TherapistFormPage — edit therapist", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("therapists-list")).toBeInTheDocument();
+    });
+  });
+
+  it("shows conflict warning with server-changed fields and preserves user edits", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("selectedTherapistId", "1");
+
+    const freshTherapist = {
+      ...mockTherapist,
+      last_name: "Jones",
+      updated_at: new Date(MOCK_UPDATED_AT.getTime() + 1000),
+    };
+
+    let therapistGetCount = 0;
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:get") {
+        therapistGetCount++;
+        return Promise.resolve(wrapped(therapistGetCount === 1 ? mockTherapist : freshTherapist));
+      }
+      if (channel === "therapist:update") return Promise.resolve(errorResponse.conflict);
+      return Promise.resolve(wrapped(null));
+    });
+
+    render(
+      <TherapistProvider>
+        <MemoryRouter initialEntries={["/therapists/1/edit"]}>
+          <Routes>
+            <Route path="/therapists">
+              <Route path=":id/edit" element={<TherapistFormPage />} />
+              <Route index element={<div data-testid="therapists-list" />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </TherapistProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/first name/i)).toHaveValue("Alice");
+    });
+
+    const firstNameInput = screen.getByLabelText(/first name/i);
+    await user.clear(firstNameInput);
+    await user.type(firstNameInput, "Alicia");
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/someone else modified/i);
+      expect(screen.getByRole("alert")).toHaveTextContent(/last_name/i);
+    });
+
+    // Server's last_name applied
+    expect(screen.getByLabelText(/last name/i)).toHaveValue("Jones");
+    // User's first_name edit preserved
+    expect(screen.getByLabelText(/first name/i)).toHaveValue("Alicia");
+    // No navigation away
+    expect(screen.queryByTestId("therapists-list")).not.toBeInTheDocument();
+  });
+
+  it("shows required field errors on empty submit", async () => {
+    const user = userEvent.setup();
+    renderEditForm();
+    await waitFor(() => screen.getByLabelText(/first name/i));
+
+    await user.clear(screen.getByLabelText(/first name/i));
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/first name is required/i)).toBeInTheDocument();
+    });
+    expect(mockInvoke).not.toHaveBeenCalledWith("therapist:update", expect.anything());
+  });
+
+  it("shows generic error alert on update failure", async () => {
+    renderEditForm();
+    await waitFor(() => screen.getByLabelText(/first name/i));
+
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:get") return Promise.resolve(wrapped(mockTherapist));
+      if (channel === "therapist:update") return Promise.resolve(errorResponse.unknown);
+      return Promise.resolve(wrapped(null));
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/failed to save therapist/i);
+    });
+  });
+
+  it("navigates to /therapists when Cancel is clicked", async () => {
+    renderEditForm();
+    await waitFor(() => screen.getByRole("button", { name: /cancel/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("therapists-list")).toBeInTheDocument();
+    });
+  });
+
+  it("shows loading state while fetching therapist data", async () => {
+    localStorage.setItem("selectedTherapistId", "1");
+    let resolveTherapist!: (v: typeof mockTherapist) => void;
+    const therapistPromise = new Promise<typeof mockTherapist>((res) => {
+      resolveTherapist = res;
+    });
+
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:get") return therapistPromise.then((data) => wrapped(data));
+      return Promise.resolve(wrapped(null));
+    });
+
+    render(
+      <TherapistProvider>
+        <MemoryRouter initialEntries={["/therapists/1/edit"]}>
+          <Routes>
+            <Route path="/therapists">
+              <Route path=":id/edit" element={<TherapistFormPage />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </TherapistProvider>,
+    );
+
+    await waitFor(() => screen.getByText(/loading/i));
+
+    resolveTherapist(mockTherapist);
+    await waitFor(() => screen.getByLabelText(/first name/i));
+  });
+
+  it("navigates to /therapists when therapist fetch throws", async () => {
+    localStorage.setItem("selectedTherapistId", "1");
+
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:get") return Promise.reject(new Error("Network error"));
+      return Promise.resolve(wrapped(null));
+    });
+
+    render(
+      <TherapistProvider>
+        <MemoryRouter initialEntries={["/therapists/1/edit"]}>
+          <Routes>
+            <Route path="/therapists">
+              <Route path=":id/edit" element={<TherapistFormPage />} />
+              <Route index element={<div data-testid="therapists-list" />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </TherapistProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("therapists-list")).toBeInTheDocument();
+    });
+  });
+
+  it("shows retry message when conflict has no field differences", async () => {
+    localStorage.setItem("selectedTherapistId", "1");
+    const freshTherapist = { ...mockTherapist, updated_at: new Date(MOCK_UPDATED_AT.getTime() + 1000) };
+
+    let therapistGetCount = 0;
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:get") {
+        therapistGetCount++;
+        return Promise.resolve(wrapped(therapistGetCount === 1 ? mockTherapist : freshTherapist));
+      }
+      if (channel === "therapist:update") return Promise.resolve(errorResponse.conflict);
+      return Promise.resolve(wrapped(null));
+    });
+
+    render(
+      <TherapistProvider>
+        <MemoryRouter initialEntries={["/therapists/1/edit"]}>
+          <Routes>
+            <Route path="/therapists">
+              <Route path=":id/edit" element={<TherapistFormPage />} />
+              <Route index element={<div data-testid="therapists-list" />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </TherapistProvider>,
+    );
+
+    await waitFor(() => screen.getByLabelText(/first name/i));
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/please try saving again/i);
     });
   });
 

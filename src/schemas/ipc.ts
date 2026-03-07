@@ -7,6 +7,7 @@ const therapistBaseSchema = z.object({
   first_name: z.string(),
   last_name: z.string(),
   is_admin: z.boolean(),
+  updated_at: z.date(),
 });
 
 const clientBaseSchema = z.object({
@@ -38,6 +39,7 @@ const clientBaseSchema = z.object({
     .enum(["Improved", "NoChange", "Declined", "DataUnavailable"])
     .nullable(),
   notes: z.string().nullable(),
+  updated_at: z.date(),
 });
 
 const sessionBaseSchema = z.object({
@@ -76,6 +78,7 @@ const sessionBaseSchema = z.object({
     ])
     .nullable(),
   notes: z.string().nullable(),
+  updated_at: z.date(),
 });
 
 // ── Exported schemas ───────────────────────────────────────────────────────

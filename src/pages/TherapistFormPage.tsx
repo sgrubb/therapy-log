@@ -29,6 +29,7 @@ export default function TherapistFormPage() {
     form,
     formState,
     saveError,
+    getConflictError,
     isEdit,
     set,
     handleSubmit,
@@ -50,7 +51,7 @@ export default function TherapistFormPage() {
         <SaveErrorAlert message={saveError} />
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="First Name *" error={getError("first_name")}>
+          <Field label="First Name *" error={getError("first_name")} conflictError={getConflictError("first_name")}>
             <Input
               id="first_name"
               aria-label="First name"
@@ -60,7 +61,7 @@ export default function TherapistFormPage() {
               aria-invalid={!!getError("first_name")}
             />
           </Field>
-          <Field label="Last Name *" error={getError("last_name")}>
+          <Field label="Last Name *" error={getError("last_name")} conflictError={getConflictError("last_name")}>
             <Input
               id="last_name"
               aria-label="Last name"
@@ -72,7 +73,7 @@ export default function TherapistFormPage() {
           </Field>
         </div>
 
-        <Field label="Is Admin" error={getError("is_admin")}>
+        <Field label="Is Admin" error={getError("is_admin")} conflictError={getConflictError("is_admin")}>
           <input
             type="checkbox"
             aria-label="Is admin"

@@ -90,18 +90,29 @@ describe("therapist:create", () => {
 
 describe("therapist:update", () => {
   it("updates an existing therapist", async () => {
+    const current = await invoke("therapist:get", ids.therapistBob);
+    assert(current.success);
     const result = await invoke("therapist:update", {
       id: ids.therapistBob,
-      data: { last_name: "Chang" },
+      data: { last_name: "Chang", updated_at: current.data.updated_at },
     });
     assert(result.success);
     expect(result.data.last_name).toBe("Chang");
   });
 
+  it("returns CONFLICT for stale updated_at", async () => {
+    const result = await invoke("therapist:update", {
+      id: ids.therapistBob,
+      data: { last_name: "Stale", updated_at: new Date("2020-01-01T00:00:00.000Z") },
+    });
+    assert(!result.success);
+    expect(result.error.code).toBe("CONFLICT");
+  });
+
   it("returns failure for nonexistent id", async () => {
     const result = await invoke("therapist:update", {
       id: 9999,
-      data: { last_name: "Nope" },
+      data: { last_name: "Nope", updated_at: new Date() },
     });
     expect(result.success).toBe(false);
   });
@@ -167,18 +178,29 @@ describe("client:create", () => {
 
 describe("client:update", () => {
   it("updates an existing client", async () => {
+    const current = await invoke("client:get", ids.clientDana);
+    assert(current.success);
     const result = await invoke("client:update", {
       id: ids.clientDana,
-      data: { phone: "07700900000" },
+      data: { phone: "07700900000", updated_at: current.data.updated_at },
     });
     assert(result.success);
     expect(result.data.phone).toBe("07700900000");
   });
 
+  it("returns CONFLICT for stale updated_at", async () => {
+    const result = await invoke("client:update", {
+      id: ids.clientDana,
+      data: { phone: "000", updated_at: new Date("2020-01-01T00:00:00.000Z") },
+    });
+    assert(!result.success);
+    expect(result.error.code).toBe("CONFLICT");
+  });
+
   it("returns failure for nonexistent id", async () => {
     const result = await invoke("client:update", {
       id: 9999,
-      data: { phone: "000" },
+      data: { phone: "000", updated_at: new Date() },
     });
     expect(result.success).toBe(false);
   });
@@ -238,18 +260,29 @@ describe("session:create", () => {
 
 describe("session:update", () => {
   it("updates an existing session", async () => {
+    const current = await invoke("session:get", ids.sessionId);
+    assert(current.success);
     const result = await invoke("session:update", {
       id: ids.sessionId,
-      data: { notes: "Updated notes." },
+      data: { notes: "Updated notes.", updated_at: current.data.updated_at },
     });
     assert(result.success);
     expect(result.data.notes).toBe("Updated notes.");
   });
 
+  it("returns CONFLICT for stale updated_at", async () => {
+    const result = await invoke("session:update", {
+      id: ids.sessionId,
+      data: { notes: "Stale", updated_at: new Date("2020-01-01T00:00:00.000Z") },
+    });
+    assert(!result.success);
+    expect(result.error.code).toBe("CONFLICT");
+  });
+
   it("returns failure for nonexistent id", async () => {
     const result = await invoke("session:update", {
       id: 9999,
-      data: { notes: "Nope" },
+      data: { notes: "Nope", updated_at: new Date() },
     });
     expect(result.success).toBe(false);
   });

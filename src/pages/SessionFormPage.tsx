@@ -38,6 +38,7 @@ export default function SessionFormPage() {
     form,
     formState,
     saveError,
+    getConflictError,
     isEdit,
     set,
     setClient,
@@ -88,7 +89,7 @@ export default function SessionFormPage() {
         <SaveErrorAlert message={saveError} />
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Client *" error={getError("client_id")}>
+          <Field label="Client *" error={getError("client_id")} conflictError={getConflictError("client_id")}>
             <Select
               value={form.client_id}
               onValueChange={(v) => setClient(v, clients)}
@@ -110,7 +111,7 @@ export default function SessionFormPage() {
             </Select>
           </Field>
 
-          <Field label="Therapist *" error={getError("therapist_id")}>
+          <Field label="Therapist *" error={getError("therapist_id")} conflictError={getConflictError("therapist_id")}>
             <Select
               value={form.therapist_id}
               onValueChange={(v) => set("therapist_id", v)}
@@ -132,7 +133,7 @@ export default function SessionFormPage() {
             </Select>
           </Field>
 
-          <Field label="Date *" error={getError("date")}>
+          <Field label="Date *" error={getError("date")} conflictError={getConflictError("date")}>
             <Input
               type="date"
               aria-label="Date"
@@ -143,7 +144,7 @@ export default function SessionFormPage() {
             />
           </Field>
 
-          <Field label="Time" error={getError("time")}>
+          <Field label="Time" error={getError("time")} conflictError={getConflictError("time")}>
             <Input
               type="time"
               aria-label="Time"
@@ -153,7 +154,7 @@ export default function SessionFormPage() {
             />
           </Field>
 
-          <Field label="Session Type *" error={getError("session_type")}>
+          <Field label="Session Type *" error={getError("session_type")} conflictError={getConflictError("session_type")}>
             <Select
               value={form.session_type}
               onValueChange={(v) => set("session_type", v as SessionType)}
@@ -175,7 +176,7 @@ export default function SessionFormPage() {
             </Select>
           </Field>
 
-          <Field label="Delivery Method *" error={getError("delivery_method")}>
+          <Field label="Delivery Method *" error={getError("delivery_method")} conflictError={getConflictError("delivery_method")}>
             <Select
               value={form.delivery_method}
               onValueChange={(v) => set("delivery_method", v as DeliveryMethod)}
@@ -197,7 +198,7 @@ export default function SessionFormPage() {
             </Select>
           </Field>
 
-          <Field label="Status *" error={getError("status")}>
+          <Field label="Status *" error={getError("status")} conflictError={getConflictError("status")}>
             <Select
               value={form.status}
               onValueChange={(v) => set("status", v as SessionStatus)}
@@ -220,7 +221,7 @@ export default function SessionFormPage() {
           </Field>
 
           {showMissedReason && (
-            <Field label="Missed Reason *" error={getError("missed_reason")}>
+            <Field label="Missed Reason *" error={getError("missed_reason")} conflictError={getConflictError("missed_reason")}>
               <Select
                 value={form.missed_reason ?? ""}
                 onValueChange={(v) => set("missed_reason", v as MissedReason)}
@@ -247,6 +248,7 @@ export default function SessionFormPage() {
         <Field
           label={`Notes (${(form.notes ?? "").length}/1000)`}
           error={getError("notes")}
+          conflictError={getConflictError("notes")}
         >
           <Textarea
             aria-label="Notes"

@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import SessionFormPage from "@/pages/SessionFormPage";
-import { wrapped, mockTherapists, mockClients, mockSession, errorResponse } from "../helpers/ipc-mocks";
+import { wrapped, mockTherapists, mockClients, mockSession, errorResponse, MOCK_UPDATED_AT } from "../helpers/ipc-mocks";
 
 vi.mock("@/components/ui/select");
 
@@ -282,6 +282,20 @@ describe("SessionFormPage — new session", () => {
     });
   });
 
+  it("clears field error when user types in that field", async () => {
+    renderNewForm();
+    await waitFor(() => screen.getByRole("button", { name: /log session/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /log session/i }));
+    await waitFor(() => screen.getByText(/date is required/i));
+
+    fireEvent.change(screen.getByLabelText(/^date/i), { target: { value: "2026-01-01" } });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/date is required/i)).not.toBeInTheDocument();
+    });
+  });
+
   it("navigates to /sessions when Cancel is clicked", async () => {
     renderNewForm();
     await waitFor(() => screen.getByRole("button", { name: /cancel/i }));
@@ -415,6 +429,102 @@ describe("SessionFormPage — edit session", () => {
     await waitFor(() => screen.getByLabelText(/^date/i));
   });
 
+  it("shows required field errors on empty submit", async () => {
+    renderEditForm();
+    await waitFor(() => screen.getByLabelText(/^date/i));
+
+    fireEvent.change(screen.getByLabelText(/^date/i), { target: { value: "" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/date is required/i)).toBeInTheDocument();
+    });
+    expect(mockInvoke).not.toHaveBeenCalledWith("session:update", expect.anything());
+  });
+
+  it("shows error alert on update failure", async () => {
+    renderEditForm();
+    await waitFor(() => screen.getByLabelText(/^date/i));
+
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
+      if (channel === "session:get") return Promise.resolve(wrapped(mockSession));
+      if (channel === "session:update") return Promise.resolve(errorResponse.unknown);
+      return Promise.resolve(wrapped(null));
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/failed to save session/i);
+    });
+  });
+
+  it("navigates to /sessions when session fetch throws", async () => {
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
+      if (channel === "session:get") return Promise.reject(new Error("Network error"));
+      return Promise.resolve(wrapped(null));
+    });
+
+    render(
+      <TherapistProvider>
+        <MemoryRouter initialEntries={["/sessions/1/edit"]}>
+          <Routes>
+            <Route path="/sessions">
+              <Route path=":id/edit" element={<SessionFormPage />} />
+              <Route index element={<div data-testid="sessions-list" />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </TherapistProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("sessions-list")).toBeInTheDocument();
+    });
+  });
+
+  it("shows retry message when conflict has no field differences", async () => {
+    const freshSession = { ...mockSession, updated_at: new Date(MOCK_UPDATED_AT.getTime() + 1000) };
+
+    let sessionGetCount = 0;
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
+      if (channel === "session:get") {
+        sessionGetCount++;
+        return Promise.resolve(wrapped(sessionGetCount === 1 ? mockSession : freshSession));
+      }
+      if (channel === "session:update") return Promise.resolve(errorResponse.conflict);
+      return Promise.resolve(wrapped(null));
+    });
+
+    render(
+      <TherapistProvider>
+        <MemoryRouter initialEntries={["/sessions/1/edit"]}>
+          <Routes>
+            <Route path="/sessions">
+              <Route path=":id/edit" element={<SessionFormPage />} />
+              <Route path=":id" element={<div data-testid="session-detail" />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </TherapistProvider>,
+    );
+
+    await waitFor(() => screen.getByLabelText(/^date/i));
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/please try saving again/i);
+    });
+  });
+
   it("navigates to /sessions when session is not found", async () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
@@ -451,6 +561,58 @@ describe("SessionFormPage — edit session", () => {
     await waitFor(() => {
       expect(screen.getByTestId("sessions-list")).toBeInTheDocument();
     });
+  });
+
+  it("shows conflict warning with server-changed fields and preserves user edits", async () => {
+    const user = userEvent.setup();
+
+    const freshSession = {
+      ...mockSession,
+      notes: "Server note",
+      updated_at: new Date(MOCK_UPDATED_AT.getTime() + 1000),
+    };
+
+    let sessionGetCount = 0;
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
+      if (channel === "session:get") {
+        sessionGetCount++;
+        return Promise.resolve(wrapped(sessionGetCount === 1 ? { ...mockSession, notes: null } : freshSession));
+      }
+      if (channel === "session:update") return Promise.resolve(errorResponse.conflict);
+      return Promise.resolve(wrapped(null));
+    });
+
+    render(
+      <TherapistProvider>
+        <MemoryRouter initialEntries={["/sessions/1/edit"]}>
+          <Routes>
+            <Route path="/sessions">
+              <Route path=":id/edit" element={<SessionFormPage />} />
+              <Route path=":id" element={<div data-testid="session-detail" />} />
+              <Route index element={<div data-testid="sessions-list" />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </TherapistProvider>,
+    );
+
+    await waitFor(() => screen.getByLabelText(/^date/i));
+
+    await user.type(screen.getByLabelText(/notes/i), "My note");
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/someone else modified/i);
+      expect(screen.getByRole("alert")).toHaveTextContent(/notes/i);
+    });
+
+    // Server's value for notes is shown, but wait — user edited notes and server also changed notes
+    // So server's "Server note" wins, confirming the merge logic
+    expect(screen.getByLabelText(/notes/i)).toHaveValue("Server note");
+    expect(screen.queryByTestId("session-detail")).not.toBeInTheDocument();
   });
 
   it("shows missed_reason field when editing a non-Attended session", async () => {

@@ -5,15 +5,12 @@ import Database from "better-sqlite3";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "../../generated/prisma/client";
 
-const MIGRATION_PATH = path.join(
-  __dirname,
-  "..",
-  "..",
-  "prisma",
-  "migrations",
-  "20260216121855_init",
-  "migration.sql",
-);
+const MIGRATIONS_DIR = path.join(__dirname, "..", "..", "prisma", "migrations");
+
+const MIGRATION_FILES = [
+  "20260216121855_init/migration.sql",
+  "20260305210156_add_updated_at/migration.sql",
+];
 
 export function createTestPrismaClient(): {
   prisma: PrismaClient;
@@ -25,8 +22,10 @@ export function createTestPrismaClient(): {
   );
 
   const db = new Database(dbPath);
-  const migrationSql = fs.readFileSync(MIGRATION_PATH, "utf-8");
-  db.exec(migrationSql);
+  for (const file of MIGRATION_FILES) {
+    const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, file), "utf-8");
+    db.exec(sql);
+  }
   db.close();
 
   const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });

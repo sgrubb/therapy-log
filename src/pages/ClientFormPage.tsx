@@ -24,6 +24,7 @@ export default function ClientFormPage() {
     form,
     formState,
     saveError,
+    getConflictError,
     isEdit,
     set,
     handleSubmit,
@@ -45,7 +46,7 @@ export default function ClientFormPage() {
         <SaveErrorAlert message={saveError} />
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="First Name *" error={getError("first_name")}>
+          <Field label="First Name *" error={getError("first_name")} conflictError={getConflictError("first_name")}>
             <Input
               id="first_name"
               aria-label="First name"
@@ -55,7 +56,7 @@ export default function ClientFormPage() {
               aria-invalid={!!getError("first_name")}
             />
           </Field>
-          <Field label="Last Name *" error={getError("last_name")}>
+          <Field label="Last Name *" error={getError("last_name")} conflictError={getConflictError("last_name")}>
             <Input
               id="last_name"
               aria-label="Last name"
@@ -65,7 +66,7 @@ export default function ClientFormPage() {
               aria-invalid={!!getError("last_name")}
             />
           </Field>
-          <Field label="Hospital Number *" error={getError("hospital_number")}>
+          <Field label="Hospital Number *" error={getError("hospital_number")} conflictError={getConflictError("hospital_number")}>
             <Input
               id="hospital_number"
               aria-label="Hospital number"
@@ -75,7 +76,7 @@ export default function ClientFormPage() {
               aria-invalid={!!getError("hospital_number")}
             />
           </Field>
-          <Field label="Date of Birth *" error={getError("dob")}>
+          <Field label="Date of Birth *" error={getError("dob")} conflictError={getConflictError("dob")}>
             <Input
               id="dob"
               type="date"
@@ -88,7 +89,7 @@ export default function ClientFormPage() {
           </Field>
         </div>
 
-        <Field label="Address" error={getError("address")}>
+        <Field label="Address" error={getError("address")} conflictError={getConflictError("address")}>
           <Textarea
             aria-label="Address"
             value={form.address ?? ""}
@@ -99,7 +100,7 @@ export default function ClientFormPage() {
         </Field>
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Phone" error={getError("phone")}>
+          <Field label="Phone" error={getError("phone")} conflictError={getConflictError("phone")}>
             <Input
               id="phone"
               type="tel"
@@ -110,7 +111,7 @@ export default function ClientFormPage() {
               aria-invalid={!!getError("phone")}
             />
           </Field>
-          <Field label="Email" error={getError("email")}>
+          <Field label="Email" error={getError("email")} conflictError={getConflictError("email")}>
             <Input
               id="email"
               type="email"
@@ -122,7 +123,7 @@ export default function ClientFormPage() {
             />
           </Field>
 
-          <Field label="Session Day" error={getError("session_day")}>
+          <Field label="Session Day" error={getError("session_day")} conflictError={getConflictError("session_day")}>
             <Select
               value={form.session_day ?? ""}
               onValueChange={(v) => set("session_day", v as SessionDay)}
@@ -143,7 +144,7 @@ export default function ClientFormPage() {
             </Select>
           </Field>
 
-          <Field label="Session Time" error={getError("session_time")}>
+          <Field label="Session Time" error={getError("session_time")} conflictError={getConflictError("session_time")}>
             <Input
               type="time"
               aria-label="Session time"
@@ -153,7 +154,7 @@ export default function ClientFormPage() {
             />
           </Field>
 
-          <Field label="Therapist *" error={getError("therapist_id")}>
+          <Field label="Therapist *" error={getError("therapist_id")} conflictError={getConflictError("therapist_id")}>
             <Select
               value={form.therapist_id}
               onValueChange={(v) => set("therapist_id", v)}
@@ -177,7 +178,7 @@ export default function ClientFormPage() {
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          <Field label="Pre Score" error={getError("pre_score")}>
+          <Field label="Pre Score" error={getError("pre_score")} conflictError={getConflictError("pre_score")}>
             <Input
               type="number"
               step="0.1"
@@ -187,7 +188,7 @@ export default function ClientFormPage() {
               onBlur={() => markTouched("pre_score")}
             />
           </Field>
-          <Field label="Post Score" error={getError("post_score")}>
+          <Field label="Post Score" error={getError("post_score")} conflictError={getConflictError("post_score")}>
             <Input
               type="number"
               step="0.1"
@@ -197,7 +198,7 @@ export default function ClientFormPage() {
               onBlur={() => markTouched("post_score")}
             />
           </Field>
-          <Field label="Outcome" error={getError("outcome")}>
+          <Field label="Outcome" error={getError("outcome")} conflictError={getConflictError("outcome")}>
             <Select
               value={form.outcome ?? ""}
               onValueChange={(v) => set("outcome", v as Outcome)}
@@ -222,6 +223,7 @@ export default function ClientFormPage() {
         <Field
           label={`Notes (${(form.notes ?? "").length}/1000)`}
           error={getError("notes")}
+          conflictError={getConflictError("notes")}
         >
           <Textarea
             aria-label="Notes"

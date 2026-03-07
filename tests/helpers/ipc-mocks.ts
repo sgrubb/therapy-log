@@ -13,17 +13,25 @@ export const errorResponse = {
     success: false,
     error: { code: "UNIQUE_CONSTRAINT", message: "A record with this value already exists." },
   },
+  conflict: {
+    success: false,
+    error: { code: "CONFLICT", message: "This record was modified by someone else." },
+  },
   unknown: {
     success: false,
     error: { code: "UNKNOWN", message: "An unexpected error occurred." },
   },
 };
 
+// ── Shared timestamp ─────────────────────────────────────────────────────────
+
+export const MOCK_UPDATED_AT = new Date("2026-01-01T00:00:00.000Z");
+
 // ── Therapists ───────────────────────────────────────────────────────────────
 
 export const mockTherapists = [
-  { id: 1, first_name: "Alice", last_name: "Morgan", is_admin: true },
-  { id: 2, first_name: "Bob", last_name: "Chen", is_admin: false },
+  { id: 1, first_name: "Alice", last_name: "Morgan", is_admin: true, updated_at: MOCK_UPDATED_AT },
+  { id: 2, first_name: "Bob", last_name: "Chen", is_admin: false, updated_at: MOCK_UPDATED_AT },
 ];
 
 export const mockTherapist = mockTherapists[0]!;
@@ -43,6 +51,7 @@ export const mockClientBase = {
   post_score: null,
   outcome: null,
   notes: null,
+  updated_at: MOCK_UPDATED_AT,
 };
 
 export const mockClient = {
@@ -87,6 +96,7 @@ export const mockSession = {
   delivery_method: "FaceToFace" as const,
   missed_reason: null,
   notes: null,
+  updated_at: MOCK_UPDATED_AT,
   client: {
     ...mockClientBase,
     id: 1,
@@ -110,6 +120,7 @@ export const mockSessions = [
     delivery_method: "Online" as const,
     missed_reason: "Illness" as const,
     notes: null,
+    updated_at: MOCK_UPDATED_AT,
     client: {
       ...mockClientBase,
       id: 2,

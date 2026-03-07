@@ -12,6 +12,9 @@ export function useFormState<F extends Record<string, unknown>>(
   const [saveError, setSaveError] = useState<string | null>(null);
   const [formState, setFormState] = useState<FormState>("idle");
   const [touched, setTouched] = useState<Set<string>>(new Set());
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const [originalForm, setOriginalForm] = useState<F | null>(null);
+  const [conflicts, setConflicts] = useState<Partial<Record<string, string>>>({});
 
   function clearError(field: keyof F) {
     if (errors[field]) {
@@ -57,13 +60,60 @@ export function useFormState<F extends Record<string, unknown>>(
     return touched.has(field as string) ? errors[field] : undefined;
   }
 
+  function getConflictError(field: keyof F) {
+    return conflicts[field as string];
+  }
+
+  function clearConflictField(field: keyof F) {
+    setConflicts((prev) => {
+      if (!(field as string in prev)) return prev;
+      const next = { ...prev };
+      delete next[field as string];
+      return next;
+    });
+  }
+
+  async function handleConflict(getFreshData: () => Promise<{ form: F; updated_at: Date }>) {
+    try {
+      const fresh = await getFreshData();
+      const serverChangedFields = (Object.keys(originalForm ?? {}) as (keyof F)[])
+        .filter((field) => fresh.form[field] !== originalForm![field]);
+      const userKeptFields = Object.fromEntries(
+        (Object.keys(form) as (keyof F)[])
+          .filter((field) => !serverChangedFields.includes(field))
+          .map((field) => [field, form[field]]),
+      );
+      setForm({ ...fresh.form, ...userKeptFields } as F);
+      setOriginalForm(fresh.form);
+      setUpdatedAt(fresh.updated_at);
+      if (serverChangedFields.length > 0) {
+        setConflicts(Object.fromEntries(
+          serverChangedFields.map((field) => [field, "Updated by someone else"]),
+        ));
+        setSaveError(
+          `Someone else modified: ${serverChangedFields.join(", ")}. `
+          + `Their changes were kept. Your other edits are preserved.`
+        );
+      } else {
+        setSaveError("The record was updated. Please try saving again.");
+      }
+    } catch {
+      setSaveError("A conflict occurred and the latest data could not be loaded.");
+    }
+  }
+
   return {
     form, setForm,
-    saveError, setSaveError,
+    originalForm, setOriginalForm,
+    updatedAt, setUpdatedAt,
     formState, setFormState,
-    clearError,
-    markTouched,
+    saveError, setSaveError,
     validate,
     getError,
+    clearError,
+    markTouched,
+    getConflictError,
+    clearConflictField,
+    handleConflict,
   };
 }

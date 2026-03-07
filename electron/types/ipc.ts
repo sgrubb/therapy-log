@@ -14,6 +14,7 @@ export type IpcErrorCode =
   | "NOT_FOUND"
   | "FOREIGN_KEY"
   | "VALIDATION"
+  | "CONFLICT"
   | "UNKNOWN";
 
 export interface IpcError {

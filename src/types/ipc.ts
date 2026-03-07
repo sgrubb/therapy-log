@@ -32,6 +32,7 @@ export interface CreateTherapist {
 }
 
 export interface UpdateTherapist {
+  updated_at: Date;
   first_name?: string;
   last_name?: string;
   is_admin?: boolean;
@@ -56,6 +57,7 @@ export interface CreateClient {
 }
 
 export interface UpdateClient {
+  updated_at: Date;
   hospital_number?: string;
   first_name?: string;
   last_name?: string;
@@ -86,6 +88,7 @@ export interface CreateSession {
 }
 
 export interface UpdateSession {
+  updated_at: Date;
   client_id?: number;
   therapist_id?: number;
   scheduled_at?: Date;

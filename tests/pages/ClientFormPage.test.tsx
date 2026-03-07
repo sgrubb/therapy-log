@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import ClientFormPage from "@/pages/ClientFormPage";
-import { wrapped, mockTherapists, mockClient, errorResponse } from "../helpers/ipc-mocks";
+import { wrapped, mockTherapists, mockClient, errorResponse, MOCK_UPDATED_AT } from "../helpers/ipc-mocks";
 
 vi.mock("@/components/ui/select");
 
@@ -540,6 +540,97 @@ describe("ClientFormPage — edit client", () => {
       // dob converted via toISOString().split("T")[0] → "2000-01-15"
       expect(screen.getByLabelText(/date of birth/i)).toHaveValue("2000-01-15");
       expect(screen.getByLabelText(/session time/i)).toHaveValue("10:00");
+    });
+  });
+
+  it("shows conflict warning with server-changed fields and preserves user edits", async () => {
+    const user = userEvent.setup();
+
+    const freshClient = {
+      ...mockClient,
+      first_name: "Janet",
+      updated_at: new Date(MOCK_UPDATED_AT.getTime() + 1000),
+    };
+
+    let clientGetCount = 0;
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") {
+        clientGetCount++;
+        return Promise.resolve(wrapped(clientGetCount === 1 ? mockClient : freshClient));
+      }
+      if (channel === "client:update") return Promise.resolve(errorResponse.conflict);
+      return Promise.resolve(wrapped(null));
+    });
+
+    render(
+      <TherapistProvider>
+        <MemoryRouter initialEntries={["/clients/1/edit"]}>
+          <Routes>
+            <Route path="/clients">
+              <Route path=":id/edit" element={<ClientFormPage />} />
+              <Route path=":id" element={<div data-testid="client-detail" />} />
+              <Route index element={<div data-testid="clients-list" />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </TherapistProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/first name/i)).toHaveValue("Jane");
+    });
+
+    await user.type(screen.getByLabelText(/notes/i), "My note");
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/someone else modified/i);
+      expect(screen.getByRole("alert")).toHaveTextContent(/first_name/i);
+    });
+
+    // Server's value for first_name is applied
+    expect(screen.getByLabelText(/first name/i)).toHaveValue("Janet");
+    // User's notes edit is preserved
+    expect(screen.getByLabelText(/notes/i)).toHaveValue("My note");
+    // Page does not navigate away
+    expect(screen.queryByTestId("client-detail")).not.toBeInTheDocument();
+  });
+
+  it("shows retry message when conflict has no field differences", async () => {
+    const freshClient = { ...mockClient, updated_at: new Date(MOCK_UPDATED_AT.getTime() + 1000) };
+
+    let clientGetCount = 0;
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") {
+        clientGetCount++;
+        return Promise.resolve(wrapped(clientGetCount === 1 ? mockClient : freshClient));
+      }
+      if (channel === "client:update") return Promise.resolve(errorResponse.conflict);
+      return Promise.resolve(wrapped(null));
+    });
+
+    render(
+      <TherapistProvider>
+        <MemoryRouter initialEntries={["/clients/1/edit"]}>
+          <Routes>
+            <Route path="/clients">
+              <Route path=":id/edit" element={<ClientFormPage />} />
+              <Route path=":id" element={<div data-testid="client-detail" />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </TherapistProvider>,
+    );
+
+    await waitFor(() => screen.getByLabelText(/first name/i));
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/please try saving again/i);
     });
   });
 });

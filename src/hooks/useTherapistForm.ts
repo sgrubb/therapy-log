@@ -1,11 +1,12 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { z } from "zod";
-import { ipc } from "@/lib/ipc";
+import { ipc, IpcError } from "@/lib/ipc";
 import log from "@/lib/logger";
 import { therapistFormSchema } from "@/schemas/forms";
 import { useFormState } from "@/hooks/useFormState";
 import { useTherapist } from "@/context/TherapistContext";
+import type { Therapist } from "@/types/ipc";
 
 export type FormFields = z.input<typeof therapistFormSchema>;
 
@@ -14,6 +15,14 @@ const EMPTY: FormFields = {
   last_name: "",
   is_admin: false,
 };
+
+function mapTherapistToFormFields(therapist: Therapist): FormFields {
+  return {
+    first_name: therapist.first_name,
+    last_name: therapist.last_name,
+    is_admin: therapist.is_admin,
+  };
+}
 
 function buildPayload(form: FormFields) {
   return {
@@ -30,12 +39,17 @@ export function useTherapistForm(therapistId?: number) {
 
   const {
     form, setForm,
-    saveError, setSaveError,
+    setOriginalForm,
+    updatedAt, setUpdatedAt,
     formState, setFormState,
-    clearError,
-    markTouched,
+    saveError, setSaveError,
     validate,
     getError,
+    clearError,
+    markTouched,
+    getConflictError,
+    clearConflictField,
+    handleConflict,
   } = useFormState(therapistFormSchema, EMPTY);
 
   useEffect(() => {
@@ -44,11 +58,10 @@ export function useTherapistForm(therapistId?: number) {
       setFormState("loading");
       try {
         const therapist = await ipc.getTherapist(therapistId!);
-        setForm({
-          first_name: therapist.first_name,
-          last_name: therapist.last_name,
-          is_admin: therapist.is_admin,
-        });
+        const fields = mapTherapistToFormFields(therapist);
+        setForm(fields);
+        setOriginalForm(fields);
+        setUpdatedAt(therapist.updated_at);
       } catch (err) {
         log.error("Failed to load therapist:", err);
         navigate("/therapists");
@@ -62,6 +75,7 @@ export function useTherapistForm(therapistId?: number) {
   const set = <K extends keyof FormFields>(field: K, value: FormFields[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     clearError(field);
+    clearConflictField(field);
   };
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -72,15 +86,22 @@ export function useTherapistForm(therapistId?: number) {
     try {
       const payload = buildPayload(form);
       if (isEdit && therapistId !== undefined) {
-        await ipc.updateTherapist(therapistId, payload);
+        await ipc.updateTherapist(therapistId, { ...payload, updated_at: updatedAt! });
       } else {
         await ipc.createTherapist(payload);
       }
       await refreshTherapists();
       navigate("/therapists");
     } catch (err) {
-      log.error("Failed to save therapist:", err);
-      setSaveError("Failed to save therapist. Please try again.");
+      if (err instanceof IpcError && err.code === "CONFLICT" && therapistId !== undefined) {
+        await handleConflict(async () => {
+          const fresh = await ipc.getTherapist(therapistId);
+          return { form: mapTherapistToFormFields(fresh), updated_at: fresh.updated_at };
+        });
+      } else {
+        log.error("Failed to save therapist:", err);
+        setSaveError("Failed to save therapist. Please try again.");
+      }
       setFormState("error");
     }
   }
@@ -89,6 +110,7 @@ export function useTherapistForm(therapistId?: number) {
     form,
     formState,
     saveError,
+    getConflictError,
     isEdit,
     set,
     handleSubmit,

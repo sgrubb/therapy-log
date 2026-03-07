@@ -20,6 +20,7 @@ export const therapistCreateSchema = z.object({
 });
 
 export const therapistUpdateSchema = z.object({
+  updated_at: z.coerce.date(),
   first_name: z.string().min(1).optional(),
   last_name: z.string().min(1).optional(),
   is_admin: z.boolean().optional(),
@@ -46,6 +47,7 @@ export const clientCreateSchema = z.object({
 });
 
 export const clientUpdateSchema = z.object({
+  updated_at: z.coerce.date(),
   hospital_number: z.string().min(1).optional(),
   first_name: z.string().min(1).optional(),
   last_name: z.string().min(1).optional(),
@@ -78,6 +80,7 @@ export const sessionCreateSchema = z.object({
 });
 
 export const sessionUpdateSchema = z.object({
+  updated_at: z.coerce.date(),
   client_id: z.number().int().positive().optional(),
   therapist_id: z.number().int().positive().optional(),
   scheduled_at: z.coerce.date().optional(),
