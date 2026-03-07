@@ -20,6 +20,10 @@ function classifyError(err: unknown): IpcError {
     return { code: "VALIDATION", message: "The provided data is invalid." };
   }
 
+  if (err instanceof Error && err.message === "CONFLICT") {
+    return { code: "CONFLICT", message: "This record was modified by someone else." };
+  }
+
   return { code: "UNKNOWN", message: "An unexpected error occurred." };
 }
 

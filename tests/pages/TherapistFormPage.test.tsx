@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import TherapistFormPage from "@/pages/TherapistFormPage";
-import { wrapped, mockTherapists, errorResponse } from "../helpers/ipc-mocks";
+import { wrapped, mockTherapists, errorResponse, MOCK_UPDATED_AT } from "../helpers/ipc-mocks";
 
 const mockInvoke = vi.fn();
 
@@ -262,6 +262,63 @@ describe("TherapistFormPage — edit therapist", () => {
     await waitFor(() => {
       expect(screen.getByTestId("therapists-list")).toBeInTheDocument();
     });
+  });
+
+  it("shows conflict warning with server-changed fields and preserves user edits", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("selectedTherapistId", "1");
+
+    const freshTherapist = {
+      ...mockTherapist,
+      last_name: "Jones",
+      updated_at: new Date(MOCK_UPDATED_AT.getTime() + 1000),
+    };
+
+    let therapistGetCount = 0;
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:get") {
+        therapistGetCount++;
+        return Promise.resolve(wrapped(therapistGetCount === 1 ? mockTherapist : freshTherapist));
+      }
+      if (channel === "therapist:update") return Promise.resolve(errorResponse.conflict);
+      return Promise.resolve(wrapped(null));
+    });
+
+    render(
+      <TherapistProvider>
+        <MemoryRouter initialEntries={["/therapists/1/edit"]}>
+          <Routes>
+            <Route path="/therapists">
+              <Route path=":id/edit" element={<TherapistFormPage />} />
+              <Route index element={<div data-testid="therapists-list" />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </TherapistProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/first name/i)).toHaveValue("Alice");
+    });
+
+    const firstNameInput = screen.getByLabelText(/first name/i);
+    await user.clear(firstNameInput);
+    await user.type(firstNameInput, "Alicia");
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/conflict detected/i);
+      expect(screen.getByRole("alert")).toHaveTextContent(/last_name/i);
+    });
+
+    // Server's last_name applied
+    expect(screen.getByLabelText(/last name/i)).toHaveValue("Jones");
+    // User's first_name edit preserved
+    expect(screen.getByLabelText(/first name/i)).toHaveValue("Alicia");
+    // No navigation away
+    expect(screen.queryByTestId("therapists-list")).not.toBeInTheDocument();
   });
 
   it("navigates to /therapists when therapist not found", async () => {

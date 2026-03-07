@@ -41,8 +41,14 @@ export function registerIpcHandlers(ipcMain: IpcMain, prisma: PrismaClient) {
     (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["therapist:update"]["result"]> =>
       withErrorHandler("therapist:update", async () => {
         const { id, data: rawData } = rawInput;
-        const data = therapistUpdateSchema.parse(rawData);
-        return prisma.therapist.update({ where: { id }, data });
+        const { updated_at: clientUpdatedAt, ...updateData } = therapistUpdateSchema.parse(rawData);
+        return prisma.$transaction(async (tx) => {
+          const existing = await tx.therapist.findUniqueOrThrow({ where: { id } });
+          if (existing.updated_at.getTime() !== clientUpdatedAt.getTime()) {
+            throw new Error("CONFLICT");
+          }
+          return tx.therapist.update({ where: { id }, data: updateData });
+        });
       }),
   );
 
@@ -77,8 +83,14 @@ export function registerIpcHandlers(ipcMain: IpcMain, prisma: PrismaClient) {
     (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["client:update"]["result"]> =>
       withErrorHandler("client:update", async () => {
         const { id, data: rawData } = rawInput;
-        const data = clientUpdateSchema.parse(rawData);
-        return prisma.client.update({ where: { id }, data });
+        const { updated_at: clientUpdatedAt, ...updateData } = clientUpdateSchema.parse(rawData);
+        return prisma.$transaction(async (tx) => {
+          const existing = await tx.client.findUniqueOrThrow({ where: { id } });
+          if (existing.updated_at.getTime() !== clientUpdatedAt.getTime()) {
+            throw new Error("CONFLICT");
+          }
+          return tx.client.update({ where: { id }, data: updateData, include: { therapist: true } });
+        });
       }),
   );
 
@@ -118,8 +130,14 @@ export function registerIpcHandlers(ipcMain: IpcMain, prisma: PrismaClient) {
     (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["session:update"]["result"]> =>
       withErrorHandler("session:update", async () => {
         const { id, data: rawData } = rawInput;
-        const data = sessionUpdateSchema.parse(rawData);
-        return prisma.session.update({ where: { id }, data });
+        const { updated_at: clientUpdatedAt, ...updateData } = sessionUpdateSchema.parse(rawData);
+        return prisma.$transaction(async (tx) => {
+          const existing = await tx.session.findUniqueOrThrow({ where: { id } });
+          if (existing.updated_at.getTime() !== clientUpdatedAt.getTime()) {
+            throw new Error("CONFLICT");
+          }
+          return tx.session.update({ where: { id }, data: updateData });
+        });
       }),
   );
 }

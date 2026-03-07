@@ -65,6 +65,7 @@ model Therapist {
   first_name String
   last_name  String
   is_admin   Boolean   @default(false)
+  updated_at DateTime  @updatedAt
   clients    Client[]
   sessions   Session[]
 }
@@ -87,6 +88,7 @@ model Client {
   post_score      Float?
   outcome         Outcome?
   notes           String?
+  updated_at      DateTime    @updatedAt
   sessions        Session[]
 }
 
@@ -103,4 +105,5 @@ model Session {
   delivery_method DeliveryMethod
   missed_reason   MissedReason?
   notes           String?
+  updated_at      DateTime       @updatedAt
 }

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/ui/field";
 import { SaveErrorAlert } from "@/components/ui/save-error-alert";
+import { ConflictAlert } from "@/components/ui/conflict-alert";
 import {
   Select,
   SelectContent,
@@ -24,6 +25,7 @@ export default function ClientFormPage() {
     form,
     formState,
     saveError,
+    conflictWarning,
     isEdit,
     set,
     handleSubmit,
@@ -42,6 +44,7 @@ export default function ClientFormPage() {
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+        <ConflictAlert message={conflictWarning?.message ?? null} />
         <SaveErrorAlert message={saveError} />
 
         <div className="grid grid-cols-2 gap-4">

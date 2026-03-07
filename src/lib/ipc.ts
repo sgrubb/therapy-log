@@ -25,6 +25,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   NOT_FOUND: "The requested record was not found.",
   FOREIGN_KEY: "A related record could not be found.",
   VALIDATION: "The provided data is invalid.",
+  CONFLICT: "This record was modified by someone else.",
   UNKNOWN: "An unexpected error occurred.",
 };
 
