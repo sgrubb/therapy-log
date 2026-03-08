@@ -3,24 +3,21 @@ import type { z } from "zod";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
 import type { ClientWithTherapist } from "@/types/ipc";
-import { Outcome } from "@/types/enums";
-import { closeClientSchema } from "@/schemas/forms";
+import { reopenClientSchema } from "@/schemas/forms";
 import { useFormState } from "@/hooks/useFormState";
 
-export type FormFields = z.input<typeof closeClientSchema>;
+export type FormFields = z.input<typeof reopenClientSchema>;
 
 const EMPTY: FormFields = {
-  post_score: "",
-  outcome: "" as Outcome,
-  closing_notes: "",
+  reopen_notes: "",
 };
 
-export function useCloseClient(
+export function useReopenClient(
   clientId: number | undefined,
   client: ClientWithTherapist | null,
   onSuccess: (updated: ClientWithTherapist) => void,
 ) {
-  const [showCloseDialog, setShowCloseDialog] = useState(false);
+  const [showReopenDialog, setShowReopenDialog] = useState(false);
 
   const {
     form,
@@ -33,60 +30,56 @@ export function useCloseClient(
     validate,
     getError,
     markTouched,
-  } = useFormState(closeClientSchema, EMPTY);
+  } = useFormState(reopenClientSchema, EMPTY);
 
   const set = <K extends keyof FormFields>(field: K, value: FormFields[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     clearError(field);
   };
 
-  function openCloseDialog() {
+  function openReopenDialog() {
     setForm(EMPTY);
     setSaveError(null);
     setFormState("idle");
-    setShowCloseDialog(true);
+    setShowReopenDialog(true);
   }
 
-  function dismissCloseDialog() {
-    setShowCloseDialog(false);
+  function dismissReopenDialog() {
+    setShowReopenDialog(false);
     setSaveError(null);
   }
 
-  async function handleCloseClient() {
+  async function handleReopenClient() {
     if (!validate()) return;
     setFormState("saving");
     setSaveError(null);
     try {
-      const closingNotes = (form.closing_notes ?? "").trim();
+      const reopenNotes = (form.reopen_notes ?? "").trim();
       const existingNotes = client?.notes ?? "";
       const date = new Date().toLocaleDateString("en-GB");
-      const appendedEntry = `Client closed - ${date}\n${closingNotes}`;
+      const appendedEntry = `Client reopened - ${date}\n${reopenNotes}`;
       const notesUpdate = existingNotes ? `${existingNotes}\n\n${appendedEntry}` : appendedEntry;
 
-      const updated = await ipc.closeClient(clientId!, {
-        post_score: form.post_score ? Number(form.post_score) : null,
-        outcome: form.outcome as Outcome,
-        notes: notesUpdate,
-      });
+      const updated = await ipc.reopenClient(clientId!, { notes: notesUpdate });
       onSuccess(updated);
-      setShowCloseDialog(false);
+      setShowReopenDialog(false);
     } catch (err) {
-      log.error("Failed to close client:", err);
-      setSaveError("Failed to close client. Please try again.");
+      log.error("Failed to reopen client:", err);
+      setSaveError("Failed to reopen client. Please try again.");
       setFormState("error");
     }
   }
 
   return {
-    showCloseDialog,
+    showReopenDialog,
     form,
     saveError,
     formState,
     getError,
     markTouched,
     set,
-    openCloseDialog,
-    dismissCloseDialog,
-    handleCloseClient,
+    openReopenDialog,
+    dismissReopenDialog,
+    handleReopenClient,
   };
 }

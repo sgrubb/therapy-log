@@ -4,7 +4,7 @@ import type { z } from "zod";
 import { ipc, IpcError } from "@/lib/ipc";
 import log from "@/lib/logger";
 import { sessionFormSchema } from "@/schemas/forms";
-import { SessionStatus } from "@/types/enums";
+import { SessionStatus, SESSION_DAY_INDEX } from "@/types/enums";
 import type { SessionType, DeliveryMethod, MissedReason } from "@/types/enums";
 import type { ClientWithTherapist, SessionWithRelations } from "@/types/ipc";
 import { useFormState } from "@/hooks/useFormState";
@@ -24,6 +24,16 @@ const EMPTY: FormFields = {
   missed_reason: "",
   notes: "",
 };
+
+function mostRecentOccurrence(dayName: string): string {
+  const target = SESSION_DAY_INDEX[dayName as keyof typeof SESSION_DAY_INDEX];
+  if (target === undefined) return "";
+  const today = new Date();
+  const daysBack = (today.getDay() - target + 7) % 7;
+  const result = new Date(today);
+  result.setDate(today.getDate() - daysBack);
+  return result.toISOString().split("T")[0]!;
+}
 
 function mapSessionToFormFields(session: SessionWithRelations): FormFields {
   return {
@@ -110,6 +120,8 @@ export function useSessionForm(sessionId?: number) {
       ...prev,
       client_id: clientId,
       therapist_id: prev.therapist_id || (client ? client.therapist_id.toString() : ""),
+      time: client?.session_time ?? "",
+      date: client?.session_day ? mostRecentOccurrence(client.session_day) : "",
     }));
     clearError("client_id");
     clearError("therapist_id");

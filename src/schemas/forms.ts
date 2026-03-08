@@ -105,3 +105,11 @@ export const closeClientSchema = z.object({
     .optional()
     .or(z.literal("")),
 });
+
+export const reopenClientSchema = z.object({
+  reopen_notes: z
+    .string()
+    .max(500, "Notes must be 500 characters or fewer.")
+    .optional()
+    .or(z.literal("")),
+});

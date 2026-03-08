@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InfoRow } from "@/components/ui/info-row";
 import { CloseClientDialog } from "@/components/CloseClientDialog";
+import { ReopenClientDialog } from "@/components/ReopenClientDialog";
 
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -52,9 +53,7 @@ export default function ClientDetailPage() {
 
   if (!client) return null;
 
-  const canClose =
-    !client.is_closed &&
-    (isAdmin || selectedTherapistId === client.therapist_id);
+  const canCloseOrReopen = isAdmin || selectedTherapistId === client.therapist_id;
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -76,12 +75,20 @@ export default function ClientDetailPage() {
           </Badge>
         </div>
         <div className="flex gap-2">
-          {canClose && (
-            <CloseClientDialog
-              clientId={Number(id)}
-              client={client}
-              onSuccess={setClient}
-            />
+          {canCloseOrReopen && (
+            client.is_closed ? (
+              <ReopenClientDialog
+                clientId={Number(id)}
+                client={client}
+                onSuccess={setClient}
+              />
+            ) : (
+              <CloseClientDialog
+                clientId={Number(id)}
+                client={client}
+                onSuccess={setClient}
+              />
+            )
           )}
           <Button
             variant="outline"
@@ -112,11 +119,15 @@ export default function ClientDetailPage() {
           label="Pre Score"
           value={client.pre_score?.toString() ?? "—"}
         />
-        <InfoRow
-          label="Post Score"
-          value={client.post_score?.toString() ?? "—"}
-        />
-        <InfoRow label="Outcome" value={client.outcome ?? "—"} />
+        {client.is_closed && (
+          <>
+            <InfoRow
+              label="Post Score"
+              value={client.post_score?.toString() ?? "—"}
+            />
+            <InfoRow label="Outcome" value={client.outcome ?? "—"} />
+          </>
+        )}
       </div>
 
       {client.notes && (

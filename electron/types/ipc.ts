@@ -61,6 +61,14 @@ export type IpcApi = {
     args: { id: number; data: Prisma.ClientUncheckedUpdateInput };
     result: IpcResponse<Client>;
   };
+  "client:close": {
+    args: { id: number; data: unknown };
+    result: IpcResponse<ClientGetPayload<{ include: { therapist: true } }>>;
+  };
+  "client:reopen": {
+    args: { id: number; data: unknown };
+    result: IpcResponse<ClientGetPayload<{ include: { therapist: true } }>>;
+  };
 
   // Sessions
   "session:list": {

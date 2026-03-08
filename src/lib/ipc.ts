@@ -16,6 +16,8 @@ import type {
   UpdateTherapist,
   CreateClient,
   UpdateClient,
+  CloseClient,
+  ReopenClient,
   CreateSession,
   UpdateSession,
 } from "@/types/ipc";
@@ -102,6 +104,16 @@ export const ipc = {
   async updateClient(id: number, data: UpdateClient): Promise<Client> {
     const response = await window.electronAPI.invoke("client:update", { id, data });
     return clientSchema.parse(unwrapResponse(response));
+  },
+
+  async closeClient(id: number, data: CloseClient): Promise<ClientWithTherapist> {
+    const response = await window.electronAPI.invoke("client:close", { id, data });
+    return clientWithTherapistSchema.parse(unwrapResponse(response));
+  },
+
+  async reopenClient(id: number, data: ReopenClient): Promise<ClientWithTherapist> {
+    const response = await window.electronAPI.invoke("client:reopen", { id, data });
+    return clientWithTherapistSchema.parse(unwrapResponse(response));
   },
 
   // ── Sessions ───────────────────────────────────────────────────────────

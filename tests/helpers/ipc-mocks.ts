@@ -49,8 +49,8 @@ export const mockClientBase = {
   is_closed: false,
   pre_score: null,
   post_score: null,
-  outcome: null,
-  notes: null,
+  outcome: null as string | null,
+  notes: null as string | null,
   updated_at: MOCK_UPDATED_AT,
 };
 

@@ -206,6 +206,63 @@ describe("client:update", () => {
   });
 });
 
+describe("client:close", () => {
+  it("marks client as closed and sets outcome", async () => {
+    const result = await invoke("client:close", {
+      id: ids.clientCharlie,
+      data: { outcome: "Improved", post_score: 8 },
+    });
+    assert(result.success);
+    expect(result.data.is_closed).toBe(true);
+    expect(result.data.outcome).toBe("Improved");
+    expect(result.data.post_score).toBe(8);
+  });
+
+  it("returns failure for nonexistent id", async () => {
+    const result = await invoke("client:close", {
+      id: 9999,
+      data: { outcome: "Improved" },
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("client:reopen", () => {
+  it("marks client as open and clears outcome and post_score", async () => {
+    const result = await invoke("client:reopen", {
+      id: ids.clientCharlie,
+      data: {},
+    });
+    assert(result.success);
+    expect(result.data.is_closed).toBe(false);
+    expect(result.data.outcome).toBeNull();
+    expect(result.data.post_score).toBeNull();
+  });
+
+  it("appends reopen notes when provided", async () => {
+    // First close the client so it can be reopened with notes
+    await invoke("client:close", {
+      id: ids.clientDana,
+      data: { outcome: "Improved" },
+    });
+    const result = await invoke("client:reopen", {
+      id: ids.clientDana,
+      data: { notes: "Returned for further support." },
+    });
+    assert(result.success);
+    expect(result.data.is_closed).toBe(false);
+    expect(result.data.notes).toBe("Returned for further support.");
+  });
+
+  it("returns failure for nonexistent id", async () => {
+    const result = await invoke("client:reopen", {
+      id: 9999,
+      data: {},
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
 // ── Sessions ──────────────────────────────────────────────────────────
 
 describe("session:list", () => {

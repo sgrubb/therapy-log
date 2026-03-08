@@ -14,6 +14,16 @@ export const SessionDay = {
 } as const;
 export type SessionDay = (typeof SessionDay)[keyof typeof SessionDay];
 
+export const SESSION_DAY_INDEX: Record<SessionDay, number> = {
+  Sunday: 0,
+  Monday: 1,
+  Tuesday: 2,
+  Wednesday: 3,
+  Thursday: 4,
+  Friday: 5,
+  Saturday: 6,
+};
+
 export const Outcome = {
   Improved: "Improved",
   NoChange: "NoChange",

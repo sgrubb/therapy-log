@@ -75,6 +75,16 @@ export interface UpdateClient {
   notes?: string | null;
 }
 
+export interface CloseClient {
+  post_score?: number | null;
+  outcome: Outcome;
+  notes?: string | null;
+}
+
+export interface ReopenClient {
+  notes?: string | null;
+}
+
 export interface CreateSession {
   client_id: number;
   therapist_id: number;

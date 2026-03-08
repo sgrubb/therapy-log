@@ -26,6 +26,7 @@ export default function ClientFormPage() {
     saveError,
     getConflictError,
     isEdit,
+    isClosed,
     set,
     handleSubmit,
     markTouched,
@@ -188,36 +189,40 @@ export default function ClientFormPage() {
               onBlur={() => markTouched("pre_score")}
             />
           </Field>
-          <Field label="Post Score" error={getError("post_score")} conflictError={getConflictError("post_score")}>
-            <Input
-              type="number"
-              step="0.1"
-              aria-label="Post score"
-              value={form.post_score ?? ""}
-              onChange={(e) => set("post_score", e.target.value)}
-              onBlur={() => markTouched("post_score")}
-            />
-          </Field>
-          <Field label="Outcome" error={getError("outcome")} conflictError={getConflictError("outcome")}>
-            <Select
-              value={form.outcome ?? ""}
-              onValueChange={(v) => set("outcome", v as Outcome)}
-            >
-              <SelectTrigger
-                aria-label="Outcome"
-                onBlur={() => markTouched("outcome")}
-              >
-                <SelectValue placeholder="None" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.values(Outcome).map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {o}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+          {isEdit && isClosed && (
+            <>
+              <Field label="Post Score" error={getError("post_score")} conflictError={getConflictError("post_score")}>
+                <Input
+                  type="number"
+                  step="0.1"
+                  aria-label="Post score"
+                  value={form.post_score ?? ""}
+                  onChange={(e) => set("post_score", e.target.value)}
+                  onBlur={() => markTouched("post_score")}
+                />
+              </Field>
+              <Field label="Outcome" error={getError("outcome")} conflictError={getConflictError("outcome")}>
+                <Select
+                  value={form.outcome ?? ""}
+                  onValueChange={(v) => set("outcome", v as Outcome)}
+                >
+                  <SelectTrigger
+                    aria-label="Outcome"
+                    onBlur={() => markTouched("outcome")}
+                  >
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(Outcome).map((o) => (
+                      <SelectItem key={o} value={o}>
+                        {o}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </>
+          )}
         </div>
 
         <Field
@@ -246,6 +251,7 @@ export default function ClientFormPage() {
           <Button
             type="button"
             variant="outline"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => navigate("/clients")}
           >
             Cancel

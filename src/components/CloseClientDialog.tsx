@@ -67,7 +67,7 @@ export function CloseClientDialog({ clientId, client, onSuccess }: Props) {
             <Field label="Outcome *" error={getError("outcome")}>
               <Select
                 value={form.outcome}
-                onValueChange={(v) => set("outcome", v)}
+                onValueChange={(v) => set("outcome", v as Outcome)}
               >
                 <SelectTrigger
                   aria-label="Outcome"
@@ -106,6 +106,7 @@ export function CloseClientDialog({ clientId, client, onSuccess }: Props) {
               </Button>
               <Button
                 variant="outline"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={dismissCloseDialog}
                 disabled={saving}
               >

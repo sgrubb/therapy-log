@@ -93,6 +93,7 @@ export default function TherapistFormPage() {
           <Button
             type="button"
             variant="outline"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => navigate("/therapists")}
           >
             Cancel

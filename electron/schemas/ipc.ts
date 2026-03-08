@@ -65,6 +65,16 @@ export const clientUpdateSchema = z.object({
   notes: z.string().nullable().optional(),
 });
 
+export const clientCloseSchema = z.object({
+  post_score: z.number().nullable().optional(),
+  outcome: z.nativeEnum(Outcome),
+  notes: z.string().nullable().optional(),
+});
+
+export const clientReopenSchema = z.object({
+  notes: z.string().nullable().optional(),
+});
+
 // ── Sessions ───────────────────────────────────────────────────────────────
 
 export const sessionCreateSchema = z.object({

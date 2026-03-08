@@ -271,6 +271,7 @@ export default function SessionFormPage() {
           <Button
             type="button"
             variant="outline"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => navigate("/sessions")}
           >
             Cancel

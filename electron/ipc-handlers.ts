@@ -5,6 +5,8 @@ import {
   therapistUpdateSchema,
   clientCreateSchema,
   clientUpdateSchema,
+  clientCloseSchema,
+  clientReopenSchema,
   sessionCreateSchema,
   sessionUpdateSchema,
 } from "./schemas/ipc";
@@ -90,6 +92,34 @@ export function registerIpcHandlers(ipcMain: IpcMain, prisma: PrismaClient) {
             throw new Error("CONFLICT");
           }
           return tx.client.update({ where: { id }, data: updateData, include: { therapist: true } });
+        });
+      }),
+  );
+
+  ipcMain.handle(
+    "client:close",
+    (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["client:close"]["result"]> =>
+      withErrorHandler("client:close", async () => {
+        const { id, data: rawData } = rawInput;
+        const data = clientCloseSchema.parse(rawData);
+        return prisma.client.update({
+          where: { id },
+          data: { ...data, is_closed: true },
+          include: { therapist: true },
+        });
+      }),
+  );
+
+  ipcMain.handle(
+    "client:reopen",
+    (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["client:reopen"]["result"]> =>
+      withErrorHandler("client:reopen", async () => {
+        const { id, data: rawData } = rawInput;
+        const data = clientReopenSchema.parse(rawData);
+        return prisma.client.update({
+          where: { id },
+          data: { ...data, is_closed: false, post_score: null, outcome: null },
+          include: { therapist: true },
         });
       }),
   );

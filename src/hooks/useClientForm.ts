@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { z } from "zod";
 import { ipc, IpcError } from "@/lib/ipc";
@@ -70,6 +70,7 @@ function buildPayload(form: FormFields) {
 export function useClientForm(clientId?: number) {
   const navigate = useNavigate();
   const isEdit = clientId !== undefined;
+  const [isClosed, setIsClosed] = useState(false);
 
   const {
     form, setForm,
@@ -96,6 +97,7 @@ export function useClientForm(clientId?: number) {
         setForm(fields);
         setOriginalForm(fields);
         setUpdatedAt(client.updated_at);
+        setIsClosed(client.is_closed);
       } catch (err) {
         log.error("Failed to load client:", err);
         navigate("/clients");
@@ -147,6 +149,7 @@ export function useClientForm(clientId?: number) {
     saveError,
     getConflictError,
     isEdit,
+    isClosed,
     set,
     handleSubmit,
     markTouched,
