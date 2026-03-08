@@ -79,9 +79,11 @@ model Client {
   address         String?
   phone           String?
   email           String?
-  session_day     SessionDay?
-  session_time    String?
-  therapist_id    Int
+  session_day               SessionDay?
+  session_time              String?
+  session_duration          Int?
+  session_delivery_method   DeliveryMethod?
+  therapist_id              Int
   therapist       Therapist   @relation(fields: [therapist_id], references: [id])
   is_closed       Boolean     @default(false)
   pre_score       Float?
@@ -100,6 +102,7 @@ model Session {
   therapist       Therapist      @relation(fields: [therapist_id], references: [id])
   scheduled_at    DateTime
   occurred_at     DateTime?
+  duration        Int
   status          SessionStatus
   session_type    SessionType
   delivery_method DeliveryMethod

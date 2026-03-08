@@ -155,12 +155,12 @@ describe("ClientDetailPage", () => {
   });
 
   it("shows dash for null optional fields", async () => {
-    // mockClient has null: email, pre_score, post_score, outcome
+    // mockClient has null: email, pre_score (post_score/outcome hidden when open)
     renderDetailPage();
     await waitFor(() => screen.getByText("Jane Smith"));
 
     const dashes = screen.getAllByText("—");
-    expect(dashes.length).toBe(4);
+    expect(dashes.length).toBe(2);
   });
 
   it("renders notes section when client has notes", async () => {
@@ -378,7 +378,7 @@ describe("ClientDetailPage — close client", () => {
       if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
       if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
-      if (channel === "client:update") return Promise.resolve(wrapped(closedClient));
+      if (channel === "client:close") return Promise.resolve(wrapped(closedClient));
       return Promise.resolve(wrapped(null));
     });
 
@@ -403,7 +403,7 @@ describe("ClientDetailPage — close client", () => {
       if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "client:get") return Promise.resolve(wrapped(closedClient));
       if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
-      if (channel === "client:update") return Promise.resolve(wrapped(closedClient));
+      if (channel === "client:close") return Promise.resolve(wrapped(closedClient));
       return Promise.resolve(wrapped(null));
     });
 
@@ -411,9 +411,9 @@ describe("ClientDetailPage — close client", () => {
 
     await waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith(
-        "client:update",
+        "client:close",
         expect.objectContaining({
-          data: expect.objectContaining({ is_closed: true, outcome: "Improved" }),
+          data: expect.objectContaining({ outcome: "Improved" }),
         }),
       );
     });
@@ -435,7 +435,7 @@ describe("ClientDetailPage — close client", () => {
       if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "client:get") return Promise.resolve(wrapped(clientWithNotes));
       if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
-      if (channel === "client:update") return Promise.resolve(wrapped(closedClient));
+      if (channel === "client:close") return Promise.resolve(wrapped(closedClient));
       return Promise.resolve(wrapped(null));
     });
 
@@ -458,12 +458,13 @@ describe("ClientDetailPage — close client", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /confirm close/i }));
 
+    const date = new Date().toLocaleDateString("en-GB");
     await waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith(
-        "client:update",
+        "client:close",
         expect.objectContaining({
           data: expect.objectContaining({
-            notes: "Existing notes.\n\nDischarge summary.",
+            notes: `Existing notes.\n\nClient closed - ${date}\nDischarge summary.`,
           }),
         }),
       );

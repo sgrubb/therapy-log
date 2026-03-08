@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useTherapist } from "@/context/TherapistContext";
 import { useClientForm } from "@/hooks/useClientForm";
-import { SessionDay, Outcome } from "@/types/enums";
+import { SessionDay, Outcome, DeliveryMethod, DELIVERY_METHOD_NAMES } from "@/types/enums";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -153,6 +153,39 @@ export default function ClientFormPage() {
               onChange={(e) => set("session_time", e.target.value)}
               onBlur={() => markTouched("session_time")}
             />
+          </Field>
+
+          <Field label="Session Duration" error={getError("session_duration")} conflictError={getConflictError("session_duration")}>
+            <Input
+              type="time"
+              aria-label="Session duration"
+              value={form.session_duration ?? ""}
+              onChange={(e) => set("session_duration", e.target.value)}
+              onBlur={() => markTouched("session_duration")}
+              min="00:05"
+              max="12:00"
+            />
+          </Field>
+
+          <Field label="Session Delivery Method" error={getError("session_delivery_method")} conflictError={getConflictError("session_delivery_method")}>
+            <Select
+              value={form.session_delivery_method ?? ""}
+              onValueChange={(v) => set("session_delivery_method", v as DeliveryMethod)}
+            >
+              <SelectTrigger
+                aria-label="Session delivery method"
+                onBlur={() => markTouched("session_delivery_method")}
+              >
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(DeliveryMethod).map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {DELIVERY_METHOD_NAMES[m]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
 
           <Field label="Therapist *" error={getError("therapist_id")} conflictError={getConflictError("therapist_id")}>

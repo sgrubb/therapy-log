@@ -10,6 +10,7 @@ const MIGRATIONS_DIR = path.join(__dirname, "..", "..", "prisma", "migrations");
 const MIGRATION_FILES = [
   "20260216121855_init/migration.sql",
   "20260305210156_add_updated_at/migration.sql",
+  "20260308224814_add_duration_and_session_defaults/migration.sql",
 ];
 
 export function createTestPrismaClient(): {
@@ -87,6 +88,7 @@ export async function seedTestData(prisma: PrismaClient): Promise<SeedIds> {
       therapist_id: alice.id,
       scheduled_at: new Date("2026-02-04T10:00:00"),
       occurred_at: new Date("2026-02-04T10:05:00"),
+      duration: 60,
       status: "Attended",
       session_type: "AssessmentChild",
       delivery_method: "FaceToFace",

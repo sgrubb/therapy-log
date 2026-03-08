@@ -301,6 +301,7 @@ describe("session:create", () => {
       client_id: ids.clientCharlie,
       therapist_id: ids.therapistAlice,
       scheduled_at: new Date("2026-03-01T10:00:00"),
+      duration: 60,
       status: "Scheduled",
       session_type: "Child",
       delivery_method: "Online",

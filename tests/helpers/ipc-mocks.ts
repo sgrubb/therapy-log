@@ -46,6 +46,8 @@ export const mockClientBase = {
   email: null,
   session_day: null,
   session_time: null,
+  session_duration: null,
+  session_delivery_method: null,
   is_closed: false,
   pre_score: null,
   post_score: null,
@@ -65,6 +67,8 @@ export const mockClient = {
   dob: new Date("2000-01-15T00:00:00.000Z"),
   address: "123 Main St",
   session_time: "10:00",
+  session_duration: 60,
+  session_delivery_method: "FaceToFace" as const,
 };
 
 export const mockClients = [
@@ -91,6 +95,7 @@ export const mockSession = {
   therapist_id: 1,
   scheduled_at: new Date("2026-03-10T10:00:00.000Z"),
   occurred_at: null,
+  duration: 60,
   status: "Attended" as const,
   session_type: "Child" as const,
   delivery_method: "FaceToFace" as const,
@@ -115,6 +120,7 @@ export const mockSessions = [
     therapist_id: 2,
     scheduled_at: new Date("2026-02-20T14:00:00.000Z"),
     occurred_at: null,
+    duration: 50,
     status: "DNA" as const,
     session_type: "Parent" as const,
     delivery_method: "Online" as const,

@@ -36,13 +36,15 @@ export const clientCreateSchema = z.object({
   address: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),
   email: z.string().nullable().optional(),
-  session_day: z.nativeEnum(SessionDay).nullable().optional(),
+  session_day: z.enum(SessionDay).nullable().optional(),
   session_time: z.string().nullable().optional(),
+  session_duration: z.number().int().positive().nullable().optional(),
+  session_delivery_method: z.enum(DeliveryMethod).nullable().optional(),
   therapist_id: z.number().int().positive(),
   is_closed: z.boolean().optional(),
   pre_score: z.number().nullable().optional(),
   post_score: z.number().nullable().optional(),
-  outcome: z.nativeEnum(Outcome).nullable().optional(),
+  outcome: z.enum(Outcome).nullable().optional(),
   notes: z.string().nullable().optional(),
 });
 
@@ -55,19 +57,21 @@ export const clientUpdateSchema = z.object({
   address: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),
   email: z.string().nullable().optional(),
-  session_day: z.nativeEnum(SessionDay).nullable().optional(),
+  session_day: z.enum(SessionDay).nullable().optional(),
   session_time: z.string().nullable().optional(),
+  session_duration: z.number().int().positive().nullable().optional(),
+  session_delivery_method: z.enum(DeliveryMethod).nullable().optional(),
   therapist_id: z.number().int().positive().optional(),
   is_closed: z.boolean().optional(),
   pre_score: z.number().nullable().optional(),
   post_score: z.number().nullable().optional(),
-  outcome: z.nativeEnum(Outcome).nullable().optional(),
+  outcome: z.enum(Outcome).nullable().optional(),
   notes: z.string().nullable().optional(),
 });
 
 export const clientCloseSchema = z.object({
   post_score: z.number().nullable().optional(),
-  outcome: z.nativeEnum(Outcome),
+  outcome: z.enum(Outcome),
   notes: z.string().nullable().optional(),
 });
 
@@ -82,10 +86,11 @@ export const sessionCreateSchema = z.object({
   therapist_id: z.number().int().positive(),
   scheduled_at: z.coerce.date(),
   occurred_at: z.coerce.date().nullable().optional(),
-  status: z.nativeEnum(SessionStatus),
-  session_type: z.nativeEnum(SessionType),
-  delivery_method: z.nativeEnum(DeliveryMethod),
-  missed_reason: z.nativeEnum(MissedReason).nullable().optional(),
+  duration: z.number().int().positive(),
+  status: z.enum(SessionStatus),
+  session_type: z.enum(SessionType),
+  delivery_method: z.enum(DeliveryMethod),
+  missed_reason: z.enum(MissedReason).nullable().optional(),
   notes: z.string().nullable().optional(),
 });
 
@@ -95,9 +100,10 @@ export const sessionUpdateSchema = z.object({
   therapist_id: z.number().int().positive().optional(),
   scheduled_at: z.coerce.date().optional(),
   occurred_at: z.coerce.date().nullable().optional(),
-  status: z.nativeEnum(SessionStatus).optional(),
-  session_type: z.nativeEnum(SessionType).optional(),
-  delivery_method: z.nativeEnum(DeliveryMethod).optional(),
-  missed_reason: z.nativeEnum(MissedReason).nullable().optional(),
+  duration: z.number().int().positive().optional(),
+  status: z.enum(SessionStatus).optional(),
+  session_type: z.enum(SessionType).optional(),
+  delivery_method: z.enum(DeliveryMethod).optional(),
+  missed_reason: z.enum(MissedReason).nullable().optional(),
   notes: z.string().nullable().optional(),
 });

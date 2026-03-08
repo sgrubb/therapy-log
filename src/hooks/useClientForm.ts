@@ -5,6 +5,7 @@ import { ipc, IpcError } from "@/lib/ipc";
 import log from "@/lib/logger";
 import { clientFormSchema } from "@/schemas/forms";
 import { SessionDay, Outcome } from "@/types/enums";
+import type { DeliveryMethod } from "@/types/enums";
 import { useFormState } from "@/hooks/useFormState";
 import type { ClientWithTherapist } from "@/types/ipc";
 
@@ -22,12 +23,25 @@ const EMPTY: FormFields = {
   email: "",
   session_day: "",
   session_time: "",
+  session_duration: "",
+  session_delivery_method: "",
   therapist_id: "",
   pre_score: "",
   post_score: "",
   outcome: "",
   notes: "",
 };
+
+function minutesToHHMM(minutes: number): string {
+  const h = Math.floor(minutes / 60).toString().padStart(2, "0");
+  const m = (minutes % 60).toString().padStart(2, "0");
+  return `${h}:${m}`;
+}
+
+function hhmmToMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(":").map(Number);
+  return (h ?? 0) * 60 + (m ?? 0);
+}
 
 function mapClientToFormFields(client: ClientWithTherapist): FormFields {
   return {
@@ -40,6 +54,8 @@ function mapClientToFormFields(client: ClientWithTherapist): FormFields {
     email: client.email ?? "",
     session_day: client.session_day ?? "",
     session_time: client.session_time ?? "",
+    session_duration: client.session_duration != null ? minutesToHHMM(client.session_duration) : "",
+    session_delivery_method: client.session_delivery_method ?? "",
     therapist_id: client.therapist_id.toString(),
     pre_score: client.pre_score?.toString() ?? "",
     post_score: client.post_score?.toString() ?? "",
@@ -59,6 +75,8 @@ function buildPayload(form: FormFields) {
     email: (form.email ?? "").trim() || undefined,
     session_day: (form.session_day || undefined) as SessionDay | undefined,
     session_time: form.session_time || undefined,
+    session_duration: form.session_duration ? hhmmToMinutes(form.session_duration) : undefined,
+    session_delivery_method: (form.session_delivery_method || undefined) as DeliveryMethod | undefined,
     therapist_id: Number(form.therapist_id),
     pre_score: form.pre_score !== "" ? Number(form.pre_score) : undefined,
     post_score: form.post_score !== "" ? Number(form.post_score) : undefined,

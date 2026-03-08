@@ -31,6 +31,10 @@ const clientBaseSchema = z.object({
     ])
     .nullable(),
   session_time: z.string().nullable(),
+  session_duration: z.number().nullable(),
+  session_delivery_method: z
+    .enum(["FaceToFace", "Online", "Telephone", "Email"])
+    .nullable(),
   therapist_id: z.number(),
   is_closed: z.boolean(),
   pre_score: z.number().nullable(),
@@ -48,6 +52,7 @@ const sessionBaseSchema = z.object({
   therapist_id: z.number(),
   scheduled_at: z.date(),
   occurred_at: z.date().nullable(),
+  duration: z.number(),
   status: z.enum([
     "Scheduled",
     "Attended",

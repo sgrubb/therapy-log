@@ -91,6 +91,7 @@ describe("SessionFormPage — new session", () => {
 
     expect(screen.getByLabelText(/^date/i)).toHaveValue("");
     expect(screen.getByLabelText(/^time/i)).toHaveValue("");
+    expect(screen.getByLabelText(/^duration/i)).toHaveValue("");
     expect(screen.getByLabelText(/notes/i)).toHaveValue("");
   });
 
@@ -139,6 +140,35 @@ describe("SessionFormPage — new session", () => {
     });
   });
 
+  it("auto-populates duration and delivery_method when client has defaults", async () => {
+    renderNewForm();
+    await waitFor(() => screen.getByText("Jane Smith"));
+
+    // Jane Smith has session_duration: 60 and session_delivery_method: "FaceToFace"
+    fireEvent.change(getClientSelect(), { target: { value: "1" } });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/^duration/i)).toHaveValue("01:00");
+      expect(getDeliveryMethodSelect()).toHaveValue("FaceToFace");
+    });
+  });
+
+  it("does not overwrite existing duration when client has no default", async () => {
+    renderNewForm();
+    await waitFor(() => screen.getByText("Jane Smith"));
+
+    // First select Jane (sets duration to "01:00")
+    fireEvent.change(getClientSelect(), { target: { value: "1" } });
+    await waitFor(() => expect(screen.getByLabelText(/^duration/i)).toHaveValue("01:00"));
+
+    // Then switch to Tom Jones (no session_duration) — duration should be preserved
+    fireEvent.change(getClientSelect(), { target: { value: "2" } });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/^duration/i)).toHaveValue("01:00");
+    });
+  });
+
   it("does not overwrite therapist when client is changed and therapist is already set", async () => {
     renderNewForm();
     await waitFor(() => screen.getByText("Jane Smith"));
@@ -164,6 +194,8 @@ describe("SessionFormPage — new session", () => {
       expect(screen.getByText(/client is required/i)).toBeInTheDocument();
       expect(screen.getByText(/therapist is required/i)).toBeInTheDocument();
       expect(screen.getByText(/date is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/time is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/duration is required/i)).toBeInTheDocument();
       expect(screen.getByText(/session type is required/i)).toBeInTheDocument();
       expect(screen.getByText(/delivery method is required/i)).toBeInTheDocument();
     });
@@ -219,6 +251,7 @@ describe("SessionFormPage — new session", () => {
           session_type: "Child",
           delivery_method: "FaceToFace",
           status: "Attended",
+          duration: 60,
         }),
       );
     });
@@ -355,7 +388,8 @@ describe("SessionFormPage — edit session", () => {
     renderEditForm();
     await waitFor(() => {
       expect(screen.getByLabelText(/^date/i)).toHaveValue("2026-03-10");
-      expect(screen.getByLabelText(/time/i)).toHaveValue("10:00");
+      expect(screen.getByLabelText(/^time/i)).toHaveValue("10:00");
+      expect(screen.getByLabelText(/^duration/i)).toHaveValue("01:00");
       expect(getClientSelect()).toHaveValue("1");
       expect(getTherapistSelect()).toHaveValue("1");
       expect(getSessionTypeSelect()).toHaveValue("Child");

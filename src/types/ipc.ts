@@ -48,6 +48,8 @@ export interface CreateClient {
   email?: string | null;
   session_day?: SessionDay | null;
   session_time?: string | null;
+  session_duration?: number | null;
+  session_delivery_method?: DeliveryMethod | null;
   therapist_id: number;
   is_closed?: boolean;
   pre_score?: number | null;
@@ -67,6 +69,8 @@ export interface UpdateClient {
   email?: string | null;
   session_day?: SessionDay | null;
   session_time?: string | null;
+  session_duration?: number | null;
+  session_delivery_method?: DeliveryMethod | null;
   therapist_id?: number;
   is_closed?: boolean;
   pre_score?: number | null;
@@ -90,6 +94,7 @@ export interface CreateSession {
   therapist_id: number;
   scheduled_at: Date;
   occurred_at?: Date | null;
+  duration: number;
   status: SessionStatus;
   session_type: SessionType;
   delivery_method: DeliveryMethod;
@@ -103,6 +108,7 @@ export interface UpdateSession {
   therapist_id?: number;
   scheduled_at?: Date;
   occurred_at?: Date | null;
+  duration?: number;
   status?: SessionStatus;
   session_type?: SessionType;
   delivery_method?: DeliveryMethod;

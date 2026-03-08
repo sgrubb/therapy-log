@@ -5,6 +5,7 @@ const sessionDayValues = Object.values(SessionDay) as [
   SessionDay,
   ...SessionDay[],
 ];
+const deliveryMethodValues = Object.values(DeliveryMethod) as [DeliveryMethod, ...DeliveryMethod[]];
 const outcomeValues = Object.values(Outcome) as [Outcome, ...Outcome[]];
 
 export const clientFormSchema = z
@@ -25,6 +26,8 @@ export const clientFormSchema = z
       .or(z.literal("")),
     session_day: z.enum(sessionDayValues).optional().or(z.literal("")),
     session_time: z.string().optional().or(z.literal("")),
+    session_duration: z.string().optional().or(z.literal("")),
+    session_delivery_method: z.enum(deliveryMethodValues).optional().or(z.literal("")),
     therapist_id: z.string().min(1, "Therapist is required."),
     pre_score: z.string().optional().or(z.literal("")),
     post_score: z.string().optional().or(z.literal("")),
@@ -48,7 +51,6 @@ export const clientFormSchema = z
   });
 
 const sessionTypeValues = Object.values(SessionType) as [SessionType, ...SessionType[]];
-const deliveryMethodValues = Object.values(DeliveryMethod) as [DeliveryMethod, ...DeliveryMethod[]];
 const sessionStatusValues = Object.values(SessionStatus) as [SessionStatus, ...SessionStatus[]];
 const missedReasonValues = Object.values(MissedReason) as [MissedReason, ...MissedReason[]];
 
@@ -57,7 +59,8 @@ export const sessionFormSchema = z
     client_id: z.string().min(1, "Client is required."),
     therapist_id: z.string().min(1, "Therapist is required."),
     date: z.string().min(1, "Date is required."),
-    time: z.string().optional().or(z.literal("")),
+    time: z.string().min(1, "Time is required."),
+    duration: z.string().min(1, "Duration is required."),
     session_type: z.enum(sessionTypeValues, "Session type is required."),
     delivery_method: z.enum(deliveryMethodValues, "Delivery method is required."),
     status: z.enum(sessionStatusValues, "Status is required."),

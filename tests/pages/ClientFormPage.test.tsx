@@ -59,9 +59,12 @@ function renderEditForm() {
   );
 }
 
-// The mocked Select renders three native <select> elements in this order:
-// 0 = session_day, 1 = therapist_id, 2 = outcome
+// The mocked Select renders native <select> elements in this order:
+// 0 = session_day, 1 = session_delivery_method, 2 = therapist_id, 3 = outcome (only when closed)
 function getTherapistSelect() {
+  return screen.getAllByRole("combobox")[2]!;
+}
+function getSessionDeliveryMethodSelect() {
   return screen.getAllByRole("combobox")[1]!;
 }
 
@@ -540,6 +543,44 @@ describe("ClientFormPage — edit client", () => {
       // dob converted via toISOString().split("T")[0] → "2000-01-15"
       expect(screen.getByLabelText(/date of birth/i)).toHaveValue("2000-01-15");
       expect(screen.getByLabelText(/session time/i)).toHaveValue("10:00");
+    });
+  });
+
+  it("pre-populates session duration and delivery method", async () => {
+    renderEditForm();
+    await waitFor(() => {
+      // mockClient.session_duration = 60 → "01:00"
+      expect(screen.getByLabelText(/session duration/i)).toHaveValue("01:00");
+      expect(getSessionDeliveryMethodSelect()).toHaveValue("FaceToFace");
+    });
+  });
+
+  it("sends session_duration as minutes in payload when set", async () => {
+    const user = userEvent.setup();
+    renderNewForm();
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:create") return Promise.resolve(wrapped(mockClient));
+      return Promise.resolve(wrapped(null));
+    });
+
+    await waitFor(() => screen.getByLabelText(/first name/i));
+
+    await user.type(screen.getByLabelText(/first name/i), "Jane");
+    await user.type(screen.getByLabelText(/last name/i), "Smith");
+    await user.type(screen.getByLabelText(/hospital number/i), "HN999");
+    await user.type(screen.getByLabelText(/date of birth/i), "2000-01-01");
+    await user.type(screen.getByLabelText(/phone/i), "07700900123");
+    fireEvent.change(getTherapistSelect(), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText(/session duration/i), { target: { value: "01:30" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /add client/i }));
+
+    await waitFor(() => {
+      expect(mockInvoke).toHaveBeenCalledWith(
+        "client:create",
+        expect.objectContaining({ session_duration: 90 }),
+      );
     });
   });
 

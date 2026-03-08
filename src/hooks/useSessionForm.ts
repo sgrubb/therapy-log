@@ -18,6 +18,7 @@ const EMPTY: FormFields = {
   therapist_id: "",
   date: "",
   time: "",
+  duration: "",
   session_type: "" as SessionType,
   delivery_method: "" as DeliveryMethod,
   status: "" as SessionStatus,
@@ -35,12 +36,24 @@ function mostRecentOccurrence(dayName: string): string {
   return result.toISOString().split("T")[0]!;
 }
 
+function minutesToHHMM(minutes: number): string {
+  const h = Math.floor(minutes / 60).toString().padStart(2, "0");
+  const m = (minutes % 60).toString().padStart(2, "0");
+  return `${h}:${m}`;
+}
+
+function hhmmToMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(":").map(Number);
+  return (h ?? 0) * 60 + (m ?? 0);
+}
+
 function mapSessionToFormFields(session: SessionWithRelations): FormFields {
   return {
     client_id: session.client_id.toString(),
     therapist_id: session.therapist_id.toString(),
     date: session.scheduled_at.toISOString().split("T")[0]!,
     time: session.scheduled_at.toISOString().split("T")[1]?.slice(0, 5) ?? "",
+    duration: minutesToHHMM(session.duration),
     session_type: session.session_type,
     delivery_method: session.delivery_method,
     status: session.status,
@@ -50,11 +63,12 @@ function mapSessionToFormFields(session: SessionWithRelations): FormFields {
 }
 
 function buildPayload(form: FormFields) {
-  const dateStr = form.time ? `${form.date}T${form.time}` : form.date;
+  const dateStr = `${form.date}T${form.time}`;
   return {
     client_id: Number(form.client_id),
     therapist_id: Number(form.therapist_id),
     scheduled_at: new Date(dateStr),
+    duration: hhmmToMinutes(form.duration),
     status: form.status as SessionStatus,
     session_type: form.session_type as SessionType,
     delivery_method: form.delivery_method as DeliveryMethod,
@@ -122,6 +136,8 @@ export function useSessionForm(sessionId?: number) {
       therapist_id: prev.therapist_id || (client ? client.therapist_id.toString() : ""),
       time: client?.session_time ?? "",
       date: client?.session_day ? mostRecentOccurrence(client.session_day) : "",
+      duration: client?.session_duration != null ? minutesToHHMM(client.session_duration) : prev.duration,
+      delivery_method: (client?.session_delivery_method ?? prev.delivery_method) as DeliveryMethod,
     }));
     clearError("client_id");
     clearError("therapist_id");

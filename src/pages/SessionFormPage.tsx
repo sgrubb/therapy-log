@@ -144,13 +144,27 @@ export default function SessionFormPage() {
             />
           </Field>
 
-          <Field label="Time" error={getError("time")} conflictError={getConflictError("time")}>
+          <Field label="Time *" error={getError("time")} conflictError={getConflictError("time")}>
             <Input
               type="time"
               aria-label="Time"
               value={form.time ?? ""}
               onChange={(e) => set("time", e.target.value)}
               onBlur={() => markTouched("time")}
+              aria-invalid={!!getError("time")}
+            />
+          </Field>
+
+          <Field label="Duration *" error={getError("duration")} conflictError={getConflictError("duration")}>
+            <Input
+              type="time"
+              aria-label="Duration"
+              value={form.duration ?? ""}
+              onChange={(e) => set("duration", e.target.value)}
+              onBlur={() => markTouched("duration")}
+              aria-invalid={!!getError("duration")}
+              min="00:05"
+              max="12:00"
             />
           </Field>
 
