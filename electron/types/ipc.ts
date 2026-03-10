@@ -89,6 +89,11 @@ export type IpcApi = {
     args: { id: number; data: Prisma.SessionUncheckedUpdateInput };
     result: IpcResponse<Session>;
   };
+
+  // Settings
+  "settings:get-db-path": { args: void; result: IpcResponse<string | null> };
+  "settings:set-db-path": { args: string; result: IpcResponse<null> };
+  "settings:open-file-dialog": { args: void; result: IpcResponse<string | null> };
 };
 
 export type IpcChannel = keyof IpcApi;

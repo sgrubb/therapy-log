@@ -136,4 +136,20 @@ export const ipc = {
     const response = await window.electronAPI.invoke("session:update", { id, data });
     return sessionSchema.parse(unwrapResponse(response));
   },
+
+  // ── Settings ───────────────────────────────────────────────────────────
+  async getDbPath(): Promise<string | null> {
+    const response = await window.electronAPI.invoke("settings:get-db-path");
+    return z.string().nullable().parse(unwrapResponse(response));
+  },
+
+  async setDbPath(newPath: string): Promise<void> {
+    const response = await window.electronAPI.invoke("settings:set-db-path", newPath);
+    unwrapResponse(response);
+  },
+
+  async openFileDialog(): Promise<string | null> {
+    const response = await window.electronAPI.invoke("settings:open-file-dialog");
+    return z.string().nullable().parse(unwrapResponse(response));
+  },
 };

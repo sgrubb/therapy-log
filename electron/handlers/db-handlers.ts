@@ -1,5 +1,5 @@
 import type { IpcMain } from "electron";
-import type { PrismaClient } from "../generated/prisma/client";
+import type { PrismaClient } from "../../generated/prisma/client";
 import {
   therapistCreateSchema,
   therapistUpdateSchema,
@@ -9,9 +9,9 @@ import {
   clientReopenSchema,
   sessionCreateSchema,
   sessionUpdateSchema,
-} from "./schemas/ipc";
-import type { IpcApi } from "./types/ipc";
-import { withErrorHandler } from "./lib/error-handler";
+} from "../schemas/ipc";
+import type { IpcApi } from "../types/ipc";
+import { withErrorHandler } from "../lib/error-handler";
 
 export function registerIpcHandlers(ipcMain: IpcMain, prisma: PrismaClient) {
   // ── Therapists ───────────────────────────────────────────────────────

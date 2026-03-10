@@ -1,9 +1,11 @@
 import path from "node:path";
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import { PrismaClient } from "../generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import dotenv from "dotenv";
-import { registerIpcHandlers } from "./ipc-handlers";
+import { registerAppHandlers } from "./handlers/app-handlers";
+import { registerIpcHandlers } from "./handlers/db-handlers";
+import { registerSettingsHandlers } from "./handlers/settings-handlers";
 import { resolveDatabaseUrl } from "./db-path";
 import log from "./lib/logger";
 import { IS_DEV } from "./lib/config";
@@ -55,7 +57,8 @@ async function bootstrap() {
 
   await app.whenReady();
   
-  ipcMain.handle("app:version", (): string => app.getVersion());
+  registerAppHandlers(ipcMain, app);
+  registerSettingsHandlers(ipcMain, app, dialog);
 
   if (prisma) {
     registerIpcHandlers(ipcMain, prisma);

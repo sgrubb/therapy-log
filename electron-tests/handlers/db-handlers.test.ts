@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll, assert } from "vitest";
-import type { PrismaClient } from "../generated/prisma/client";
-import { registerIpcHandlers } from "../electron/ipc-handlers";
-import type { IpcApi } from "../electron/types/ipc";
+import type { PrismaClient } from "../../generated/prisma/client";
+import { registerIpcHandlers } from "../../electron/handlers/db-handlers";
+import type { IpcApi } from "../../electron/types/ipc";
 import {
   createTestPrismaClient,
   cleanupTestDb,
   seedTestData,
-} from "./helpers/test-helpers";
+} from "../helpers/test-helpers";
 
 type Handler = (event: unknown, ...args: unknown[]) => Promise<unknown>;
 

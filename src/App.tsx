@@ -9,6 +9,7 @@ import SessionFormPage from "@/pages/SessionFormPage";
 import SessionDetailPage from "@/pages/SessionDetailPage";
 import TherapistsPage from "@/pages/TherapistsPage";
 import TherapistFormPage from "@/pages/TherapistFormPage";
+import SettingsPage from "@/pages/SettingsPage";
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
               <Route path="new" element={<TherapistFormPage />} />
               <Route path=":id/edit" element={<TherapistFormPage />} />
             </Route>
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/clients" replace />} />
           </Route>
         </Routes>

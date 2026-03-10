@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import { Settings } from "lucide-react";
 import TherapistSelector from "@/components/TherapistSelector";
 import { ipc } from "@/lib/ipc";
 
@@ -48,8 +49,23 @@ export default function AppLayout() {
             </NavLink>
           ))}
         </nav>
+        <div className="px-2 pb-2">
+          <NavLink
+            to="/settings"
+            className={({ isActive }) =>
+              `flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              }`
+            }
+          >
+            <Settings size={13} />
+            Settings
+          </NavLink>
+        </div>
         {version && (
-          <div className="p-4">
+          <div className="px-4 pb-4">
             <p className="text-xs text-muted-foreground">TherapyLog v{version}</p>
           </div>
         )}
