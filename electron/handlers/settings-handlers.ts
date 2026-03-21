@@ -19,7 +19,7 @@ export function registerSettingsHandlers(
 
   ipcMain.handle("settings:set-db-path", (_event, newPath: string): IpcResponse<null> => {
     try {
-      writeConfig({ databasePath: newPath });
+      writeConfig({ databasePath: newPath, createdByApp: false });
       return { success: true, data: null };
     } catch (error) {
       log.error("settings:set-db-path failed:", error);

@@ -10,12 +10,16 @@ import SessionDetailPage from "@/pages/SessionDetailPage";
 import TherapistsPage from "@/pages/TherapistsPage";
 import TherapistFormPage from "@/pages/TherapistFormPage";
 import SettingsPage from "@/pages/SettingsPage";
+import SetupPage from "@/pages/SetupPage";
+import MigrationPage from "@/pages/MigrationPage";
 
 export default function App() {
   return (
     <TherapistProvider>
       <HashRouter>
         <Routes>
+          <Route path="/setup" element={<SetupPage />} />
+          <Route path="/migration" element={<MigrationPage />} />
           <Route element={<AppLayout />}>
             <Route path="/clients">
               <Route index element={<ClientsPage />} />

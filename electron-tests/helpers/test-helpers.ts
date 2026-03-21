@@ -7,11 +7,11 @@ import { PrismaClient } from "../../generated/prisma/client";
 
 const MIGRATIONS_DIR = path.join(__dirname, "..", "..", "prisma", "migrations");
 
-const MIGRATION_FILES = [
-  "20260216121855_init/migration.sql",
-  "20260305210156_add_updated_at/migration.sql",
-  "20260308224814_add_duration_and_session_defaults/migration.sql",
-];
+const MIGRATION_FILES = fs
+  .readdirSync(MIGRATIONS_DIR)
+  .filter((f) => fs.statSync(path.join(MIGRATIONS_DIR, f)).isDirectory())
+  .sort()
+  .map((dir) => path.join(dir, "migration.sql"));
 
 export function createTestPrismaClient(): {
   prisma: PrismaClient;

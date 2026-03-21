@@ -64,6 +64,90 @@ export const ipc = {
     return z.string().parse(result);
   },
 
+  // ── Setup wizard ───────────────────────────────────────────────────────
+  async setupOpenSaveDialog(): Promise<string | null> {
+    const response = await window.electronAPI.invoke("setup:open-save-dialog");
+    return z.string().nullable().parse(unwrapResponse(response));
+  },
+
+  async setupOpenFileDialog(): Promise<string | null> {
+    const response = await window.electronAPI.invoke("setup:open-file-dialog");
+    return z.string().nullable().parse(unwrapResponse(response));
+  },
+
+  async setupCreateDatabase(filePath: string): Promise<void> {
+    const response = await window.electronAPI.invoke("setup:create-database", filePath);
+    unwrapResponse(response);
+  },
+
+  async setupValidateExistingDatabase(
+    filePath: string,
+  ): Promise<{ valid: boolean; version: number }> {
+    const response = await window.electronAPI.invoke(
+      "setup:validate-existing-database",
+      filePath,
+    );
+    return z
+      .object({ valid: z.boolean(), version: z.number() })
+      .parse(unwrapResponse(response));
+  },
+
+  async setupSaveConfig(config: { dbPath: string; createdByApp: boolean }): Promise<void> {
+    const response = await window.electronAPI.invoke("setup:save-config", config);
+    unwrapResponse(response);
+  },
+
+  async setupComplete(): Promise<void> {
+    const response = await window.electronAPI.invoke("setup:complete");
+    unwrapResponse(response);
+  },
+
+  // ── Migration ──────────────────────────────────────────────────────────
+  async migrationGetInfo(): Promise<{
+    currentVersion: number;
+    requiredVersion: number;
+    createdByApp: boolean;
+  }> {
+    const response = await window.electronAPI.invoke("migration:get-info");
+    return z
+      .object({
+        currentVersion: z.number(),
+        requiredVersion: z.number(),
+        createdByApp: z.boolean(),
+      })
+      .parse(unwrapResponse(response));
+  },
+
+  async migrationApply(): Promise<void> {
+    const response = await window.electronAPI.invoke("migration:apply");
+    unwrapResponse(response);
+  },
+
+  async migrationComplete(): Promise<void> {
+    const response = await window.electronAPI.invoke("migration:complete");
+    unwrapResponse(response);
+  },
+
+  async migrationQuit(): Promise<void> {
+    await window.electronAPI.invoke("migration:quit");
+  },
+
+  // ── Settings ───────────────────────────────────────────────────────────
+  async getDbPath(): Promise<string | null> {
+    const response = await window.electronAPI.invoke("settings:get-db-path");
+    return z.string().nullable().parse(unwrapResponse(response));
+  },
+
+  async setDbPath(newPath: string): Promise<void> {
+    const response = await window.electronAPI.invoke("settings:set-db-path", newPath);
+    unwrapResponse(response);
+  },
+
+  async openFileDialog(): Promise<string | null> {
+    const response = await window.electronAPI.invoke("settings:open-file-dialog");
+    return z.string().nullable().parse(unwrapResponse(response));
+  },
+
   // ── Therapists ─────────────────────────────────────────────────────────
   async listTherapists(): Promise<Therapist[]> {
     const response = await window.electronAPI.invoke("therapist:list");
@@ -135,21 +219,5 @@ export const ipc = {
   async updateSession(id: number, data: UpdateSession): Promise<Session> {
     const response = await window.electronAPI.invoke("session:update", { id, data });
     return sessionSchema.parse(unwrapResponse(response));
-  },
-
-  // ── Settings ───────────────────────────────────────────────────────────
-  async getDbPath(): Promise<string | null> {
-    const response = await window.electronAPI.invoke("settings:get-db-path");
-    return z.string().nullable().parse(unwrapResponse(response));
-  },
-
-  async setDbPath(newPath: string): Promise<void> {
-    const response = await window.electronAPI.invoke("settings:set-db-path", newPath);
-    unwrapResponse(response);
-  },
-
-  async openFileDialog(): Promise<string | null> {
-    const response = await window.electronAPI.invoke("settings:open-file-dialog");
-    return z.string().nullable().parse(unwrapResponse(response));
   },
 };

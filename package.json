@@ -5,6 +5,8 @@
   "main": "./out/main/main.js",
   "scripts": {
     "dev": "electron-vite dev",
+    "generate:migrations": "tsx scripts/generate-migrations.ts",
+    "prebuild": "npm run generate:migrations",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "postinstall": "electron-builder install-app-deps",

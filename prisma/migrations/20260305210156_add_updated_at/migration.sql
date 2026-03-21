@@ -1,6 +1,7 @@
 -- RedefineTables
-PRAGMA defer_foreign_keys=ON;
-PRAGMA foreign_keys=OFF;
+PRAGMA defer_foreign_keys = ON;
+PRAGMA foreign_keys = OFF;
+
 CREATE TABLE "new_Client" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "hospital_number" TEXT NOT NULL,
@@ -21,10 +22,22 @@ CREATE TABLE "new_Client" (
     "updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Client_therapist_id_fkey" FOREIGN KEY ("therapist_id") REFERENCES "Therapist" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
-INSERT INTO "new_Client" ("address", "dob", "email", "first_name", "hospital_number", "id", "is_closed", "last_name", "notes", "outcome", "phone", "post_score", "pre_score", "session_day", "session_time", "therapist_id") SELECT "address", "dob", "email", "first_name", "hospital_number", "id", "is_closed", "last_name", "notes", "outcome", "phone", "post_score", "pre_score", "session_day", "session_time", "therapist_id" FROM "Client";
+
+INSERT INTO "new_Client" (
+    "address", "dob", "email", "first_name", "hospital_number", "id",
+    "is_closed", "last_name", "notes", "outcome", "phone", "post_score",
+    "pre_score", "session_day", "session_time", "therapist_id"
+)
+SELECT
+    "address", "dob", "email", "first_name", "hospital_number", "id",
+    "is_closed", "last_name", "notes", "outcome", "phone", "post_score",
+    "pre_score", "session_day", "session_time", "therapist_id"
+FROM "Client";
+
 DROP TABLE "Client";
 ALTER TABLE "new_Client" RENAME TO "Client";
 CREATE UNIQUE INDEX "Client_hospital_number_key" ON "Client"("hospital_number");
+
 CREATE TABLE "new_Session" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "client_id" INTEGER NOT NULL,
@@ -40,9 +53,19 @@ CREATE TABLE "new_Session" (
     CONSTRAINT "Session_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "Client" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "Session_therapist_id_fkey" FOREIGN KEY ("therapist_id") REFERENCES "Therapist" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
-INSERT INTO "new_Session" ("client_id", "delivery_method", "id", "missed_reason", "notes", "occurred_at", "scheduled_at", "session_type", "status", "therapist_id") SELECT "client_id", "delivery_method", "id", "missed_reason", "notes", "occurred_at", "scheduled_at", "session_type", "status", "therapist_id" FROM "Session";
+
+INSERT INTO "new_Session" (
+    "client_id", "delivery_method", "id", "missed_reason", "notes",
+    "occurred_at", "scheduled_at", "session_type", "status", "therapist_id"
+)
+SELECT
+    "client_id", "delivery_method", "id", "missed_reason", "notes",
+    "occurred_at", "scheduled_at", "session_type", "status", "therapist_id"
+FROM "Session";
+
 DROP TABLE "Session";
 ALTER TABLE "new_Session" RENAME TO "Session";
+
 CREATE TABLE "new_Therapist" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "first_name" TEXT NOT NULL,
@@ -50,8 +73,13 @@ CREATE TABLE "new_Therapist" (
     "is_admin" BOOLEAN NOT NULL DEFAULT false,
     "updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-INSERT INTO "new_Therapist" ("first_name", "id", "is_admin", "last_name") SELECT "first_name", "id", "is_admin", "last_name" FROM "Therapist";
+
+INSERT INTO "new_Therapist" ("first_name", "id", "is_admin", "last_name")
+SELECT "first_name", "id", "is_admin", "last_name"
+FROM "Therapist";
+
 DROP TABLE "Therapist";
 ALTER TABLE "new_Therapist" RENAME TO "Therapist";
-PRAGMA foreign_keys=ON;
-PRAGMA defer_foreign_keys=OFF;
+
+PRAGMA foreign_keys = ON;
+PRAGMA defer_foreign_keys = OFF;

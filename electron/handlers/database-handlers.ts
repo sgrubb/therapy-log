@@ -13,7 +13,7 @@ import {
 import type { IpcApi } from "../types/ipc";
 import { withErrorHandler } from "../lib/error-handler";
 
-export function registerIpcHandlers(ipcMain: IpcMain, prisma: PrismaClient) {
+export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient) {
   // ── Therapists ───────────────────────────────────────────────────────
   ipcMain.handle(
     "therapist:list",

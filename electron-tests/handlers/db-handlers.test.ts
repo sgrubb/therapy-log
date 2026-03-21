@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, assert } from "vitest";
 import type { PrismaClient } from "../../generated/prisma/client";
-import { registerIpcHandlers } from "../../electron/handlers/db-handlers";
+import { registerDatabaseHandlers } from "../../electron/handlers/database-handlers";
 import type { IpcApi } from "../../electron/types/ipc";
 import {
   createTestPrismaClient,
@@ -25,7 +25,7 @@ beforeAll(async () => {
       handlers[channel] = handler;
     },
   };
-  registerIpcHandlers(fakeIpcMain as never, prisma);
+  registerDatabaseHandlers(fakeIpcMain as never, prisma);
 });
 
 afterAll(async () => {

@@ -7,3 +7,5 @@ generated
 *.tsbuildinfo
 .env
 .claude/
+electron/generated/
+temp-schema.db

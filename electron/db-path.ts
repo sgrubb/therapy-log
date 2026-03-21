@@ -4,6 +4,7 @@ import { app } from "electron";
 
 interface AppConfig {
   databasePath: string;
+  createdByApp: boolean;
 }
 
 const CONFIG_FILE = "config.json";
@@ -42,10 +43,10 @@ export function writeConfig(config: AppConfig): void {
  *
  * - Development: reads DATABASE_URL from the .env file (loaded by dotenv
  *   before this function is called).
- * - Production:  reads the path from userData/config.json. Returns null if
+ * - Production:  reads the path from userData/config.json. Returns null url if
  *   no config exists yet (first-run setup needed).
  */
-export function resolveDatabaseUrl(): string | null {
+export function resolveDatabaseUrl(): { url: string | null; createdByApp: boolean } {
   if (!app.isPackaged) {
     const envUrl = process.env["DATABASE_URL"];
     if (!envUrl) {
@@ -53,16 +54,13 @@ export function resolveDatabaseUrl(): string | null {
         "DATABASE_URL is not set. Add it to the .env file in the project root.",
       );
     }
-    return envUrl;
+    return { url: envUrl, createdByApp: true };
   }
 
   const config = readConfig();
   if (!config) {
-    // TODO (Phase 6): Show first-run setup screen prompting the user to
-    // select or create a database file. Store the chosen path in config.json
-    // for subsequent launches.
-    return null;
+    return { url: null, createdByApp: false };
   }
 
-  return `file:${config.databasePath}`;
+  return { url: `file:${config.databasePath}`, createdByApp: config.createdByApp };
 }

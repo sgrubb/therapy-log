@@ -32,6 +32,34 @@ export type IpcApi = {
   // App
   "app:version": { args: void; result: string };
 
+  // Setup wizard
+  "setup:open-save-dialog": { args: void; result: IpcResponse<string | null> };
+  "setup:open-file-dialog": { args: void; result: IpcResponse<string | null> };
+  "setup:create-database": { args: string; result: IpcResponse<null> };
+  "setup:validate-existing-database": {
+    args: string;
+    result: IpcResponse<{ valid: boolean; version: number }>;
+  };
+  "setup:save-config": {
+    args: { dbPath: string; createdByApp: boolean };
+    result: IpcResponse<null>;
+  };
+  "setup:complete": { args: void; result: IpcResponse<null> };
+
+  // Migration
+  "migration:get-info": {
+    args: void;
+    result: IpcResponse<{ currentVersion: number; requiredVersion: number; createdByApp: boolean }>;
+  };
+  "migration:apply": { args: void; result: IpcResponse<null> };
+  "migration:complete": { args: void; result: IpcResponse<null> };
+  "migration:quit": { args: void; result: void };
+
+  // Settings
+  "settings:get-db-path": { args: void; result: IpcResponse<string | null> };
+  "settings:set-db-path": { args: string; result: IpcResponse<null> };
+  "settings:open-file-dialog": { args: void; result: IpcResponse<string | null> };
+
   // Therapists
   "therapist:list": { args: void; result: IpcResponse<Therapist[]> };
   "therapist:get": { args: number; result: IpcResponse<Therapist> };
@@ -89,11 +117,6 @@ export type IpcApi = {
     args: { id: number; data: Prisma.SessionUncheckedUpdateInput };
     result: IpcResponse<Session>;
   };
-
-  // Settings
-  "settings:get-db-path": { args: void; result: IpcResponse<string | null> };
-  "settings:set-db-path": { args: string; result: IpcResponse<null> };
-  "settings:open-file-dialog": { args: void; result: IpcResponse<string | null> };
 };
 
 export type IpcChannel = keyof IpcApi;

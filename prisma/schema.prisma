@@ -110,3 +110,8 @@ model Session {
   notes           String?
   updated_at      DateTime       @updatedAt
 }
+
+model Metadata {
+  key   String @id
+  value String
+}

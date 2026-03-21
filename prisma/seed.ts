@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { PrismaClient } from "../generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { CURRENT_SCHEMA_VERSION } from "../electron/generated/migrations.generated";
 
 const adapter = new PrismaBetterSqlite3({
   url: process.env["DATABASE_URL"]!,
@@ -8,6 +9,13 @@ const adapter = new PrismaBetterSqlite3({
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  // ── Schema version ─────────────────────────────────────────────────
+  await prisma.metadata.upsert({
+    where: { key: "schema_version" },
+    update: {},
+    create: { key: "schema_version", value: String(CURRENT_SCHEMA_VERSION) },
+  });
+
   // ── Therapists ─────────────────────────────────────────────────────
   const alice = await prisma.therapist.create({
     data: { first_name: "Alice", last_name: "Morgan", is_admin: true },
