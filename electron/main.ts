@@ -1,6 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
-import { app, BrowserWindow, ipcMain, dialog } from "electron";
+import { app, BrowserWindow, ipcMain, dialog, globalShortcut } from "electron";
+import windowStateKeeper from "electron-window-state";
 import { PrismaClient } from "../generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import dotenv from "dotenv";
@@ -21,6 +22,7 @@ if (IS_DEV) {
 }
 
 let prisma: PrismaClient | null = null;
+let mainWin: BrowserWindow | null = null;
 
 function createPrismaClient(url: string): PrismaClient | null {
   try {
@@ -33,15 +35,23 @@ function createPrismaClient(url: string): PrismaClient | null {
 }
 
 async function createWindow(): Promise<BrowserWindow> {
+  const windowState = windowStateKeeper({ defaultWidth: 1200, defaultHeight: 800 });
+
   const win = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    x: windowState.x,
+    y: windowState.y,
+    width: windowState.width,
+    height: windowState.height,
+    title: "TherapyLog",
+    icon: path.join(__dirname, "../../assets/icon.png"),
     webPreferences: {
       preload: path.join(__dirname, "../preload/preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
     },
   });
+
+  windowState.manage(win);
 
   if (process.env["ELECTRON_RENDERER_URL"]) {
     await win.loadURL(process.env["ELECTRON_RENDERER_URL"]);
@@ -50,17 +60,36 @@ async function createWindow(): Promise<BrowserWindow> {
     await win.loadFile(path.join(__dirname, "../renderer/index.html"));
   }
 
+  mainWin = win;
+  win.on("closed", () => {
+    mainWin = null;
+  });
+
   return win;
 }
 
 async function openMainWindow(): Promise<void> {
   const { url } = resolveDatabaseUrl();
-  if (!url) throw new Error("Database URL missing — config may not have been saved.");
+  if (!url) {
+    throw new Error("Database URL missing — config may not have been saved.");
+  }
+
   prisma = createPrismaClient(url);
-  if (!prisma) throw new Error("Failed to connect to the database.");
+  if (!prisma) {
+    throw new Error("Failed to connect to the database.");
+  }
+
   registerDatabaseHandlers(ipcMain, prisma);
   registerSettingsHandlers(ipcMain, app, dialog);
   log.info("Database handlers registered");
+  
+  globalShortcut.register("CommandOrControl+N", () => {
+    if (mainWin) {
+      mainWin.webContents.send("navigate-to-new");
+    }
+  });
+  log.info("Keyboard shortcuts registered");
+
   await createWindow();
   log.info("Main window created");
 }
@@ -75,6 +104,10 @@ app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
+});
+
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
 });
 
 app.on("before-quit", async () => {

@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { TherapistProvider } from "@/context/TherapistContext";
 import { Settings } from "lucide-react";
 import TherapistSelector from "@/components/TherapistSelector";
 import { ipc } from "@/lib/ipc";
@@ -10,8 +11,10 @@ const NAV_ITEMS = [
   { to: "/therapists", label: "Therapists" },
 ] as const;
 
-export default function AppLayout() {
+function AppLayout() {
   const [version, setVersion] = useState<string>("");
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     async function fetchVersion() {
@@ -24,6 +27,20 @@ export default function AppLayout() {
     }
     fetchVersion();
   }, []);
+
+  const locationRef = useRef(location.pathname);
+  useEffect(() => {
+    locationRef.current = location.pathname;
+  }, [location.pathname]);
+
+  useEffect(() => {
+    window.electronAPI?.onNavigateToNew(() => {
+      const path = locationRef.current;
+      if (path.startsWith("/sessions")) navigate("/sessions/new");
+      else if (path.startsWith("/therapists")) navigate("/therapists/new");
+      else navigate("/clients/new");
+    });
+  }, [navigate]);
 
   return (
     <div className="flex h-screen">
@@ -84,5 +101,13 @@ export default function AppLayout() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function AppLayoutWithProviders() {
+  return (
+    <TherapistProvider>
+      <AppLayout />
+    </TherapistProvider>
   );
 }

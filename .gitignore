@@ -9,3 +9,6 @@ generated
 .claude/
 electron/generated/
 temp-schema.db
+assets/icon.png
+assets/icon.ico
+assets/icon.icns

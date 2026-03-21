@@ -8,6 +8,10 @@ const api = {
   ): Promise<IpcApi[C]["result"]> {
     return ipcRenderer.invoke(channel, ...args);
   },
+
+  onNavigateToNew(callback: () => void): void {
+    ipcRenderer.on("navigate-to-new", () => callback());
+  },
 };
 
 export type ElectronApi = typeof api;

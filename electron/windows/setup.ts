@@ -4,7 +4,7 @@ import { BrowserWindow } from "electron";
 export async function createSetupWindow(recoveryError?: string): Promise<BrowserWindow> {
   const win = new BrowserWindow({
     width: 700,
-    height: 500,
+    height: 620,
     resizable: false,
     minimizable: false,
     maximizable: false,

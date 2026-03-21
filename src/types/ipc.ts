@@ -121,4 +121,5 @@ export interface UpdateSession {
 
 export interface ElectronAPI {
   invoke(channel: string, ...args: unknown[]): Promise<unknown>;
+  onNavigateToNew(callback: () => void): void;
 }

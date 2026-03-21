@@ -1,5 +1,4 @@
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
-import { TherapistProvider } from "@/context/TherapistContext";
 import AppLayout from "@/components/AppLayout";
 import ClientsPage from "@/pages/ClientsPage";
 import ClientFormPage from "@/pages/ClientFormPage";
@@ -15,12 +14,11 @@ import MigrationPage from "@/pages/MigrationPage";
 
 export default function App() {
   return (
-    <TherapistProvider>
-      <HashRouter>
-        <Routes>
-          <Route path="/setup" element={<SetupPage />} />
-          <Route path="/migration" element={<MigrationPage />} />
-          <Route element={<AppLayout />}>
+    <HashRouter>
+      <Routes>
+        <Route path="/setup" element={<SetupPage />} />
+        <Route path="/migration" element={<MigrationPage />} />
+        <Route element={<AppLayout />}>
             <Route path="/clients">
               <Route index element={<ClientsPage />} />
               <Route path="new" element={<ClientFormPage />} />
@@ -43,6 +41,5 @@ export default function App() {
           </Route>
         </Routes>
       </HashRouter>
-    </TherapistProvider>
   );
 }

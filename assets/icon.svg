@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <rect width="1024" height="1024" rx="180" fill="#2563eb"/>
+  <!-- Document -->
+  <rect x="280" y="220" width="464" height="584" rx="32" fill="white"/>
+  <!-- Lines representing session notes -->
+  <rect x="340" y="320" width="344" height="28" rx="8" fill="#dbeafe"/>
+  <rect x="340" y="380" width="280" height="28" rx="8" fill="#dbeafe"/>
+  <rect x="340" y="440" width="320" height="28" rx="8" fill="#dbeafe"/>
+  <!-- Heart symbol -->
+  <path d="M512 660 C512 660 400 590 400 530 C400 500 420 480 450 480 C470 480 490 492 512 510 C534 492 554 480 574 480 C604 480 624 500 624 530 C624 590 512 660 512 660Z" fill="#2563eb"/>
+</svg>
