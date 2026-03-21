@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
-import type { SessionWithRelations } from "@/types/ipc";
+import type { SessionWithRelations, ClientWithTherapist } from "@/types/ipc";
 import { SessionStatus, SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/types/enums";
+import { getOverduePlaceholders } from "@/lib/calendar-utils";
 import { useSessionFilters } from "@/hooks/useSessionFilters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,13 +29,15 @@ export default function SessionsPage() {
   const navigate = useNavigate();
 
   const [sessions, setSessions] = useState<SessionWithRelations[]>([]);
+  const [clients, setClients] = useState<ClientWithTherapist[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       try {
-        const data = await ipc.listSessions();
-        setSessions(data);
+        const [s, c] = await Promise.all([ipc.listSessions(), ipc.listClients()]);
+        setSessions(s);
+        setClients(c);
       } catch (err) {
         log.error("Failed to fetch sessions:", err);
       } finally {
@@ -42,6 +46,8 @@ export default function SessionsPage() {
     }
     load();
   }, []);
+
+  const [overdueOpen, setOverdueOpen] = useState(false);
 
   const {
     clientFilter, setClientFilter,
@@ -52,13 +58,37 @@ export default function SessionsPage() {
     handleSort, sortIndicator,
     filtered, uniqueClients, sortedTherapists,
     showMine, selectedTherapistId,
+    reset,
   } = useSessionFilters(sessions);
+
+  const overdue = useMemo(() => {
+    const therapistIds = therapistFilter !== "all"
+      ? new Set([Number(therapistFilter)])
+      : undefined;
+    let result = getOverduePlaceholders(clients, sessions, new Map(), therapistIds, 2);
+    if (clientFilter !== "all") {
+      result = result.filter((o) => o.clientId === Number(clientFilter));
+    }
+    if (dateFromFilter) {
+      const from = new Date(dateFromFilter);
+      result = result.filter((o) => o.start >= from);
+    }
+    if (dateToFilter) {
+      const to = new Date(dateToFilter);
+      to.setHours(23, 59, 59, 999);
+      result = result.filter((o) => o.start <= to);
+    }
+    return result;
+  }, [clients, sessions, therapistFilter, clientFilter, dateFromFilter, dateToFilter]);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Sessions</h1>
-        <Button onClick={() => navigate("/sessions/new")}>Log Session</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={reset}>Reset Filters</Button>
+          <Button onClick={() => navigate("/sessions/new")}>Log Session</Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -150,6 +180,72 @@ export default function SessionsPage() {
           />
         </label>
       </div>
+
+      {!loading && overdue.length > 0 && (
+        <div className="border-destructive my-6 w-full rounded-md border px-4 py-3">
+          <button
+            className="text-destructive flex w-full cursor-pointer items-center gap-2 text-sm font-semibold"
+            onClick={() => setOverdueOpen((o) => !o)}
+          >
+            Overdue expected sessions
+            <span className="bg-destructive rounded-full px-2 py-0.5 text-xs text-white">
+              {overdue.length}
+            </span>
+            <span className="ml-auto text-xs">{overdueOpen ? "▲" : "▼"}</span>
+          </button>
+          {overdueOpen && (
+            <div className="mt-3 min-w-0 overflow-x-auto">
+              <table className="w-full min-w-[480px] table-fixed text-sm">
+                <colgroup>
+                  <col className="w-[18%]" />
+                  <col className="w-[30%]" />
+                  <col className="w-[30%]" />
+                  <col className="w-[22%]" />
+                </colgroup>
+                <thead>
+                  <tr className="text-muted-foreground border-b text-left">
+                    <th className="py-2 pr-4 font-medium">Expected date</th>
+                    <th className="py-2 pr-4 font-medium">Client</th>
+                    <th className="py-2 pr-4 font-medium">Therapist</th>
+                    <th className="py-2 font-medium" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {overdue.map((o) => {
+                    const client = clients.find((c) => c.id === o.clientId);
+                    const therapist = client?.therapist;
+                    const dateStr = format(o.start, "yyyy-MM-dd");
+                    const timeStr = format(o.start, "HH:mm");
+                    return (
+                      <tr key={o.id} className="border-b">
+                        <td className="py-2 pr-4">{format(o.start, "dd MMM yyyy")}</td>
+                        <td className="py-2 pr-4">
+                          {client ? `${client.first_name} ${client.last_name}` : "—"}
+                        </td>
+                        <td className="py-2 pr-4">
+                          {therapist ? `${therapist.first_name} ${therapist.last_name}` : "—"}
+                        </td>
+                        <td className="py-2 text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/sessions/new?clientId=${o.clientId}&date=${dateStr}&time=${timeStr}`, { state: { from: "/sessions" } });
+                            }}
+                          >
+                            Log
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <p className="text-muted-foreground text-sm">Loading…</p>

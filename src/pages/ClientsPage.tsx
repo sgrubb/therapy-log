@@ -42,13 +42,17 @@ export default function ClientsPage() {
     handleSort, sortIndicator,
     sorted, sortedTherapists,
     showMine, selectedTherapistId,
+    reset,
   } = useClientFilters(clients);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Clients</h1>
-        <Button onClick={() => navigate("/clients/new")}>Add Client</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={reset}>Reset Filters</Button>
+          <Button onClick={() => navigate("/clients/new")}>Add Client</Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3">

@@ -77,9 +77,28 @@ function buildPayload(form: FormFields) {
   };
 }
 
-export function useSessionForm(sessionId?: number) {
+export interface SessionFormDefaults {
+  clientId?: string;
+  date?: string;
+  time?: string;
+  therapistId?: string;
+  durationMins?: string;
+}
+
+export function useSessionForm(sessionId?: number, defaults?: SessionFormDefaults) {
   const navigate = useNavigate();
   const isEdit = sessionId !== undefined;
+
+  const initialForm: FormFields = defaults && !isEdit
+    ? {
+        ...EMPTY,
+        client_id: defaults.clientId ?? "",
+        therapist_id: defaults.therapistId ?? "",
+        date: defaults.date ?? "",
+        time: defaults.time ?? "",
+        duration: defaults.durationMins ? minutesToHHMM(Number(defaults.durationMins)) : "",
+      }
+    : EMPTY;
 
   const {
     form, setForm,
@@ -94,7 +113,7 @@ export function useSessionForm(sessionId?: number) {
     getConflictError,
     clearConflictField,
     handleConflict,
-  } = useFormState(sessionFormSchema, EMPTY);
+  } = useFormState(sessionFormSchema, initialForm);
 
   useEffect(() => {
     if (!isEdit || sessionId === undefined) return;
@@ -130,13 +149,17 @@ export function useSessionForm(sessionId?: number) {
 
   function setClient(clientId: string, clients: ClientWithTherapist[]) {
     const client = clients.find((c) => c.id.toString() === clientId);
+    // date and time are locked if they came from URL params (e.g. clicking a calendar slot)
+    const lockDate = !!(defaults && !isEdit && defaults.date);
+    const lockTime = !!(defaults && !isEdit && defaults.time);
+    const lockDuration = !!(defaults && !isEdit && defaults.durationMins);
     setForm((prev) => ({
       ...prev,
       client_id: clientId,
-      therapist_id: prev.therapist_id || (client ? client.therapist_id.toString() : ""),
-      time: client?.session_time ?? "",
-      date: client?.session_day ? mostRecentOccurrence(client.session_day) : "",
-      duration: client?.session_duration != null ? minutesToHHMM(client.session_duration) : prev.duration,
+      therapist_id: client ? client.therapist_id.toString() : prev.therapist_id,
+      time: lockTime ? prev.time : (client?.session_time ?? ""),
+      date: lockDate ? prev.date : (client?.session_day ? mostRecentOccurrence(client.session_day) : ""),
+      duration: lockDuration ? prev.duration : (client?.session_duration != null ? minutesToHHMM(client.session_duration) : prev.duration),
       delivery_method: (client?.session_delivery_method ?? prev.delivery_method) as DeliveryMethod,
     }));
     clearError("client_id");

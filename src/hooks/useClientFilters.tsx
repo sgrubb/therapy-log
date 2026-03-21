@@ -55,6 +55,12 @@ export function useClientFilters(clients: ClientWithTherapist[]) {
       });
   }, [clients, statusFilter, therapistFilter, search, sortKey, sortDir]);
 
+  function reset() {
+    setSearch("");
+    setStatusFilter("open");
+    setTherapistFilter("all");
+  }
+
   return {
     search, setSearch,
     statusFilter, setStatusFilter,
@@ -62,5 +68,6 @@ export function useClientFilters(clients: ClientWithTherapist[]) {
     handleSort, sortIndicator,
     sorted, sortedTherapists,
     showMine, selectedTherapistId,
+    reset,
   };
 }

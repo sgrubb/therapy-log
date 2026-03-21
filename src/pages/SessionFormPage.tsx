@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useTherapist } from "@/context/TherapistContext";
 import { useSessionForm } from "@/hooks/useSessionForm";
 import { ipc } from "@/lib/ipc";
@@ -30,9 +30,24 @@ import {
 export default function SessionFormPage() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { therapists } = useTherapist();
 
+  const cancelTarget = (location.state as { from?: string } | null)?.from ?? "/sessions";
+
   const [clients, setClients] = useState<ClientWithTherapist[]>([]);
+
+  const sessionId = id !== undefined ? Number(id) : undefined;
+  const defaults = sessionId === undefined
+    ? {
+        clientId: searchParams.get("clientId") ?? undefined,
+        date: searchParams.get("date") ?? undefined,
+        time: searchParams.get("time") ?? undefined,
+        therapistId: searchParams.get("therapistId") ?? undefined,
+        durationMins: searchParams.get("duration") ?? undefined,
+      }
+    : undefined;
 
   const {
     form,
@@ -45,13 +60,16 @@ export default function SessionFormPage() {
     handleSubmit,
     markTouched,
     getError,
-  } = useSessionForm(id !== undefined ? Number(id) : undefined);
+  } = useSessionForm(sessionId, defaults);
 
   useEffect(() => {
     async function load() {
       try {
         const data = await ipc.listClients();
         setClients(data);
+        if (defaults?.clientId) {
+          setClient(defaults.clientId, data);
+        }
       } catch (err) {
         log.error("Failed to fetch clients:", err);
       }
@@ -286,7 +304,7 @@ export default function SessionFormPage() {
             type="button"
             variant="outline"
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => navigate("/sessions")}
+            onClick={() => navigate(cancelTarget)}
           >
             Cancel
           </Button>

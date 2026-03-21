@@ -122,3 +122,29 @@
     @apply bg-background text-foreground;
     }
 }
+
+button { cursor: pointer; }
+
+/* ── Calendar ─────────────────────────────────────────────────────────── */
+/* Time is obvious from the slot position — hide the redundant label */
+.rbc-event-label { display: none; }
+
+/* Pointer cursor on events and the time grid */
+.rbc-event,
+.rbc-time-content { cursor: pointer; }
+
+/* Brighten real events on hover; increase opacity on placeholder events */
+.rbc-event:not(.is-placeholder):hover { filter: brightness(1.15); }
+.rbc-event.is-placeholder:hover { opacity: 0.75 !important; }
+
+/* Hide the empty all-day row — we don't use all-day events */
+.rbc-allday-cell { display: none; }
+.rbc-time-header-content { border-top: none; }
+
+/* Remove persistent focus highlight on toolbar buttons after mouse click;
+   :focus-visible keeps the style for keyboard navigation */
+.rbc-toolbar button:focus:not(:focus-visible):not(:hover) {
+  background-color: transparent;
+  box-shadow: none;
+  outline: none;
+}

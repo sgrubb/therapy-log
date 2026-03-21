@@ -72,6 +72,14 @@ export function useSessionFilters(sessions: SessionWithRelations[]) {
       });
   }, [sessions, clientFilter, therapistFilter, statusFilter, dateFromFilter, dateToFilter, sortKey, sortDir]);
 
+  function reset() {
+    setClientFilter("all");
+    setTherapistFilter("all");
+    setStatusFilter("all");
+    setDateFromFilter("");
+    setDateToFilter("");
+  }
+
   return {
     clientFilter, setClientFilter,
     therapistFilter, setTherapistFilter,
@@ -81,5 +89,6 @@ export function useSessionFilters(sessions: SessionWithRelations[]) {
     handleSort, sortIndicator,
     filtered, uniqueClients, sortedTherapists,
     showMine, selectedTherapistId,
+    reset,
   };
 }
