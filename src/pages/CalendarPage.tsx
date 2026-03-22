@@ -1,11 +1,11 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, dateFnsLocalizer, type View } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { enGB } from "date-fns/locale";
 import { useTherapist } from "@/context/TherapistContext";
 import { useCalendarData } from "@/hooks/useCalendarData";
-import { MultiSelect } from "@/components/ui/multi-select";
+import { SearchableMultiSelect } from "@/components/ui/searchable-multi-select";
 import { Button } from "@/components/ui/button";
 import type { CalendarEvent } from "@/lib/calendar-utils";
 import type { Therapist } from "@/types/ipc";
@@ -64,8 +64,12 @@ export default function CalendarPage() {
   const [showPlaceholders, setShowPlaceholders] = useState(true);
   const [showOverlappingOnly, setShowOverlappingOnly] = useState(false);
 
+  useEffect(() => {
+    setSelectedTherapistIds(selectedTherapistId !== null ? [selectedTherapistId.toString()] : []);
+  }, [selectedTherapistId]);
+
   function reset() {
-    setSelectedTherapistIds(defaultTherapistIds);
+    setSelectedTherapistIds(selectedTherapistId !== null ? [selectedTherapistId.toString()] : []);
     setShowPlaceholders(true);
     setShowOverlappingOnly(false);
   }
@@ -113,7 +117,10 @@ export default function CalendarPage() {
       if (event.isPlaceholder) {
         const dateStr = format(event.start, "yyyy-MM-dd");
         const timeStr = format(event.start, "HH:mm");
-        navigate(`/sessions/new?clientId=${event.clientId}&date=${dateStr}&time=${timeStr}`, { state: { from: "/calendar" } });
+        navigate(
+          `/sessions/new?clientId=${event.clientId}&date=${dateStr}&time=${timeStr}`,
+          { state: { from: "/calendar" } },
+        );
       } else if (event.sessionId !== undefined) {
         navigate(`/sessions/${event.sessionId}`);
       }
@@ -126,7 +133,10 @@ export default function CalendarPage() {
       const dateStr = format(start, "yyyy-MM-dd");
       const timeStr = format(start, "HH:mm");
       const durationMins = Math.round((end.getTime() - start.getTime()) / 60_000);
-      navigate(`/sessions/new?date=${dateStr}&time=${timeStr}&duration=${durationMins}`, { state: { from: "/calendar" } });
+      navigate(
+        `/sessions/new?date=${dateStr}&time=${timeStr}&duration=${durationMins}`,
+        { state: { from: "/calendar" } },
+      );
     },
     [navigate],
   );
@@ -142,7 +152,7 @@ export default function CalendarPage() {
         <label className="text-muted-foreground flex flex-col gap-1 text-xs">
           Therapists (max 5)
           <div className="w-56">
-            <MultiSelect
+            <SearchableMultiSelect
               options={therapistOptions}
               value={selectedTherapistIds}
               onChange={setSelectedTherapistIds}

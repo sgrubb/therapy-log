@@ -20,7 +20,9 @@ export default function SessionDetailPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      return;
+    }
     async function load() {
       setLoading(true);
       try {
@@ -60,25 +62,25 @@ export default function SessionDetailPage() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/sessions")}
-          >
-            ← Back to Sessions
-          </Button>
+      <div className="space-y-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/sessions")}
+        >
+          ← Back to Sessions
+        </Button>
+        <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">
             {session.client.first_name} {session.client.last_name}
           </h1>
+          <Button
+            variant="outline"
+            onClick={() => navigate(`/sessions/${id}/edit`, { state: { from: `/sessions/${id}` } })}
+          >
+            Edit
+          </Button>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => navigate(`/sessions/${id}/edit`)}
-        >
-          Edit
-        </Button>
       </div>
 
       <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">

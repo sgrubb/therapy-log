@@ -15,6 +15,7 @@ import {
 } from "@/types/enums";
 import type { ClientWithTherapist } from "@/types/ipc";
 import { Button } from "@/components/ui/button";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/ui/field";
@@ -85,8 +86,12 @@ export default function SessionFormPage() {
       const tid = Number(form.therapist_id);
       const aIsMine = a.therapist_id === tid;
       const bIsMine = b.therapist_id === tid;
-      if (aIsMine && !bIsMine) return -1;
-      if (!aIsMine && bIsMine) return 1;
+      if (aIsMine && !bIsMine) {
+        return -1;
+      }
+      if (!aIsMine && bIsMine) {
+        return 1;
+      }
     }
     return aName.localeCompare(bName);
   });
@@ -108,47 +113,27 @@ export default function SessionFormPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <Field label="Client *" error={getError("client_id")} conflictError={getConflictError("client_id")}>
-            <Select
+            <SearchableSelect
               value={form.client_id}
               onValueChange={(v) => setClient(v, clients)}
-            >
-              <SelectTrigger
-                aria-label="Client"
-                aria-invalid={!!getError("client_id")}
-                onBlur={() => markTouched("client_id")}
-              >
-                <SelectValue placeholder="Select client…" />
-              </SelectTrigger>
-              <SelectContent>
-                {sortedClients.map((c) => (
-                  <SelectItem key={c.id} value={c.id.toString()}>
-                    {c.first_name} {c.last_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              aria-label="Client"
+              aria-invalid={!!getError("client_id")}
+              onBlur={() => markTouched("client_id")}
+              placeholder="Select client…"
+              options={sortedClients.map((c) => ({ value: c.id.toString(), label: `${c.first_name} ${c.last_name}` }))}
+            />
           </Field>
 
           <Field label="Therapist *" error={getError("therapist_id")} conflictError={getConflictError("therapist_id")}>
-            <Select
+            <SearchableSelect
               value={form.therapist_id}
               onValueChange={(v) => set("therapist_id", v)}
-            >
-              <SelectTrigger
-                aria-label="Therapist"
-                aria-invalid={!!getError("therapist_id")}
-                onBlur={() => markTouched("therapist_id")}
-              >
-                <SelectValue placeholder="Select therapist…" />
-              </SelectTrigger>
-              <SelectContent>
-                {therapists.map((t) => (
-                  <SelectItem key={t.id} value={t.id.toString()}>
-                    {t.first_name} {t.last_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              aria-label="Therapist"
+              aria-invalid={!!getError("therapist_id")}
+              onBlur={() => markTouched("therapist_id")}
+              placeholder="Select therapist…"
+              options={therapists.map((t) => ({ value: t.id.toString(), label: `${t.first_name} ${t.last_name}` }))}
+            />
           </Field>
 
           <Field label="Date *" error={getError("date")} conflictError={getConflictError("date")}>

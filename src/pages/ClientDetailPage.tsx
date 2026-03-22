@@ -23,7 +23,9 @@ export default function ClientDetailPage() {
   const isAdmin = selectedTherapist?.is_admin ?? false;
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      return;
+    }
     async function load() {
       setLoading(true);
       try {
@@ -51,51 +53,55 @@ export default function ClientDetailPage() {
     return <p className="text-muted-foreground text-sm">Loading…</p>;
   }
 
-  if (!client) return null;
+  if (!client) {
+    return null;
+  }
 
   const canCloseOrReopen = isAdmin || selectedTherapistId === client.therapist_id;
 
   return (
     <div className="max-w-3xl space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/clients")}
-          >
-            ← Back to Clients
-          </Button>
-          <h1 className="text-2xl font-semibold">
-            {client.first_name} {client.last_name}
-          </h1>
-          <Badge variant={client.is_closed ? "closed" : "open"}>
-            {client.is_closed ? "Closed" : "Open"}
-          </Badge>
-        </div>
-        <div className="flex gap-2">
-          {canCloseOrReopen && (
-            client.is_closed ? (
-              <ReopenClientDialog
-                clientId={Number(id)}
-                client={client}
-                onSuccess={setClient}
-              />
-            ) : (
-              <CloseClientDialog
-                clientId={Number(id)}
-                client={client}
-                onSuccess={setClient}
-              />
-            )
-          )}
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/clients/${id}/edit`)}
-          >
-            Edit
-          </Button>
+      <div className="space-y-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/clients")}
+        >
+          ← Back to Clients
+        </Button>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold">
+              {client.first_name} {client.last_name}
+            </h1>
+            <Badge variant={client.is_closed ? "closed" : "open"}>
+              {client.is_closed ? "Closed" : "Open"}
+            </Badge>
+          </div>
+          <div className="flex gap-2">
+            {canCloseOrReopen && (
+              client.is_closed ? (
+                <ReopenClientDialog
+                  clientId={Number(id)}
+                  client={client}
+                  onSuccess={setClient}
+                />
+              ) : (
+                <CloseClientDialog
+                  clientId={Number(id)}
+                  client={client}
+                  onSuccess={setClient}
+                />
+              )
+            )}
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/clients/${id}/edit`, { state: { from: `/clients/${id}` } })}
+            >
+              Edit
+            </Button>
+          </div>
         </div>
       </div>
 

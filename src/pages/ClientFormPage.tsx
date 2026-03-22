@@ -1,4 +1,5 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useTherapist } from "@/context/TherapistContext";
 import { useClientForm } from "@/hooks/useClientForm";
 import { SessionDay, Outcome, DeliveryMethod, DELIVERY_METHOD_NAMES } from "@/types/enums";
@@ -18,7 +19,10 @@ import {
 export default function ClientFormPage() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { therapists } = useTherapist();
+
+  const cancelTarget = (location.state as { from?: string } | null)?.from ?? "/clients";
 
   const {
     form,
@@ -189,25 +193,15 @@ export default function ClientFormPage() {
           </Field>
 
           <Field label="Therapist *" error={getError("therapist_id")} conflictError={getConflictError("therapist_id")}>
-            <Select
+            <SearchableSelect
               value={form.therapist_id}
               onValueChange={(v) => set("therapist_id", v)}
-            >
-              <SelectTrigger
-                aria-label="Therapist"
-                aria-invalid={!!getError("therapist_id")}
-                onBlur={() => markTouched("therapist_id")}
-              >
-                <SelectValue placeholder="Select therapist…" />
-              </SelectTrigger>
-              <SelectContent>
-                {therapists.map((t) => (
-                  <SelectItem key={t.id} value={t.id.toString()}>
-                    {t.first_name} {t.last_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              aria-label="Therapist"
+              aria-invalid={!!getError("therapist_id")}
+              onBlur={() => markTouched("therapist_id")}
+              placeholder="Select therapist…"
+              options={therapists.map((t) => ({ value: t.id.toString(), label: `${t.first_name} ${t.last_name}` }))}
+            />
           </Field>
         </div>
 
@@ -285,7 +279,7 @@ export default function ClientFormPage() {
             type="button"
             variant="outline"
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => navigate("/clients")}
+            onClick={() => navigate(cancelTarget)}
           >
             Cancel
           </Button>

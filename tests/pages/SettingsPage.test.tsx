@@ -23,7 +23,9 @@ function renderPage() {
 describe("SettingsPage", () => {
   it("renders the current database path", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "settings:get-db-path") return Promise.resolve(wrapped("/data/therapy.db"));
+      if (channel === "settings:get-db-path") {
+        return Promise.resolve(wrapped("/data/therapy.db"));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -36,7 +38,9 @@ describe("SettingsPage", () => {
 
   it("shows 'Not configured' when path is null", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "settings:get-db-path") return Promise.resolve(wrapped(null));
+      if (channel === "settings:get-db-path") {
+        return Promise.resolve(wrapped(null));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -49,8 +53,12 @@ describe("SettingsPage", () => {
 
   it("clicking 'Change Database Location' opens the file dialog", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "settings:get-db-path") return Promise.resolve(wrapped("/data/therapy.db"));
-      if (channel === "settings:open-file-dialog") return Promise.resolve(wrapped(null));
+      if (channel === "settings:get-db-path") {
+        return Promise.resolve(wrapped("/data/therapy.db"));
+      }
+      if (channel === "settings:open-file-dialog") {
+        return Promise.resolve(wrapped(null));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -64,9 +72,15 @@ describe("SettingsPage", () => {
 
   it("shows restart warning after a successful path change", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "settings:get-db-path") return Promise.resolve(wrapped("/old/path.db"));
-      if (channel === "settings:open-file-dialog") return Promise.resolve(wrapped("/new/path.db"));
-      if (channel === "settings:set-db-path") return Promise.resolve(wrapped(null));
+      if (channel === "settings:get-db-path") {
+        return Promise.resolve(wrapped("/old/path.db"));
+      }
+      if (channel === "settings:open-file-dialog") {
+        return Promise.resolve(wrapped("/new/path.db"));
+      }
+      if (channel === "settings:set-db-path") {
+        return Promise.resolve(wrapped(null));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -82,8 +96,12 @@ describe("SettingsPage", () => {
 
   it("does not show restart warning when dialog is cancelled", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "settings:get-db-path") return Promise.resolve(wrapped("/data/therapy.db"));
-      if (channel === "settings:open-file-dialog") return Promise.resolve(wrapped(null));
+      if (channel === "settings:get-db-path") {
+        return Promise.resolve(wrapped("/data/therapy.db"));
+      }
+      if (channel === "settings:open-file-dialog") {
+        return Promise.resolve(wrapped(null));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -99,9 +117,15 @@ describe("SettingsPage", () => {
 
   it("shows error message when set-db-path fails", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "settings:get-db-path") return Promise.resolve(wrapped("/data/therapy.db"));
-      if (channel === "settings:open-file-dialog") return Promise.resolve(wrapped("/new/path.db"));
-      if (channel === "settings:set-db-path") return Promise.resolve(errorResponse.unknown);
+      if (channel === "settings:get-db-path") {
+        return Promise.resolve(wrapped("/data/therapy.db"));
+      }
+      if (channel === "settings:open-file-dialog") {
+        return Promise.resolve(wrapped("/new/path.db"));
+      }
+      if (channel === "settings:set-db-path") {
+        return Promise.resolve(errorResponse.unknown);
+      }
       return Promise.resolve(wrapped(null));
     });
 

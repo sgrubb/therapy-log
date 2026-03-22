@@ -106,7 +106,9 @@ export function useClientForm(clientId?: number) {
   } = useFormState(clientFormSchema, EMPTY);
 
   useEffect(() => {
-    if (!isEdit || clientId === undefined) return;
+    if (!isEdit || clientId === undefined) {
+      return;
+    }
     async function load() {
       setFormState("loading");
       try {

@@ -1,9 +1,19 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import SessionDetailPage from "@/pages/SessionDetailPage";
 import { wrapped, mockTherapists, mockSession, errorResponse } from "../helpers/ipc-mocks";
+
+function EditFormSpy() {
+  const location = useLocation();
+  return (
+    <div
+      data-testid="session-edit-form"
+      data-from={(location.state as { from?: string } | null)?.from ?? ""}
+    />
+  );
+}
 
 const mockInvoke = vi.fn();
 
@@ -20,9 +30,12 @@ function renderDetailPage(sessionOverride?: Partial<typeof mockSession> | null) 
       : { ...mockSession, ...sessionOverride };
 
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-    if (channel === "session:get")
+    if (channel === "therapist:list") {
+      return Promise.resolve(wrapped(mockTherapists));
+    }
+    if (channel === "session:get") {
       return Promise.resolve(sessionData === null ? errorResponse.notFound : wrapped(sessionData));
+    }
     return Promise.resolve(wrapped(null));
   });
 
@@ -32,7 +45,7 @@ function renderDetailPage(sessionOverride?: Partial<typeof mockSession> | null) 
         <Routes>
           <Route path="/sessions">
             <Route path=":id" element={<SessionDetailPage />} />
-            <Route path=":id/edit" element={<div data-testid="session-edit-form" />} />
+            <Route path=":id/edit" element={<EditFormSpy />} />
             <Route index element={<div data-testid="sessions-list" />} />
           </Route>
           <Route path="/clients/:id" element={<div data-testid="client-detail" />} />
@@ -81,8 +94,12 @@ describe("SessionDetailPage", () => {
     });
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "session:get") return sessionPromise.then((d) => wrapped(d));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "session:get") {
+        return sessionPromise.then((d) => wrapped(d));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -120,6 +137,20 @@ describe("SessionDetailPage", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("session-edit-form")).toBeInTheDocument();
+    });
+  });
+
+  it("Edit button passes location state so cancel returns to detail page", async () => {
+    renderDetailPage();
+    await waitFor(() => screen.getByRole("button", { name: /edit/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /edit/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("session-edit-form")).toHaveAttribute(
+        "data-from",
+        "/sessions/1",
+      );
     });
   });
 
@@ -170,8 +201,12 @@ describe("SessionDetailPage", () => {
 
   it("shows not-found state when fetch fails", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "session:get") return Promise.reject(new Error("Network error"));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "session:get") {
+        return Promise.reject(new Error("Network error"));
+      }
       return Promise.resolve(wrapped(null));
     });
 

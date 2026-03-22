@@ -1,5 +1,7 @@
 export function SaveErrorAlert({ message }: { message: string | null }) {
-  if (!message) return null;
+  if (!message) {
+    return null;
+  }
   return (
     <div
       role="alert"

@@ -38,7 +38,9 @@ async function invoke<C extends keyof IpcApi>(
   ...args: IpcApi[C]["args"] extends void ? [] : [IpcApi[C]["args"]]
 ): Promise<IpcApi[C]["result"]> {
   const handler = handlers[channel];
-  if (!handler) throw new Error(`No handler for ${String(channel)}`);
+  if (!handler) {
+    throw new Error(`No handler for ${String(channel)}`);
+  }
   const result = await handler({} as never, ...(args as never[]));
   return result as IpcApi[C]["result"];
 }

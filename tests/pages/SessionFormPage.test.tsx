@@ -7,6 +7,7 @@ import SessionFormPage from "@/pages/SessionFormPage";
 import { wrapped, mockTherapists, mockClients, mockSession, errorResponse, MOCK_UPDATED_AT } from "../helpers/ipc-mocks";
 
 vi.mock("@/components/ui/select");
+vi.mock("@/components/ui/searchable-select");
 
 const mockInvoke = vi.fn();
 
@@ -18,8 +19,12 @@ beforeEach(() => {
 
 function renderNewForm() {
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-    if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
+    if (channel === "therapist:list") {
+      return Promise.resolve(wrapped(mockTherapists));
+    }
+    if (channel === "client:list") {
+      return Promise.resolve(wrapped(mockClients));
+    }
     return Promise.resolve(wrapped(null));
   });
 
@@ -41,9 +46,15 @@ function renderNewForm() {
 function renderEditForm() {
   const editSession = { ...mockSession, notes: "Some notes" };
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-    if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
-    if (channel === "session:get") return Promise.resolve(wrapped(editSession));
+    if (channel === "therapist:list") {
+      return Promise.resolve(wrapped(mockTherapists));
+    }
+    if (channel === "client:list") {
+      return Promise.resolve(wrapped(mockClients));
+    }
+    if (channel === "session:get") {
+      return Promise.resolve(wrapped(editSession));
+    }
     return Promise.resolve(wrapped(null));
   });
 
@@ -226,9 +237,15 @@ describe("SessionFormPage — new session", () => {
   it("calls session:create with correct payload and navigates to /sessions", async () => {
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
-      if (channel === "session:create") return Promise.resolve(wrapped(mockSession));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:list") {
+        return Promise.resolve(wrapped(mockClients));
+      }
+      if (channel === "session:create") {
+        return Promise.resolve(wrapped(mockSession));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -264,10 +281,15 @@ describe("SessionFormPage — new session", () => {
   it("shows error alert on save failure", async () => {
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
-      if (channel === "session:create")
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:list") {
+        return Promise.resolve(wrapped(mockClients));
+      }
+      if (channel === "session:create") {
         return Promise.resolve(errorResponse.unknown);
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -348,9 +370,15 @@ describe("SessionFormPage — new session", () => {
 
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
-      if (channel === "session:create") return savePromise.then((d) => wrapped(d));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:list") {
+        return Promise.resolve(wrapped(mockClients));
+      }
+      if (channel === "session:create") {
+        return savePromise.then((d) => wrapped(d));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -404,10 +432,18 @@ describe("SessionFormPage — edit session", () => {
     await waitFor(() => screen.getByLabelText(/^date/i));
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
-      if (channel === "session:get") return Promise.resolve(wrapped(mockSession));
-      if (channel === "session:update") return Promise.resolve(wrapped(mockSession));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:list") {
+        return Promise.resolve(wrapped(mockClients));
+      }
+      if (channel === "session:get") {
+        return Promise.resolve(wrapped(mockSession));
+      }
+      if (channel === "session:update") {
+        return Promise.resolve(wrapped(mockSession));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -439,9 +475,15 @@ describe("SessionFormPage — edit session", () => {
     });
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
-      if (channel === "session:get") return sessionPromise.then((d) => wrapped(d));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:list") {
+        return Promise.resolve(wrapped(mockClients));
+      }
+      if (channel === "session:get") {
+        return sessionPromise.then((d) => wrapped(d));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -482,10 +524,18 @@ describe("SessionFormPage — edit session", () => {
     await waitFor(() => screen.getByLabelText(/^date/i));
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
-      if (channel === "session:get") return Promise.resolve(wrapped(mockSession));
-      if (channel === "session:update") return Promise.resolve(errorResponse.unknown);
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:list") {
+        return Promise.resolve(wrapped(mockClients));
+      }
+      if (channel === "session:get") {
+        return Promise.resolve(wrapped(mockSession));
+      }
+      if (channel === "session:update") {
+        return Promise.resolve(errorResponse.unknown);
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -498,9 +548,15 @@ describe("SessionFormPage — edit session", () => {
 
   it("navigates to /sessions when session fetch throws", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
-      if (channel === "session:get") return Promise.reject(new Error("Network error"));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:list") {
+        return Promise.resolve(wrapped(mockClients));
+      }
+      if (channel === "session:get") {
+        return Promise.reject(new Error("Network error"));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -527,13 +583,19 @@ describe("SessionFormPage — edit session", () => {
 
     let sessionGetCount = 0;
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:list") {
+        return Promise.resolve(wrapped(mockClients));
+      }
       if (channel === "session:get") {
         sessionGetCount++;
         return Promise.resolve(wrapped(sessionGetCount === 1 ? mockSession : freshSession));
       }
-      if (channel === "session:update") return Promise.resolve(errorResponse.conflict);
+      if (channel === "session:update") {
+        return Promise.resolve(errorResponse.conflict);
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -561,10 +623,15 @@ describe("SessionFormPage — edit session", () => {
 
   it("navigates to /sessions when session is not found", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
-      if (channel === "session:get")
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:list") {
+        return Promise.resolve(wrapped(mockClients));
+      }
+      if (channel === "session:get") {
         return Promise.resolve(errorResponse.notFound);
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -608,13 +675,19 @@ describe("SessionFormPage — edit session", () => {
 
     let sessionGetCount = 0;
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:list") {
+        return Promise.resolve(wrapped(mockClients));
+      }
       if (channel === "session:get") {
         sessionGetCount++;
         return Promise.resolve(wrapped(sessionGetCount === 1 ? { ...mockSession, notes: null } : freshSession));
       }
-      if (channel === "session:update") return Promise.resolve(errorResponse.conflict);
+      if (channel === "session:update") {
+        return Promise.resolve(errorResponse.conflict);
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -657,9 +730,15 @@ describe("SessionFormPage — edit session", () => {
     };
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
-      if (channel === "session:get") return Promise.resolve(wrapped(dnaMockSession));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:list") {
+        return Promise.resolve(wrapped(mockClients));
+      }
+      if (channel === "session:get") {
+        return Promise.resolve(wrapped(dnaMockSession));
+      }
       return Promise.resolve(wrapped(null));
     });
 

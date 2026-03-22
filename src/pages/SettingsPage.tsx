@@ -27,7 +27,9 @@ export default function SettingsPage() {
     setError(null);
     try {
       const chosen = await ipc.openFileDialog();
-      if (chosen === null) return;
+      if (chosen === null) {
+        return;
+      }
       await ipc.setDbPath(chosen);
       setDbPath(chosen);
       setRestartWarning(true);

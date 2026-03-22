@@ -1,7 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
+
+function EditFormSpy() {
+  const location = useLocation();
+  return (
+    <div
+      data-testid="client-edit-form"
+      data-from={(location.state as { from?: string } | null)?.from ?? ""}
+    />
+  );
+}
 import { TherapistProvider } from "@/context/TherapistContext";
 import ClientDetailPage from "@/pages/ClientDetailPage";
 import { wrapped, mockTherapists, mockClient, mockSession, mockSessions, errorResponse } from "../helpers/ipc-mocks";
@@ -23,9 +33,15 @@ function renderDetailPage(clientOverride?: Partial<typeof mockClient> | null) {
       : { ...mockClient, ...clientOverride };
 
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-    if (channel === "client:get") return Promise.resolve(clientData === null ? errorResponse.notFound : wrapped(clientData));
-    if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
+    if (channel === "therapist:list") {
+      return Promise.resolve(wrapped(mockTherapists));
+    }
+    if (channel === "client:get") {
+      return Promise.resolve(clientData === null ? errorResponse.notFound : wrapped(clientData));
+    }
+    if (channel === "session:list") {
+      return Promise.resolve(wrapped(mockSessions));
+    }
     return Promise.resolve(wrapped(null));
   });
 
@@ -35,7 +51,7 @@ function renderDetailPage(clientOverride?: Partial<typeof mockClient> | null) {
         <Routes>
           <Route path="/clients">
             <Route path=":id" element={<ClientDetailPage />} />
-            <Route path=":id/edit" element={<div data-testid="client-edit-form" />} />
+            <Route path=":id/edit" element={<EditFormSpy />} />
             <Route index element={<div data-testid="clients-list" />} />
           </Route>
         </Routes>
@@ -85,9 +101,15 @@ describe("ClientDetailPage", () => {
 
   it("shows no sessions message when session list is empty", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
-      if (channel === "session:list") return Promise.resolve(wrapped([]));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:get") {
+        return Promise.resolve(wrapped(mockClient));
+      }
+      if (channel === "session:list") {
+        return Promise.resolve(wrapped([]));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -114,6 +136,20 @@ describe("ClientDetailPage", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("client-edit-form")).toBeInTheDocument();
+    });
+  });
+
+  it("Edit button passes location state so cancel returns to detail page", async () => {
+    renderDetailPage();
+    await waitFor(() => screen.getByRole("button", { name: /edit/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /edit/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("client-edit-form")).toHaveAttribute(
+        "data-from",
+        "/clients/1",
+      );
     });
   });
 
@@ -185,9 +221,15 @@ describe("ClientDetailPage", () => {
     });
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:get") return clientPromise.then((data) => wrapped(data));
-      if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:get") {
+        return clientPromise.then((data) => wrapped(data));
+      }
+      if (channel === "session:list") {
+        return Promise.resolve(wrapped(mockSessions));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -209,9 +251,15 @@ describe("ClientDetailPage", () => {
 
   it("navigates to /clients when fetch throws", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:get") return Promise.reject(new Error("Network error"));
-      if (channel === "session:list") return Promise.resolve(wrapped([]));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:get") {
+        return Promise.reject(new Error("Network error"));
+      }
+      if (channel === "session:list") {
+        return Promise.resolve(wrapped([]));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -241,10 +289,15 @@ describe("ClientDetailPage", () => {
     };
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
-      if (channel === "session:list")
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:get") {
+        return Promise.resolve(wrapped(mockClient));
+      }
+      if (channel === "session:list") {
         return Promise.resolve(wrapped([...mockSessions, otherClientSession]));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -265,16 +318,22 @@ describe("ClientDetailPage", () => {
   it("renders sessions newest first", async () => {
     const olderSession = {
       ...mockSessions[0],
+      id: 99,
       scheduled_at: new Date("2025-01-10T10:00:00.000Z"),
       session_type: "Parent",
     };
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:get") {
+        return Promise.resolve(wrapped(mockClient));
+      }
       // older session comes first in the array but should sort to second row
-      if (channel === "session:list")
+      if (channel === "session:list") {
         return Promise.resolve(wrapped([olderSession, ...mockSessions]));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -375,10 +434,18 @@ describe("ClientDetailPage — close client", () => {
     const closedClient = { ...mockClient, is_closed: true, outcome: "Improved" as const };
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
-      if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
-      if (channel === "client:close") return Promise.resolve(wrapped(closedClient));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:get") {
+        return Promise.resolve(wrapped(mockClient));
+      }
+      if (channel === "session:list") {
+        return Promise.resolve(wrapped(mockSessions));
+      }
+      if (channel === "client:close") {
+        return Promise.resolve(wrapped(closedClient));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -400,10 +467,18 @@ describe("ClientDetailPage — close client", () => {
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "Improved" } });
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:get") return Promise.resolve(wrapped(closedClient));
-      if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
-      if (channel === "client:close") return Promise.resolve(wrapped(closedClient));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:get") {
+        return Promise.resolve(wrapped(closedClient));
+      }
+      if (channel === "session:list") {
+        return Promise.resolve(wrapped(mockSessions));
+      }
+      if (channel === "client:close") {
+        return Promise.resolve(wrapped(closedClient));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -432,10 +507,18 @@ describe("ClientDetailPage — close client", () => {
     const closedClient = { ...clientWithNotes, is_closed: true, outcome: "Improved" as const };
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:get") return Promise.resolve(wrapped(clientWithNotes));
-      if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
-      if (channel === "client:close") return Promise.resolve(wrapped(closedClient));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:get") {
+        return Promise.resolve(wrapped(clientWithNotes));
+      }
+      if (channel === "session:list") {
+        return Promise.resolve(wrapped(mockSessions));
+      }
+      if (channel === "client:close") {
+        return Promise.resolve(wrapped(closedClient));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -475,10 +558,18 @@ describe("ClientDetailPage — close client", () => {
     localStorage.setItem("selectedTherapistId", "1");
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
-      if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
-      if (channel === "client:update") return Promise.resolve(errorResponse.unknown);
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:get") {
+        return Promise.resolve(wrapped(mockClient));
+      }
+      if (channel === "session:list") {
+        return Promise.resolve(wrapped(mockSessions));
+      }
+      if (channel === "client:update") {
+        return Promise.resolve(errorResponse.unknown);
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -578,10 +669,18 @@ describe("ClientDetailPage — reopen client", () => {
     const reopenedClient = { ...mockClient, is_closed: false, post_score: null, outcome: null };
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:get") return Promise.resolve(wrapped(closedClient));
-      if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
-      if (channel === "client:reopen") return Promise.resolve(wrapped(reopenedClient));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:get") {
+        return Promise.resolve(wrapped(closedClient));
+      }
+      if (channel === "session:list") {
+        return Promise.resolve(wrapped(mockSessions));
+      }
+      if (channel === "client:reopen") {
+        return Promise.resolve(wrapped(reopenedClient));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -600,10 +699,18 @@ describe("ClientDetailPage — reopen client", () => {
     await waitFor(() => screen.getByRole("heading", { name: /reopen client/i }));
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:get") return Promise.resolve(wrapped(reopenedClient));
-      if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
-      if (channel === "client:reopen") return Promise.resolve(wrapped(reopenedClient));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:get") {
+        return Promise.resolve(wrapped(reopenedClient));
+      }
+      if (channel === "session:list") {
+        return Promise.resolve(wrapped(mockSessions));
+      }
+      if (channel === "client:reopen") {
+        return Promise.resolve(wrapped(reopenedClient));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -629,10 +736,18 @@ describe("ClientDetailPage — reopen client", () => {
     const reopenedClient = { ...mockClient, is_closed: false, post_score: null, outcome: null };
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:get") return Promise.resolve(wrapped(closedClient));
-      if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
-      if (channel === "client:reopen") return Promise.resolve(wrapped(reopenedClient));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:get") {
+        return Promise.resolve(wrapped(closedClient));
+      }
+      if (channel === "session:list") {
+        return Promise.resolve(wrapped(mockSessions));
+      }
+      if (channel === "client:reopen") {
+        return Promise.resolve(wrapped(reopenedClient));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -672,10 +787,18 @@ describe("ClientDetailPage — reopen client", () => {
     const closedClient = { ...mockClient, is_closed: true };
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:get") return Promise.resolve(wrapped(closedClient));
-      if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
-      if (channel === "client:reopen") return Promise.resolve({ success: false, error: { code: "UNKNOWN", message: "Unexpected error." } });
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:get") {
+        return Promise.resolve(wrapped(closedClient));
+      }
+      if (channel === "session:list") {
+        return Promise.resolve(wrapped(mockSessions));
+      }
+      if (channel === "client:reopen") {
+        return Promise.resolve({ success: false, error: { code: "UNKNOWN", message: "Unexpected error." } });
+      }
       return Promise.resolve(wrapped(null));
     });
 

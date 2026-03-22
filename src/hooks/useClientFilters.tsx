@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTherapist } from "@/context/TherapistContext";
 import type { ClientWithTherapist } from "@/types/ipc";
 import { useSortableTable } from "@/hooks/useSortableTable";
@@ -11,7 +11,13 @@ export function useClientFilters(clients: ClientWithTherapist[]) {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"open" | "closed" | "all">("open");
-  const [therapistFilter, setTherapistFilter] = useState("all");
+  const [therapistFilter, setTherapistFilter] = useState(
+    () => selectedTherapistId !== null ? String(selectedTherapistId) : "all",
+  );
+
+  useEffect(() => {
+    setTherapistFilter(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
+  }, [selectedTherapistId]);
 
   const { sortKey, sortDir, handleSort, sortIndicator } = useSortableTable<ClientSortKey>("name");
 
@@ -58,7 +64,7 @@ export function useClientFilters(clients: ClientWithTherapist[]) {
   function reset() {
     setSearch("");
     setStatusFilter("open");
-    setTherapistFilter("all");
+    setTherapistFilter(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
   }
 
   return {

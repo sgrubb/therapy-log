@@ -14,8 +14,12 @@ beforeEach(() => {
   mockInvoke.mockReset();
   window.electronAPI = { invoke: mockInvoke } as never;
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-    if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
+    if (channel === "therapist:list") {
+      return Promise.resolve(wrapped(mockTherapists));
+    }
+    if (channel === "client:list") {
+      return Promise.resolve(wrapped(mockClients));
+    }
     return Promise.resolve(wrapped([]));
   });
 });
@@ -36,14 +40,16 @@ function renderClientsPage() {
   );
 }
 
-// Helpers — the mocked Select renders two native <select> elements:
-// index 0 = status filter, index 1 = therapist filter
+// Status filter is still Radix Select (mocked → native <select>)
 function getStatusSelect() {
   return screen.getAllByRole("combobox")[0]!;
 }
 
-function getTherapistFilterSelect() {
-  return screen.getAllByRole("combobox")[1]!;
+// Therapist filter is SearchableSelect — interact by clicking trigger then option
+function selectTherapistOption(optionText: string) {
+  const trigger = screen.getByRole("combobox", { name: "Therapist filter" });
+  fireEvent.click(trigger);
+  fireEvent.click(within(trigger.parentElement!).getByText(optionText));
 }
 
 describe("ClientsPage", () => {
@@ -170,8 +176,12 @@ describe("ClientsPage", () => {
     });
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:list") return clientsPromise.then((data) => wrapped(data));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:list") {
+        return clientsPromise.then((data) => wrapped(data));
+      }
       return Promise.resolve(wrapped([]));
     });
 
@@ -184,8 +194,12 @@ describe("ClientsPage", () => {
 
   it("renders without crashing when client:list fails", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "client:list") return Promise.reject(new Error("DB error"));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "client:list") {
+        return Promise.reject(new Error("DB error"));
+      }
       return Promise.resolve(wrapped([]));
     });
 
@@ -204,7 +218,7 @@ describe("ClientsPage", () => {
     fireEvent.change(getStatusSelect(), { target: { value: "all" } });
     await waitFor(() => screen.getByText("Tom Jones"));
 
-    fireEvent.change(getTherapistFilterSelect(), { target: { value: "1" } });
+    selectTherapistOption("Alice Morgan");
 
     await waitFor(() => {
       expect(screen.getByText("Jane Smith")).toBeInTheDocument();
@@ -219,13 +233,10 @@ describe("ClientsPage", () => {
     fireEvent.change(getStatusSelect(), { target: { value: "all" } });
     await waitFor(() => screen.getByText("Tom Jones"));
 
-    const therapistSelect = getTherapistFilterSelect();
-    fireEvent.change(therapistSelect, { target: { value: "1" } });
-    await waitFor(() =>
-      expect(screen.queryByText("Tom Jones")).not.toBeInTheDocument(),
-    );
+    selectTherapistOption("Alice Morgan");
+    await waitFor(() => expect(screen.queryByText("Tom Jones")).not.toBeInTheDocument());
 
-    fireEvent.change(therapistSelect, { target: { value: "all" } });
+    selectTherapistOption("All therapists");
     await waitFor(() => {
       expect(screen.getByText("Jane Smith")).toBeInTheDocument();
       expect(screen.getByText("Tom Jones")).toBeInTheDocument();
@@ -348,47 +359,39 @@ describe("ClientsPage", () => {
       expect(screen.getByRole("checkbox")).toBeInTheDocument();
     });
 
-    it("checking Mine filters clients to the selected therapist", async () => {
+    it("Mine checkbox is checked by default when a therapist is selected", async () => {
       localStorage.setItem("selectedTherapistId", "1");
       renderClientsPage();
       await waitFor(() => screen.getByText("Jane Smith"));
 
-      fireEvent.click(screen.getByRole("checkbox"));
-
-      await waitFor(() => {
-        expect(screen.getByText("Jane Smith")).toBeInTheDocument();
-        expect(screen.queryByText("Tom Jones")).not.toBeInTheDocument();
-      });
+      expect(screen.getByRole("checkbox")).toBeChecked();
     });
 
-    it("unchecking Mine resets the filter to show all clients", async () => {
+    it("Mine defaults to checked and filters clients to the selected therapist", async () => {
+      localStorage.setItem("selectedTherapistId", "1");
+      renderClientsPage();
+      await waitFor(() => screen.getByText("Jane Smith"));
+
+      // Switch to "all" statuses so Tom would be visible if not filtered by therapist
+      fireEvent.change(getStatusSelect(), { target: { value: "all" } });
+      // Tom (therapist 2) remains hidden because Mine is checked (therapist filter = 1)
+      await waitFor(() => expect(screen.queryByText("Tom Jones")).not.toBeInTheDocument());
+    });
+
+    it("unchecking Mine shows all clients", async () => {
       localStorage.setItem("selectedTherapistId", "1");
       renderClientsPage();
       await waitFor(() => screen.getByText("Jane Smith"));
 
       fireEvent.change(getStatusSelect(), { target: { value: "all" } });
-      await waitFor(() => screen.getByText("Tom Jones"));
-
-      fireEvent.click(screen.getByRole("checkbox"));
+      // Mine checked → Tom hidden
       await waitFor(() => expect(screen.queryByText("Tom Jones")).not.toBeInTheDocument());
 
-      fireEvent.click(screen.getByRole("checkbox"));
+      fireEvent.click(screen.getByRole("checkbox")); // uncheck Mine
       await waitFor(() => {
         expect(screen.getByText("Jane Smith")).toBeInTheDocument();
         expect(screen.getByText("Tom Jones")).toBeInTheDocument();
       });
-    });
-
-    it("checkbox becomes checked when therapist dropdown is set to the selected therapist", async () => {
-      localStorage.setItem("selectedTherapistId", "1");
-      renderClientsPage();
-      await waitFor(() => screen.getByText("Jane Smith"));
-
-      expect(screen.getByRole("checkbox")).not.toBeChecked();
-
-      fireEvent.change(getTherapistFilterSelect(), { target: { value: "1" } });
-
-      await waitFor(() => expect(screen.getByRole("checkbox")).toBeChecked());
     });
 
     it("checkbox becomes unchecked when therapist dropdown is changed away from selected therapist", async () => {
@@ -396,19 +399,22 @@ describe("ClientsPage", () => {
       renderClientsPage();
       await waitFor(() => screen.getByText("Jane Smith"));
 
-      fireEvent.click(screen.getByRole("checkbox"));
-      await waitFor(() => expect(screen.getByRole("checkbox")).toBeChecked());
+      expect(screen.getByRole("checkbox")).toBeChecked();
 
-      fireEvent.change(getTherapistFilterSelect(), { target: { value: "all" } });
+      selectTherapistOption("All therapists");
       await waitFor(() => expect(screen.getByRole("checkbox")).not.toBeChecked());
     });
   });
 
   it("shows empty state when status filter yields no results", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
       // only Tom (closed) — default "open" filter will hide him
-      if (channel === "client:list") return Promise.resolve(wrapped([mockClients[1]]));
+      if (channel === "client:list") {
+        return Promise.resolve(wrapped([mockClients[1]]));
+      }
       return Promise.resolve(wrapped([]));
     });
 

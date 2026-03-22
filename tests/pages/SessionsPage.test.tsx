@@ -3,7 +3,22 @@ import { render, screen, waitFor, fireEvent, within } from "@testing-library/rea
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import SessionsPage from "@/pages/SessionsPage";
-import { wrapped, mockTherapists, mockSessions } from "../helpers/ipc-mocks";
+import { wrapped, mockTherapists, mockSessions, mockClients, mockClientBase } from "../helpers/ipc-mocks";
+
+// A client with a regular Monday slot but no sessions → always overdue within 2 weeks
+const overdueClient = {
+  ...mockClientBase,
+  id: 3,
+  first_name: "Eve",
+  last_name: "Walker",
+  hospital_number: "HN003",
+  therapist_id: 1,
+  therapist: mockTherapists[0]!,
+  session_day: "Monday" as const,
+  session_time: "09:00",
+  session_duration: 60,
+  session_delivery_method: "FaceToFace" as const,
+};
 
 vi.mock("@/components/ui/select");
 
@@ -14,8 +29,15 @@ beforeEach(() => {
   mockInvoke.mockReset();
   window.electronAPI = { invoke: mockInvoke } as never;
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-    if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
+    if (channel === "therapist:list") {
+      return Promise.resolve(wrapped(mockTherapists));
+    }
+    if (channel === "session:list") {
+      return Promise.resolve(wrapped(mockSessions));
+    }
+    if (channel === "client:list") {
+      return Promise.resolve(wrapped([]));
+    }
     return Promise.resolve(wrapped([]));
   });
 });
@@ -36,16 +58,20 @@ function renderSessionsPage() {
   );
 }
 
-// The mocked Select renders three native <select> elements in this order:
-// 0 = client filter, 1 = therapist filter, 2 = status filter
-function getClientFilterSelect() {
-  return screen.getAllByRole("combobox")[0]!;
+// Client and therapist filters are SearchableSelect; status is still Radix Select (mocked → native <select>)
+function selectClientOption(optionText: string) {
+  const trigger = screen.getByRole("combobox", { name: "Client filter" });
+  fireEvent.click(trigger);
+  fireEvent.click(within(trigger.parentElement!).getByText(optionText));
 }
-function getTherapistFilterSelect() {
-  return screen.getAllByRole("combobox")[1]!;
+function selectTherapistOption(optionText: string) {
+  const trigger = screen.getByRole("combobox", { name: "Therapist filter" });
+  fireEvent.click(trigger);
+  fireEvent.click(within(trigger.parentElement!).getByText(optionText));
 }
 function getStatusFilterSelect() {
-  return screen.getAllByRole("combobox")[2]!;
+  // Radix Select mock loses aria-label (SelectTrigger → null); label text gives name "Status"
+  return screen.getByRole("combobox", { name: "Status" });
 }
 
 describe("SessionsPage", () => {
@@ -93,8 +119,12 @@ describe("SessionsPage", () => {
     });
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "session:list") return sessionsPromise.then((d) => wrapped(d));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "session:list") {
+        return sessionsPromise.then((d) => wrapped(d));
+      }
       return Promise.resolve(wrapped([]));
     });
 
@@ -107,8 +137,12 @@ describe("SessionsPage", () => {
 
   it("shows empty state when no sessions found", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "session:list") return Promise.resolve(wrapped([]));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "session:list") {
+        return Promise.resolve(wrapped([]));
+      }
       return Promise.resolve(wrapped([]));
     });
 
@@ -120,8 +154,12 @@ describe("SessionsPage", () => {
 
   it("renders without crashing when session:list fails", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "session:list") return Promise.reject(new Error("DB error"));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "session:list") {
+        return Promise.reject(new Error("DB error"));
+      }
       return Promise.resolve(wrapped([]));
     });
 
@@ -135,7 +173,7 @@ describe("SessionsPage", () => {
     renderSessionsPage();
     await waitFor(() => screen.getByText("Jane Smith"));
 
-    fireEvent.change(getTherapistFilterSelect(), { target: { value: "1" } });
+    selectTherapistOption("Alice Morgan");
 
     await waitFor(() => {
       expect(screen.getByText("Jane Smith")).toBeInTheDocument();
@@ -147,7 +185,7 @@ describe("SessionsPage", () => {
     renderSessionsPage();
     await waitFor(() => screen.getByText("Jane Smith"));
 
-    fireEvent.change(getClientFilterSelect(), { target: { value: "2" } });
+    selectClientOption("Jones, Tom");
 
     await waitFor(() => {
       expect(screen.queryByText("Jane Smith")).not.toBeInTheDocument();
@@ -199,10 +237,10 @@ describe("SessionsPage", () => {
     renderSessionsPage();
     await waitFor(() => screen.getByText("Jane Smith"));
 
-    fireEvent.change(getTherapistFilterSelect(), { target: { value: "1" } });
+    selectTherapistOption("Alice Morgan");
     await waitFor(() => expect(screen.queryByText("Tom Jones")).not.toBeInTheDocument());
 
-    fireEvent.change(getTherapistFilterSelect(), { target: { value: "all" } });
+    selectTherapistOption("All therapists");
     await waitFor(() => {
       expect(screen.getByText("Jane Smith")).toBeInTheDocument();
       expect(screen.getByText("Tom Jones")).toBeInTheDocument();
@@ -330,44 +368,34 @@ describe("SessionsPage", () => {
       expect(screen.getByRole("checkbox")).toBeInTheDocument();
     });
 
-    it("checking Mine filters sessions to the selected therapist", async () => {
+    it("Mine checkbox is checked by default when a therapist is selected", async () => {
       localStorage.setItem("selectedTherapistId", "1");
       renderSessionsPage();
       await waitFor(() => screen.getByText("Jane Smith"));
 
-      fireEvent.click(screen.getByRole("checkbox"));
+      expect(screen.getByRole("checkbox")).toBeChecked();
+    });
 
+    it("Mine defaults to checked and filters sessions to the selected therapist", async () => {
+      localStorage.setItem("selectedTherapistId", "1");
+      renderSessionsPage();
+      // Tom Jones's session belongs to therapist 2 — hidden by default Mine filter
       await waitFor(() => {
         expect(screen.getByText("Jane Smith")).toBeInTheDocument();
         expect(screen.queryByText("Tom Jones")).not.toBeInTheDocument();
       });
     });
 
-    it("unchecking Mine resets the filter to show all sessions", async () => {
+    it("unchecking Mine shows all sessions", async () => {
       localStorage.setItem("selectedTherapistId", "1");
       renderSessionsPage();
       await waitFor(() => screen.getByText("Jane Smith"));
 
-      fireEvent.click(screen.getByRole("checkbox"));
-      await waitFor(() => expect(screen.queryByText("Tom Jones")).not.toBeInTheDocument());
-
-      fireEvent.click(screen.getByRole("checkbox"));
+      fireEvent.click(screen.getByRole("checkbox")); // uncheck Mine
       await waitFor(() => {
         expect(screen.getByText("Jane Smith")).toBeInTheDocument();
         expect(screen.getByText("Tom Jones")).toBeInTheDocument();
       });
-    });
-
-    it("checkbox becomes checked when therapist dropdown is set to the selected therapist", async () => {
-      localStorage.setItem("selectedTherapistId", "1");
-      renderSessionsPage();
-      await waitFor(() => screen.getByText("Jane Smith"));
-
-      expect(screen.getByRole("checkbox")).not.toBeChecked();
-
-      fireEvent.change(getTherapistFilterSelect(), { target: { value: "1" } });
-
-      await waitFor(() => expect(screen.getByRole("checkbox")).toBeChecked());
     });
 
     it("checkbox becomes unchecked when therapist dropdown is changed away from selected therapist", async () => {
@@ -375,11 +403,134 @@ describe("SessionsPage", () => {
       renderSessionsPage();
       await waitFor(() => screen.getByText("Jane Smith"));
 
-      fireEvent.click(screen.getByRole("checkbox"));
-      await waitFor(() => expect(screen.getByRole("checkbox")).toBeChecked());
+      expect(screen.getByRole("checkbox")).toBeChecked();
 
-      fireEvent.change(getTherapistFilterSelect(), { target: { value: "all" } });
+      selectTherapistOption("All therapists");
       await waitFor(() => expect(screen.getByRole("checkbox")).not.toBeChecked());
+    });
+  });
+
+  describe("overdue sessions section", () => {
+    function renderWithOverdueClient() {
+      mockInvoke.mockImplementation((channel: string) => {
+        if (channel === "therapist:list") {
+          return Promise.resolve(wrapped(mockTherapists));
+        }
+        if (channel === "session:list") {
+          return Promise.resolve(wrapped(mockSessions));
+        }
+        // overdueClient has a Monday slot but no sessions → always overdue
+        if (channel === "client:list") {
+          return Promise.resolve(wrapped([...mockClients, overdueClient]));
+        }
+        return Promise.resolve(wrapped([]));
+      });
+      return renderSessionsPage();
+    }
+
+    it("does not show the overdue section when no clients have regular sessions", async () => {
+      // default mock returns client:list as [] → no overdue
+      renderSessionsPage();
+      await waitFor(() => screen.getByText("Jane Smith"));
+      expect(screen.queryByText(/overdue expected sessions/i)).not.toBeInTheDocument();
+    });
+
+    it("shows the overdue section header when overdue sessions exist", async () => {
+      renderWithOverdueClient();
+      await waitFor(() => {
+        expect(screen.getByText(/overdue expected sessions/i)).toBeInTheDocument();
+      });
+    });
+
+    it("is collapsed by default — overdue table is not visible", async () => {
+      renderWithOverdueClient();
+      await waitFor(() => screen.getByText(/overdue expected sessions/i));
+      expect(screen.queryByText("Expected date")).not.toBeInTheDocument();
+    });
+
+    it("shows ▼ indicator when collapsed", async () => {
+      renderWithOverdueClient();
+      await waitFor(() => screen.getByText(/overdue expected sessions/i));
+      const header = screen.getByRole("button", { name: /overdue expected sessions/i });
+      expect(header).toHaveTextContent("▼");
+    });
+
+    it("expands to show the overdue table when the header button is clicked", async () => {
+      renderWithOverdueClient();
+      await waitFor(() => screen.getByText(/overdue expected sessions/i));
+
+      fireEvent.click(screen.getByRole("button", { name: /overdue expected sessions/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Expected date")).toBeInTheDocument();
+        // may appear multiple times if multiple weeks are overdue
+        expect(screen.getAllByText("Eve Walker").length).toBeGreaterThan(0);
+      });
+    });
+
+    it("shows ▲ indicator when expanded", async () => {
+      renderWithOverdueClient();
+      await waitFor(() => screen.getByText(/overdue expected sessions/i));
+
+      fireEvent.click(screen.getByRole("button", { name: /overdue expected sessions/i }));
+
+      await waitFor(() => {
+        const header = screen.getByRole("button", { name: /overdue expected sessions/i });
+        expect(header).toHaveTextContent("▲");
+      });
+    });
+
+    it("collapses again when the header is clicked a second time", async () => {
+      renderWithOverdueClient();
+      await waitFor(() => screen.getByText(/overdue expected sessions/i));
+
+      const header = screen.getByRole("button", { name: /overdue expected sessions/i });
+      fireEvent.click(header);
+      await waitFor(() => screen.getByText("Expected date"));
+
+      fireEvent.click(header);
+      await waitFor(() => {
+        expect(screen.queryByText("Expected date")).not.toBeInTheDocument();
+      });
+    });
+
+    it("shows therapist name in the expanded overdue table", async () => {
+      renderWithOverdueClient();
+      await waitFor(() => screen.getByText(/overdue expected sessions/i));
+
+      fireEvent.click(screen.getByRole("button", { name: /overdue expected sessions/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Expected date")).toBeInTheDocument();
+        const overdueTable = screen.getByText("Expected date").closest("table")!;
+        expect(within(overdueTable).getAllByText("Alice Morgan").length).toBeGreaterThan(0);
+      });
+    });
+
+    it("Log button navigates to /sessions/new with the overdue client pre-filled", async () => {
+      renderWithOverdueClient();
+      await waitFor(() => screen.getByText(/overdue expected sessions/i));
+
+      fireEvent.click(screen.getByRole("button", { name: /overdue expected sessions/i }));
+      await waitFor(() => screen.getAllByRole("button", { name: /^log$/i }));
+
+      fireEvent.click(screen.getAllByRole("button", { name: /^log$/i })[0]!);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("session-form")).toBeInTheDocument();
+      });
+    });
+
+    it("hides the overdue section when therapist filter excludes the overdue client's therapist", async () => {
+      renderWithOverdueClient();
+      await waitFor(() => screen.getByText(/overdue expected sessions/i));
+
+      // overdueClient belongs to therapist 1 (Alice); filter to therapist 2 (Bob)
+      selectTherapistOption("Bob Chen");
+
+      await waitFor(() => {
+        expect(screen.queryByText(/overdue expected sessions/i)).not.toBeInTheDocument();
+      });
     });
   });
 });

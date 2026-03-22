@@ -15,7 +15,9 @@ beforeEach(() => {
 
 function renderPage() {
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+    if (channel === "therapist:list") {
+      return Promise.resolve(wrapped(mockTherapists));
+    }
     return Promise.resolve(wrapped(null));
   });
 
@@ -48,7 +50,9 @@ describe("TherapistsPage", () => {
     const promise = new Promise<typeof mockTherapists>((res) => { resolve = res; });
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return promise.then((data) => wrapped(data));
+      if (channel === "therapist:list") {
+        return promise.then((data) => wrapped(data));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -100,7 +104,8 @@ describe("TherapistsPage", () => {
     });
   });
 
-  it("navigates to edit page when a row is clicked", async () => {
+  it("navigates to edit page when an admin clicks a row", async () => {
+    localStorage.setItem("selectedTherapistId", "1"); // Alice Morgan, is_admin: true
     renderPage();
     await waitFor(() => screen.getByText("Alice Morgan"));
 
@@ -109,6 +114,17 @@ describe("TherapistsPage", () => {
     await waitFor(() => {
       expect(screen.getByTestId("therapist-edit-form")).toBeInTheDocument();
     });
+  });
+
+  it("does not navigate when a non-admin clicks a row", async () => {
+    localStorage.setItem("selectedTherapistId", "2"); // Bob Chen, is_admin: false
+    renderPage();
+    await waitFor(() => screen.getByText("Alice Morgan"));
+
+    fireEvent.click(screen.getByText("Alice Morgan"));
+
+    await waitFor(() => screen.getByText("Bob Chen"));
+    expect(screen.queryByTestId("therapist-edit-form")).not.toBeInTheDocument();
   });
 
   it("shows admin column with tick only for admin users", async () => {
@@ -132,7 +148,9 @@ describe("TherapistsPage", () => {
 
   it("shows error message from navigation state", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
       return Promise.resolve(wrapped(null));
     });
 
@@ -155,7 +173,9 @@ describe("TherapistsPage", () => {
 
   it("shows empty state when no therapists exist", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") return Promise.resolve(wrapped([]));
+      if (channel === "therapist:list") {
+        return Promise.resolve(wrapped([]));
+      }
       return Promise.resolve(wrapped(null));
     });
 

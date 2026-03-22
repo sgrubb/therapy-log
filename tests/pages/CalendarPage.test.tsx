@@ -27,9 +27,15 @@ beforeEach(() => {
   mockInvoke.mockReset();
   window.electronAPI = { invoke: mockInvoke } as never;
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") return Promise.resolve(wrapped(mockTherapists));
-    if (channel === "session:list") return Promise.resolve(wrapped(mockSessions));
-    if (channel === "client:list") return Promise.resolve(wrapped(mockClients));
+    if (channel === "therapist:list") {
+      return Promise.resolve(wrapped(mockTherapists));
+    }
+    if (channel === "session:list") {
+      return Promise.resolve(wrapped(mockSessions));
+    }
+    if (channel === "client:list") {
+      return Promise.resolve(wrapped(mockClients));
+    }
     return Promise.resolve(wrapped([]));
   });
 });
@@ -72,7 +78,15 @@ describe("CalendarPage", () => {
   it("renders therapist multi-select with placeholder text", async () => {
     renderCalendarPage();
     await waitForLoad();
-    expect(screen.getByText("All therapists")).toBeInTheDocument();
+    expect(screen.getByText("Select therapists…")).toBeInTheDocument();
+  });
+
+  it("pre-selects the therapist when selectedTherapistId is set in context", async () => {
+    localStorage.setItem("selectedTherapistId", "1"); // Alice Morgan
+    renderCalendarPage();
+    await waitForLoad();
+    // With therapist 1 selected, the placeholder should no longer be visible
+    expect(screen.queryByText("Select therapists…")).not.toBeInTheDocument();
   });
 
   it("shows no events when no therapist is selected", async () => {

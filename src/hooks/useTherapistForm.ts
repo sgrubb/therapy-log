@@ -53,7 +53,9 @@ export function useTherapistForm(therapistId?: number) {
   } = useFormState(therapistFormSchema, EMPTY);
 
   useEffect(() => {
-    if (!isEdit || therapistId === undefined) return;
+    if (!isEdit || therapistId === undefined) {
+      return;
+    }
     async function load() {
       setFormState("loading");
       try {

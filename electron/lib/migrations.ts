@@ -11,12 +11,16 @@ export function checkSchemaVersion(dbPath: string): number | null {
     const tableExists = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='Metadata'`)
       .get();
-    if (!tableExists) return null;
+    if (!tableExists) {
+      return null;
+    }
 
     const row = db
       .prepare(`SELECT value FROM Metadata WHERE key = 'schema_version'`)
       .get() as { value: string } | undefined;
-    if (!row) return null;
+    if (!row) {
+      return null;
+    }
 
     return parseInt(row.value, 10);
   } catch {
@@ -31,7 +35,9 @@ export function applyMigrations(dbPath: string, fromVersion: number, toVersion: 
   try {
     for (let v = fromVersion + 1; v <= toVersion; v++) {
       const sql = MIGRATIONS[v];
-      if (!sql) throw new Error(`No migration SQL found for version ${v}`);
+      if (!sql) {
+        throw new Error(`No migration SQL found for version ${v}`);
+      }
       db.exec(sql);
       log.info(`Applied migration to version ${v}`);
     }

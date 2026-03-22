@@ -9,7 +9,9 @@ vi.mock("@/lib/logger", () => ({
 import log from "@/lib/logger";
 
 function Bomb({ shouldThrow }: { shouldThrow: boolean }) {
-  if (shouldThrow) throw new Error("Test explosion");
+  if (shouldThrow) {
+    throw new Error("Test explosion");
+  }
   return <p>All good</p>;
 }
 

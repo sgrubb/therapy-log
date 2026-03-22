@@ -1,0 +1,121 @@
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
+
+interface Option {
+  value: string;
+  label: string;
+}
+
+interface SearchableSelectProps {
+  options: Option[];
+  value: string;
+  onValueChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+  "aria-label"?: string;
+  "aria-invalid"?: boolean;
+  onBlur?: () => void;
+}
+
+export function SearchableSelect({
+  options,
+  value,
+  onValueChange,
+  placeholder = "Select…",
+  className,
+  "aria-label": ariaLabel,
+  "aria-invalid": ariaInvalid,
+  onBlur,
+}: SearchableSelectProps) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setSearch("");
+        onBlur?.();
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onBlur]);
+
+  useEffect(() => {
+    if (open) {
+      searchRef.current?.focus();
+    } else {
+      setSearch("");
+    }
+  }, [open]);
+
+  const filtered = options.filter((o) =>
+    o.label.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const selectedLabel = options.find((o) => o.value === value)?.label;
+
+  function select(v: string) {
+    onValueChange(v);
+    setOpen(false);
+    setSearch("");
+    onBlur?.();
+  }
+
+  return (
+    <div ref={containerRef} className={`relative${className ? ` ${className}` : ""}`}>
+      <button
+        type="button"
+        role="combobox"
+        aria-expanded={open}
+        aria-label={ariaLabel}
+        aria-invalid={ariaInvalid}
+        onClick={() => setOpen((o) => !o)}
+        className={`border-input bg-background flex h-9 w-full items-center justify-between rounded-md border px-3 py-2 text-sm shadow-xs${ariaInvalid ? " border-destructive" : ""}`}
+      >
+        <span className={!selectedLabel ? "text-muted-foreground" : ""}>
+          {selectedLabel ?? placeholder}
+        </span>
+        <ChevronDown size={14} className="text-muted-foreground ml-2 shrink-0" />
+      </button>
+
+      {open && (
+        <div className="bg-popover border-border absolute z-50 mt-1 w-full rounded-md border shadow-md">
+          <div className="p-2">
+            <input
+              ref={searchRef}
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setOpen(false);
+                  onBlur?.();
+                }
+              }}
+              placeholder="Search…"
+              className="border-input bg-background w-full rounded border px-2 py-1 text-sm outline-none"
+            />
+          </div>
+          <div className="max-h-52 overflow-auto">
+            {filtered.map((opt) => (
+              <div
+                key={opt.value}
+                onClick={() => select(opt.value)}
+                className={`cursor-pointer px-3 py-2 text-sm hover:bg-accent${opt.value === value ? " bg-accent font-medium" : ""}`}
+              >
+                {opt.label}
+              </div>
+            ))}
+            {filtered.length === 0 && (
+              <p className="text-muted-foreground px-3 py-2 text-sm">No results.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

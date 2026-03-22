@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTherapist } from "@/context/TherapistContext";
 import type { SessionWithRelations } from "@/types/ipc";
 import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/types/enums";
@@ -11,10 +11,16 @@ export function useSessionFilters(sessions: SessionWithRelations[]) {
   const { therapists, selectedTherapistId } = useTherapist();
 
   const [clientFilter, setClientFilter] = useState("all");
-  const [therapistFilter, setTherapistFilter] = useState("all");
+  const [therapistFilter, setTherapistFilter] = useState(
+    () => selectedTherapistId !== null ? String(selectedTherapistId) : "all",
+  );
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFromFilter, setDateFromFilter] = useState("");
   const [dateToFilter, setDateToFilter] = useState("");
+
+  useEffect(() => {
+    setTherapistFilter(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
+  }, [selectedTherapistId]);
 
   const { sortKey, sortDir, handleSort, sortIndicator } = useSortableTable<SessionSortKey>("scheduled_at", "desc");
 
@@ -74,7 +80,7 @@ export function useSessionFilters(sessions: SessionWithRelations[]) {
 
   function reset() {
     setClientFilter("all");
-    setTherapistFilter("all");
+    setTherapistFilter(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
     setStatusFilter("all");
     setDateFromFilter("");
     setDateToFilter("");

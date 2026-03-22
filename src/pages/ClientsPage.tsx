@@ -7,6 +7,7 @@ import { useClientFilters } from "@/hooks/useClientFilters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   Select,
   SelectContent,
@@ -99,19 +100,17 @@ export default function ClientsPage() {
               </label>
             )}
           </div>
-          <Select value={therapistFilter} onValueChange={setTherapistFilter}>
-            <SelectTrigger className="w-52" aria-label="Therapist filter">
-              <SelectValue placeholder="All therapists" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All therapists</SelectItem>
-              {sortedTherapists.map((t) => (
-                <SelectItem key={t.id} value={t.id.toString()}>
-                  {t.first_name} {t.last_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            className="w-52"
+            aria-label="Therapist filter"
+            value={therapistFilter}
+            onValueChange={setTherapistFilter}
+            placeholder="All therapists"
+            options={[
+              { value: "all", label: "All therapists" },
+              ...sortedTherapists.map((t) => ({ value: t.id.toString(), label: `${t.first_name} ${t.last_name}` })),
+            ]}
+          />
         </div>
       </div>
 

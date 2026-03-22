@@ -68,8 +68,8 @@ export default function TherapistsPage() {
             {therapists.map((therapist) => (
               <tr
                 key={therapist.id}
-                className="hover:bg-muted/50 cursor-pointer border-b transition-colors"
-                onClick={() => navigate(`/therapists/${therapist.id}/edit`)}
+                className={`border-b transition-colors${isAdmin ? " hover:bg-muted/50 cursor-pointer" : ""}`}
+                onClick={isAdmin ? () => navigate(`/therapists/${therapist.id}/edit`) : undefined}
               >
                 <td className="py-2 pr-4">
                   {therapist.first_name} {therapist.last_name}

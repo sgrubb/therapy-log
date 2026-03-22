@@ -9,6 +9,7 @@ import { getOverduePlaceholders } from "@/lib/calendar-utils";
 import { useSessionFilters } from "@/hooks/useSessionFilters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   Select,
   SelectContent,
@@ -94,19 +95,17 @@ export default function SessionsPage() {
       <div className="flex flex-wrap gap-3">
         <label className="text-muted-foreground flex flex-col gap-1 text-xs">
           Client
-          <Select value={clientFilter} onValueChange={setClientFilter}>
-            <SelectTrigger className="w-52" aria-label="Client filter">
-              <SelectValue placeholder="All clients" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All clients</SelectItem>
-              {uniqueClients.map((c) => (
-                <SelectItem key={c.id} value={c.id.toString()}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            className="w-52"
+            aria-label="Client filter"
+            value={clientFilter}
+            onValueChange={setClientFilter}
+            placeholder="All clients"
+            options={[
+              { value: "all", label: "All clients" },
+              ...uniqueClients.map((c) => ({ value: c.id.toString(), label: c.name })),
+            ]}
+          />
         </label>
 
         <div className="flex flex-col gap-1">
@@ -127,19 +126,17 @@ export default function SessionsPage() {
               </label>
             )}
           </div>
-          <Select value={therapistFilter} onValueChange={setTherapistFilter}>
-            <SelectTrigger className="w-52" aria-label="Therapist filter">
-              <SelectValue placeholder="All therapists" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All therapists</SelectItem>
-              {sortedTherapists.map((t) => (
-                <SelectItem key={t.id} value={t.id.toString()}>
-                  {t.first_name} {t.last_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            className="w-52"
+            aria-label="Therapist filter"
+            value={therapistFilter}
+            onValueChange={setTherapistFilter}
+            placeholder="All therapists"
+            options={[
+              { value: "all", label: "All therapists" },
+              ...sortedTherapists.map((t) => ({ value: t.id.toString(), label: `${t.first_name} ${t.last_name}` })),
+            ]}
+          />
         </div>
 
         <label className="text-muted-foreground flex flex-col gap-1 text-xs">
@@ -231,7 +228,10 @@ export default function SessionsPage() {
                             variant="outline"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/sessions/new?clientId=${o.clientId}&date=${dateStr}&time=${timeStr}`, { state: { from: "/sessions" } });
+                              navigate(
+                                `/sessions/new?clientId=${o.clientId}&date=${dateStr}&time=${timeStr}`,
+                                { state: { from: "/sessions" } },
+                              );
                             }}
                           >
                             Log
@@ -262,22 +262,40 @@ export default function SessionsPage() {
           </colgroup>
           <thead>
             <tr className="text-muted-foreground border-b text-left">
-              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("scheduled_at")}>
+              <th
+                className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium"
+                onClick={() => handleSort("scheduled_at")}
+              >
                 Date{sortIndicator("scheduled_at")}
               </th>
-              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("client")}>
+              <th
+                className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium"
+                onClick={() => handleSort("client")}
+              >
                 Client{sortIndicator("client")}
               </th>
-              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("therapist")}>
+              <th
+                className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium"
+                onClick={() => handleSort("therapist")}
+              >
                 Therapist{sortIndicator("therapist")}
               </th>
-              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("session_type")}>
+              <th
+                className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium"
+                onClick={() => handleSort("session_type")}
+              >
                 Type{sortIndicator("session_type")}
               </th>
-              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("status")}>
+              <th
+                className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium"
+                onClick={() => handleSort("status")}
+              >
                 Status{sortIndicator("status")}
               </th>
-              <th className="hover:text-foreground cursor-pointer select-none py-2 font-medium" onClick={() => handleSort("delivery_method")}>
+              <th
+                className="hover:text-foreground cursor-pointer select-none py-2 font-medium"
+                onClick={() => handleSort("delivery_method")}
+              >
                 Delivery{sortIndicator("delivery_method")}
               </th>
             </tr>

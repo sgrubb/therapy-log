@@ -14,7 +14,9 @@ export function useSortableTable<K extends string>(defaultKey: K, defaultDir: "a
   }
 
   function sortIndicator(key: K) {
-    if (sortKey !== key) return null;
+    if (sortKey !== key) {
+      return null;
+    }
     return <span className="ml-1 text-xs">{sortDir === "asc" ? "↑" : "↓"}</span>;
   }
 

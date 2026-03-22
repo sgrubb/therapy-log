@@ -28,7 +28,9 @@ const EMPTY: FormFields = {
 
 function mostRecentOccurrence(dayName: string): string {
   const target = SESSION_DAY_INDEX[dayName as keyof typeof SESSION_DAY_INDEX];
-  if (target === undefined) return "";
+  if (target === undefined) {
+    return "";
+  }
   const today = new Date();
   const daysBack = (today.getDay() - target + 7) % 7;
   const result = new Date(today);
@@ -116,7 +118,9 @@ export function useSessionForm(sessionId?: number, defaults?: SessionFormDefault
   } = useFormState(sessionFormSchema, initialForm);
 
   useEffect(() => {
-    if (!isEdit || sessionId === undefined) return;
+    if (!isEdit || sessionId === undefined) {
+      return;
+    }
     async function load() {
       setFormState("loading");
       try {
@@ -156,10 +160,12 @@ export function useSessionForm(sessionId?: number, defaults?: SessionFormDefault
     setForm((prev) => ({
       ...prev,
       client_id: clientId,
-      therapist_id: client ? client.therapist_id.toString() : prev.therapist_id,
+      therapist_id: prev.therapist_id || (client ? client.therapist_id.toString() : ""),
       time: lockTime ? prev.time : (client?.session_time ?? ""),
       date: lockDate ? prev.date : (client?.session_day ? mostRecentOccurrence(client.session_day) : ""),
-      duration: lockDuration ? prev.duration : (client?.session_duration != null ? minutesToHHMM(client.session_duration) : prev.duration),
+      duration: lockDuration
+        ? prev.duration
+        : (client?.session_duration != null ? minutesToHHMM(client.session_duration) : prev.duration),
       delivery_method: (client?.session_delivery_method ?? prev.delivery_method) as DeliveryMethod,
     }));
     clearError("client_id");

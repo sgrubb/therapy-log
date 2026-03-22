@@ -26,7 +26,9 @@ function readConfig(): AppConfig | null {
 export function getConfiguredDbPath(): string | null {
   if (!app.isPackaged) {
     const envUrl = process.env["DATABASE_URL"];
-    if (!envUrl) return null;
+    if (!envUrl) {
+      return null;
+    }
     return envUrl.replace(/^file:/, "");
   }
   const config = readConfig();

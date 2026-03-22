@@ -74,17 +74,23 @@ export function generatePlaceholders(
 
     for (const client of openClients) {
       const key = `${client.id}-${weekKey}`;
-      if (coveredWeeks.has(key)) continue;
+      if (coveredWeeks.has(key)) {
+        continue;
+      }
 
       const dayIdx = SESSION_DAY_INDEX[client.session_day!];
-      if (dayIdx === undefined) continue;
+      if (dayIdx === undefined) {
+        continue;
+      }
 
       // dayIdx: Sun=0, Mon=1…Sat=6 → offset from Monday
       const daysFromMonday = dayIdx === 0 ? 6 : dayIdx - 1;
       const sessionDate = new Date(cursor);
       sessionDate.setDate(cursor.getDate() + daysFromMonday);
 
-      if (sessionDate < rangeStart || sessionDate > rangeEnd) continue;
+      if (sessionDate < rangeStart || sessionDate > rangeEnd) {
+        continue;
+      }
 
       const [hStr, mStr] = client.session_time!.split(":");
       sessionDate.setHours(Number(hStr ?? 0), Number(mStr ?? 0), 0, 0);
@@ -113,7 +119,9 @@ export function generatePlaceholders(
 export function detectOverlaps(events: CalendarEvent[]): CalendarEvent[] {
   const byTherapist = new Map<number, CalendarEvent[]>();
   for (const e of events) {
-    if (e.isPlaceholder) continue;
+    if (e.isPlaceholder) {
+      continue;
+    }
     const arr = byTherapist.get(e.resourceId) ?? [];
     arr.push(e);
     byTherapist.set(e.resourceId, arr);
