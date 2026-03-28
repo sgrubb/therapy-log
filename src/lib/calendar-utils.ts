@@ -1,3 +1,4 @@
+import { eachWeekOfInterval } from "date-fns";
 import { SESSION_DAY_INDEX, SESSION_TYPE_NAMES } from "@/types/enums";
 import type { SessionWithRelations, ClientWithTherapist, Therapist } from "@/types/ipc";
 
@@ -56,90 +57,74 @@ export function generatePlaceholders(
       selectedTherapistIds.has(c.therapist_id),
   );
 
-  // Build a set of "clientId-weekStart" combos that already have a real session
-  const coveredWeeks = new Set<string>();
-  for (const s of sessions) {
-    const weekStart = getWeekStart(s.scheduled_at);
-    coveredWeeks.add(`${s.client_id}-${weekStart}`);
-  }
+  const coveredWeeks = new Set(
+    sessions.map((s) => `${s.client_id}-${getWeekStart(s.scheduled_at)}`),
+  );
 
-  const placeholders: CalendarEvent[] = [];
+  // Build an array of each Monday in the visible range
+  const weekStarts = eachWeekOfInterval(
+    { start: rangeStart, end: rangeEnd },
+    { weekStartsOn: 1 },
+  );
 
-  // Iterate over each Monday in the visible range
-  const cursor = getWeekStartDate(rangeStart);
-  const end = getWeekStartDate(rangeEnd);
+  return weekStarts.flatMap((weekDate) => {
+    const weekKey = weekDate.toISOString().split("T")[0]!;
+    return openClients
+      .filter((client) => !coveredWeeks.has(`${client.id}-${weekKey}`))
+      .flatMap((client) => {
+         const dayIdx = SESSION_DAY_INDEX[client.session_day!];
+        if (dayIdx === undefined) {
+          return [];
+        }
 
-  while (cursor <= end) {
-    const weekKey = cursor.toISOString().split("T")[0]!;
+        // dayIdx: Sun=0, Mon=1…Sat=6 → offset from Monday
+        const daysFromMonday = dayIdx === 0 ? 6 : dayIdx - 1;
+        const sessionDate = new Date(weekDate);
+        sessionDate.setDate(weekDate.getDate() + daysFromMonday);
 
-    for (const client of openClients) {
-      const key = `${client.id}-${weekKey}`;
-      if (coveredWeeks.has(key)) {
-        continue;
-      }
+        if (sessionDate < rangeStart || sessionDate > rangeEnd) {
+          return [];
+        }
 
-      const dayIdx = SESSION_DAY_INDEX[client.session_day!];
-      if (dayIdx === undefined) {
-        continue;
-      }
+        const [hStr, mStr] = client.session_time!.split(":");
+        sessionDate.setHours(Number(hStr ?? 0), Number(mStr ?? 0), 0, 0);
+        const durationMs = (client.session_duration ?? 60) * 60_000;
 
-      // dayIdx: Sun=0, Mon=1…Sat=6 → offset from Monday
-      const daysFromMonday = dayIdx === 0 ? 6 : dayIdx - 1;
-      const sessionDate = new Date(cursor);
-      sessionDate.setDate(cursor.getDate() + daysFromMonday);
-
-      if (sessionDate < rangeStart || sessionDate > rangeEnd) {
-        continue;
-      }
-
-      const [hStr, mStr] = client.session_time!.split(":");
-      sessionDate.setHours(Number(hStr ?? 0), Number(mStr ?? 0), 0, 0);
-
-      const durationMs = (client.session_duration ?? 60) * 60_000;
-
-      placeholders.push({
-        id: `placeholder-${client.id}-${weekKey}`,
-        title: `${client.first_name} ${client.last_name} (expected)`,
-        start: new Date(sessionDate),
-        end: new Date(sessionDate.getTime() + durationMs),
-        resourceId: client.therapist_id,
-        isPlaceholder: true,
-        isOverlapping: false,
-        clientId: client.id,
-        color: therapistColors.get(client.therapist_id) ?? THERAPIST_COLORS[0]!,
+        return [{
+          id: `placeholder-${client.id}-${weekKey}`,
+          title: `${client.first_name} ${client.last_name} (expected)`,
+          start: new Date(sessionDate),
+          end: new Date(sessionDate.getTime() + durationMs),
+          resourceId: client.therapist_id,
+          isPlaceholder: true,
+          isOverlapping: false,
+          clientId: client.id,
+          color: therapistColors.get(client.therapist_id) ?? THERAPIST_COLORS[0]!,
+        }];
       });
-    }
-
-    cursor.setDate(cursor.getDate() + 7);
-  }
-
-  return placeholders;
+  });
 }
 
 export function detectOverlaps(events: CalendarEvent[]): CalendarEvent[] {
-  const byTherapist = new Map<number, CalendarEvent[]>();
-  for (const e of events) {
-    if (e.isPlaceholder) {
-      continue;
-    }
-    const arr = byTherapist.get(e.resourceId) ?? [];
-    arr.push(e);
-    byTherapist.set(e.resourceId, arr);
-  }
+  const byTherapist = events
+    .filter((e) => !e.isPlaceholder)
+    .reduce((sessions, e) => {
+      const therapistSessions = sessions.get(e.resourceId) ?? [];
+      therapistSessions.push(e);
+      sessions.set(e.resourceId, therapistSessions);
+      return sessions;
+    }, new Map<number, CalendarEvent[]>());
 
-  const overlappingIds = new Set<string>();
-  for (const list of byTherapist.values()) {
-    for (let i = 0; i < list.length; i++) {
-      for (let j = i + 1; j < list.length; j++) {
-        const a = list[i]!;
-        const b = list[j]!;
-        if (a.start < b.end && b.start < a.end) {
-          overlappingIds.add(a.id);
-          overlappingIds.add(b.id);
-        }
-      }
-    }
-  }
+  const overlappingIds = new Set(
+    Array.from(byTherapist.values()).flatMap((sessions) =>
+      sessions.flatMap((a, i) =>
+        sessions
+          .slice(i + 1)
+          .filter((b) => a.start < b.end && b.start < a.end)
+          .flatMap((b) => [a.id, b.id]),
+      ),
+    ),
+  );
 
   return events.map((e) =>
     overlappingIds.has(e.id) ? { ...e, isOverlapping: true } : e,
@@ -153,13 +138,19 @@ export function getOverduePlaceholders(
   selectedTherapistIds?: Set<number>,
   weeksBack = 12,
 ): CalendarEvent[] {
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  yesterday.setHours(23, 59, 59, 999);
-
-  const rangeStart = new Date(yesterday);
-  rangeStart.setDate(yesterday.getDate() - weeksBack * 7);
-  rangeStart.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const yesterday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - 1,
+    23, 59, 59, 999
+  );
+  const rangeStart = new Date(
+    yesterday.getFullYear(),
+    yesterday.getMonth(),
+    yesterday.getDate() - weeksBack * 7,
+    0, 0, 0, 0
+  );
 
   const ids = selectedTherapistIds ?? new Set(clients.map((c) => c.therapist_id));
 
@@ -183,10 +174,12 @@ function getWeekStart(date: Date): string {
 }
 
 function getWeekStartDate(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  const day = d.getDay(); // 0=Sun, 1=Mon…
+  const day = date.getDay(); // 0 = Sun, 1 = Mon…
   const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  return d;
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate() + diff,
+    0, 0, 0, 0
+  );
 }

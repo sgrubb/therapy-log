@@ -61,26 +61,17 @@ export function useCalendarData({
       selectedTherapistIds.has(s.therapist_id),
     );
 
-    let evts = sessionsToEvents(filteredSessions, therapistColors);
-    evts = detectOverlaps(evts);
+    const sessionEvents = detectOverlaps(sessionsToEvents(filteredSessions, therapistColors));
 
-    if (showPlaceholders) {
-      const placeholders = generatePlaceholders(
-        clients,
-        sessions,
-        rangeStart,
-        rangeEnd,
-        selectedTherapistIds,
-        therapistColors,
-      );
-      evts = [...evts, ...placeholders];
-    }
+    const placeholders = showPlaceholders
+      ? generatePlaceholders(clients, sessions, rangeStart, rangeEnd, selectedTherapistIds, therapistColors)
+      : [];
 
-    if (showOverlappingOnly) {
-      evts = evts.filter((e) => e.isOverlapping && !e.isPlaceholder);
-    }
+    const combined = [...sessionEvents, ...placeholders];
 
-    return evts;
+    return showOverlappingOnly
+      ? combined.filter((e) => e.isOverlapping && !e.isPlaceholder)
+      : combined;
   }, [
     sessions,
     clients,
