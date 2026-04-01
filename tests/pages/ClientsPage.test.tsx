@@ -49,7 +49,7 @@ function getStatusSelect() {
 function selectTherapistOption(optionText: string) {
   const trigger = screen.getByRole("combobox", { name: "Therapist filter" });
   fireEvent.click(trigger);
-  fireEvent.click(within(trigger.parentElement!).getByText(optionText));
+  fireEvent.click(within(screen.getByRole("dialog")).getByText(optionText));
 }
 
 describe("ClientsPage", () => {

@@ -62,12 +62,12 @@ function renderSessionsPage() {
 function selectClientOption(optionText: string) {
   const trigger = screen.getByRole("combobox", { name: "Client filter" });
   fireEvent.click(trigger);
-  fireEvent.click(within(trigger.parentElement!).getByText(optionText));
+  fireEvent.click(within(screen.getByRole("dialog")).getByText(optionText));
 }
 function selectTherapistOption(optionText: string) {
   const trigger = screen.getByRole("combobox", { name: "Therapist filter" });
   fireEvent.click(trigger);
-  fireEvent.click(within(trigger.parentElement!).getByText(optionText));
+  fireEvent.click(within(screen.getByRole("dialog")).getByText(optionText));
 }
 function getStatusFilterSelect() {
   // Radix Select mock loses aria-label (SelectTrigger → null); label text gives name "Status"

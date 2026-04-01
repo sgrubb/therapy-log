@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { Popover } from "radix-ui";
 import { ChevronDown } from "lucide-react";
 
 interface Option {
@@ -29,28 +30,7 @@ export function SearchableSelect({
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const containerRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setSearch("");
-        onBlur?.();
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onBlur]);
-
-  useEffect(() => {
-    if (open) {
-      searchRef.current?.focus();
-    } else {
-      setSearch("");
-    }
-  }, [open]);
 
   const filtered = options.filter((o) =>
     o.label.toLowerCase().includes(search.toLowerCase()),
@@ -58,44 +38,53 @@ export function SearchableSelect({
 
   const selectedLabel = options.find((o) => o.value === value)?.label;
 
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (!next) {
+      setSearch("");
+      onBlur?.();
+    }
+  }
+
   function select(v: string) {
     onValueChange(v);
-    setOpen(false);
-    setSearch("");
-    onBlur?.();
+    handleOpenChange(false);
   }
 
   return (
-    <div ref={containerRef} className={`relative${className ? ` ${className}` : ""}`}>
-      <button
-        type="button"
-        role="combobox"
-        aria-expanded={open}
-        aria-label={ariaLabel}
-        aria-invalid={ariaInvalid}
-        onClick={() => setOpen((o) => !o)}
-        className={`border-input bg-background flex h-9 w-full items-center justify-between rounded-md border px-3 py-2 text-sm shadow-xs${ariaInvalid ? " border-destructive" : ""}`}
-      >
-        <span className={!selectedLabel ? "text-muted-foreground" : ""}>
-          {selectedLabel ?? placeholder}
-        </span>
-        <ChevronDown size={14} className="text-muted-foreground ml-2 shrink-0" />
-      </button>
-
-      {open && (
-        <div className="bg-popover border-border absolute z-50 mt-1 w-full rounded-md border shadow-md">
+    <Popover.Root open={open} onOpenChange={handleOpenChange}>
+      <Popover.Trigger asChild>
+        <button
+          type="button"
+          role="combobox"
+          aria-expanded={open}
+          aria-label={ariaLabel}
+          aria-invalid={ariaInvalid}
+          className={`border-input bg-background flex h-9 w-full items-center justify-between rounded-md border px-3 py-2 text-sm shadow-xs${ariaInvalid ? " border-destructive" : ""}${className ? ` ${className}` : ""}`}
+        >
+          <span className={!selectedLabel ? "text-muted-foreground" : ""}>
+            {selectedLabel ?? placeholder}
+          </span>
+          <ChevronDown size={14} className="text-muted-foreground ml-2 shrink-0" />
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          align="start"
+          sideOffset={4}
+          style={{ width: "var(--radix-popover-trigger-width)" }}
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            searchRef.current?.focus();
+          }}
+          className="bg-popover border-border z-50 rounded-md border shadow-md"
+        >
           <div className="p-2">
             <input
               ref={searchRef}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  setOpen(false);
-                  onBlur?.();
-                }
-              }}
               placeholder="Search…"
               className="border-input bg-background w-full rounded border px-2 py-1 text-sm outline-none"
             />
@@ -114,8 +103,8 @@ export function SearchableSelect({
               <p className="text-muted-foreground px-3 py-2 text-sm">No results.</p>
             )}
           </div>
-        </div>
-      )}
-    </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }

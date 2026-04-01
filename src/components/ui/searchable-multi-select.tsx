@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useRef, useState } from "react";
+import { Checkbox, Popover } from "radix-ui";
+import { Check, ChevronDown } from "lucide-react";
 
 interface Option {
   value: string;
@@ -23,31 +24,18 @@ export function SearchableMultiSelect({
 }: SearchableMultiSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const containerRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setSearch("");
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    if (open) {
-      searchRef.current?.focus();
-    } else {
-      setSearch("");
-    }
-  }, [open]);
 
   const filtered = options.filter((o) =>
     o.label.toLowerCase().includes(search.toLowerCase()),
   );
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (!next) {
+      setSearch("");
+    }
+  }
 
   function toggle(optionValue: string) {
     if (value.includes(optionValue)) {
@@ -68,20 +56,29 @@ export function SearchableMultiSelect({
         : `${value.length} selected`;
 
   return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="border-input bg-background ring-offset-background flex h-9 w-full items-center justify-between rounded-md border px-3 py-2 text-sm shadow-xs"
-      >
-        <span className={value.length === 0 ? "text-muted-foreground" : ""}>
-          {triggerLabel}
-        </span>
-        <ChevronDown size={14} className="text-muted-foreground ml-2 shrink-0" />
-      </button>
-
-      {open && (
-        <div className="bg-popover border-border absolute z-50 mt-1 w-full rounded-md border shadow-md">
+    <Popover.Root open={open} onOpenChange={handleOpenChange}>
+      <Popover.Trigger asChild>
+        <button
+          type="button"
+          className="border-input bg-background ring-offset-background flex h-9 w-full items-center justify-between rounded-md border px-3 py-2 text-sm shadow-xs"
+        >
+          <span className={value.length === 0 ? "text-muted-foreground" : ""}>
+            {triggerLabel}
+          </span>
+          <ChevronDown size={14} className="text-muted-foreground ml-2 shrink-0" />
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          align="start"
+          sideOffset={4}
+          style={{ width: "var(--radix-popover-trigger-width)" }}
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            searchRef.current?.focus();
+          }}
+          className="bg-popover border-border z-50 rounded-md border shadow-md"
+        >
           <div className="p-2">
             <input
               ref={searchRef}
@@ -90,7 +87,7 @@ export function SearchableMultiSelect({
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Escape") {
-                  setOpen(false);
+                  handleOpenChange(false);
                 }
               }}
               placeholder="Search…"
@@ -100,7 +97,8 @@ export function SearchableMultiSelect({
           <div className="max-h-52 overflow-auto">
             {filtered.map((opt) => {
               const checked = value.includes(opt.value);
-              const disabled = !checked && maxSelections !== undefined && value.length >= maxSelections;
+              const disabled =
+                !checked && maxSelections !== undefined && value.length >= maxSelections;
               return (
                 <label
                   key={opt.value}
@@ -108,13 +106,17 @@ export function SearchableMultiSelect({
                     disabled ? "text-muted-foreground cursor-not-allowed opacity-50" : "hover:bg-accent"
                   }`}
                 >
-                  <input
-                    type="checkbox"
+                  <Checkbox.Root
                     checked={checked}
                     disabled={disabled}
-                    onChange={() => toggle(opt.value)}
-                    className="shrink-0"
-                  />
+                    onCheckedChange={() => toggle(opt.value)}
+                    aria-label={opt.label}
+                    className="border-input flex h-4 w-4 shrink-0 items-center justify-center rounded border"
+                  >
+                    <Checkbox.Indicator>
+                      <Check size={12} />
+                    </Checkbox.Indicator>
+                  </Checkbox.Root>
                   {opt.label}
                 </label>
               );
@@ -123,8 +125,8 @@ export function SearchableMultiSelect({
               <p className="text-muted-foreground px-3 py-2 text-sm">No results.</p>
             )}
           </div>
-        </div>
-      )}
-    </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }

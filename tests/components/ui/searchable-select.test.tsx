@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 
 const options = [
@@ -45,10 +45,9 @@ describe("SearchableSelect", () => {
     renderSelect();
     fireEvent.click(screen.getByRole("combobox", { name: "Therapist" }));
 
-    const container = screen.getByRole("combobox", { name: "Therapist" }).parentElement!;
-    expect(within(container).getByText("Alice Morgan")).toBeInTheDocument();
-    expect(within(container).getByText("Bob Chen")).toBeInTheDocument();
-    expect(within(container).getByText("Carol Davis")).toBeInTheDocument();
+    expect(screen.getByText("Alice Morgan")).toBeInTheDocument();
+    expect(screen.getByText("Bob Chen")).toBeInTheDocument();
+    expect(screen.getByText("Carol Davis")).toBeInTheDocument();
   });
 
   it("filters options as the user types in the search box", () => {
@@ -56,10 +55,9 @@ describe("SearchableSelect", () => {
     fireEvent.click(screen.getByRole("combobox", { name: "Therapist" }));
     fireEvent.change(screen.getByPlaceholderText("Search…"), { target: { value: "bob" } });
 
-    const container = screen.getByRole("combobox", { name: "Therapist" }).parentElement!;
-    expect(within(container).getByText("Bob Chen")).toBeInTheDocument();
-    expect(within(container).queryByText("Alice Morgan")).not.toBeInTheDocument();
-    expect(within(container).queryByText("Carol Davis")).not.toBeInTheDocument();
+    expect(screen.getByText("Bob Chen")).toBeInTheDocument();
+    expect(screen.queryByText("Alice Morgan")).not.toBeInTheDocument();
+    expect(screen.queryByText("Carol Davis")).not.toBeInTheDocument();
   });
 
   it("shows 'No results.' when search matches nothing", () => {
@@ -74,9 +72,7 @@ describe("SearchableSelect", () => {
     const onChange = vi.fn();
     renderSelect("", onChange);
     fireEvent.click(screen.getByRole("combobox", { name: "Therapist" }));
-
-    const container = screen.getByRole("combobox", { name: "Therapist" }).parentElement!;
-    fireEvent.click(within(container).getByText("Bob Chen"));
+    fireEvent.click(screen.getByText("Bob Chen"));
 
     expect(onChange).toHaveBeenCalledWith("2");
   });
@@ -86,8 +82,7 @@ describe("SearchableSelect", () => {
     fireEvent.click(screen.getByRole("combobox", { name: "Therapist" }));
     expect(screen.getByPlaceholderText("Search…")).toBeInTheDocument();
 
-    const container = screen.getByRole("combobox", { name: "Therapist" }).parentElement!;
-    fireEvent.click(within(container).getByText("Alice Morgan"));
+    fireEvent.click(screen.getByText("Alice Morgan"));
 
     expect(screen.queryByPlaceholderText("Search…")).not.toBeInTheDocument();
   });
@@ -104,8 +99,7 @@ describe("SearchableSelect", () => {
       />,
     );
     fireEvent.click(screen.getByRole("combobox", { name: "Therapist" }));
-    const container = screen.getByRole("combobox", { name: "Therapist" }).parentElement!;
-    fireEvent.click(within(container).getByText("Alice Morgan"));
+    fireEvent.click(screen.getByText("Alice Morgan"));
 
     expect(onBlur).toHaveBeenCalled();
   });
