@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Spinner } from "@/components/ui/spinner";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
 import type { ClientWithTherapist } from "@/types/ipc";
@@ -115,7 +116,7 @@ export default function ClientsPage() {
       </div>
 
       {loading ? (
-        <p className="text-muted-foreground text-sm">Loading…</p>
+        <Spinner />
       ) : (
         <div className="min-w-0 overflow-x-auto">
         <table className="min-w-[580px] w-full table-fixed text-sm">

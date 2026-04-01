@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Check } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
 import type { Therapist } from "@/types/ipc";
@@ -56,7 +57,7 @@ export default function TherapistsPage() {
       )}
 
       {loading ? (
-        <p className="text-muted-foreground text-sm">Loading…</p>
+        <Spinner />
       ) : (
         <table className="w-full text-sm">
           <thead>

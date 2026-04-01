@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Spinner } from "@/components/ui/spinner";
 import { format } from "date-fns";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
@@ -248,7 +249,7 @@ export default function SessionsPage() {
       )}
 
       {loading ? (
-        <p className="text-muted-foreground text-sm">Loading…</p>
+        <Spinner />
       ) : (
         <div className="min-w-0 overflow-x-auto">
         <table className="min-w-[640px] w-full table-fixed text-sm">

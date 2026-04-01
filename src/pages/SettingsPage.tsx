@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ipc, IpcError } from "@/lib/ipc";
+import { Spinner } from "@/components/ui/spinner";
 import log from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 
@@ -40,7 +41,7 @@ export default function SettingsPage() {
   }
 
   if (loading) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
+    return <div className="flex justify-center py-8"><Spinner /></div>;
   }
 
   return (

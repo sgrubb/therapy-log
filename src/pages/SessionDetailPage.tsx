@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
+import { Spinner } from "@/components/ui/spinner";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
 import type { SessionWithRelations } from "@/types/ipc";
@@ -38,7 +39,7 @@ export default function SessionDetailPage() {
   }, [id]);
 
   if (loading) {
-    return <p className="text-muted-foreground text-sm">Loading…</p>;
+    return <div className="flex justify-center py-8"><Spinner /></div>;
   }
 
   if (!session) {

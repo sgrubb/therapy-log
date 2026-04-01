@@ -1,4 +1,5 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { Spinner } from "@/components/ui/spinner";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useTherapist } from "@/context/TherapistContext";
 import { useClientForm } from "@/hooks/useClientForm";
@@ -38,7 +39,7 @@ export default function ClientFormPage() {
   } = useClientForm(id !== undefined ? Number(id) : undefined);
 
   if (formState === "loading") {
-    return <p className="text-muted-foreground text-sm">Loading…</p>;
+    return <div className="flex justify-center py-8"><Spinner /></div>;
   }
 
   return (

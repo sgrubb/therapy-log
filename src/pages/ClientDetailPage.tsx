@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Spinner } from "@/components/ui/spinner";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
 import type { ClientWithTherapist, SessionWithRelations } from "@/types/ipc";
@@ -50,7 +51,7 @@ export default function ClientDetailPage() {
   }, [id, navigate]);
 
   if (loading) {
-    return <p className="text-muted-foreground text-sm">Loading…</p>;
+    return <div className="flex justify-center py-8"><Spinner /></div>;
   }
 
   if (!client) {

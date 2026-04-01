@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TriangleAlert } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { Calendar, dateFnsLocalizer, type View } from "react-big-calendar";
 import { format, parse, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay } from "date-fns";
 import { enGB } from "date-fns/locale";
@@ -184,7 +185,7 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {loading && <p className="text-muted-foreground text-sm">Loading…</p>}
+      {loading && <Spinner />}
 
       <div className="min-h-0 flex-1">
         <Calendar

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { Spinner } from "@/components/ui/spinner";
 import { useTherapist } from "@/context/TherapistContext";
 import { useSessionForm } from "@/hooks/useSessionForm";
 import { ipc } from "@/lib/ipc";
@@ -99,7 +100,7 @@ export default function SessionFormPage() {
   const showMissedReason = !!form.status && form.status !== SessionStatus.Attended;
 
   if (formState === "loading") {
-    return <p className="text-muted-foreground text-sm">Loading…</p>;
+    return <div className="flex justify-center py-8"><Spinner /></div>;
   }
 
   return (

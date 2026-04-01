@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Spinner } from "@/components/ui/spinner";
 import { useTherapist } from "@/context/TherapistContext";
 import { useTherapistForm } from "@/hooks/useTherapistForm";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,7 @@ export default function TherapistFormPage() {
   } = useTherapistForm(id !== undefined ? Number(id) : undefined);
 
   if (!therapistsLoaded || !isAdmin || formState === "loading") {
-    return <p className="text-muted-foreground text-sm">Loading…</p>;
+    return <div className="flex justify-center py-8"><Spinner /></div>;
   }
 
   return (
