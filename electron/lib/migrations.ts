@@ -4,22 +4,37 @@ import { MIGRATIONS, CURRENT_SCHEMA_VERSION } from "../generated/migrations.gene
 
 export { CURRENT_SCHEMA_VERSION };
 
+const LAST_PRE_METADATA_VERSION = 3;
+
+function hasKnownAppTables(db: Database.Database): boolean {
+  const tables = ["Therapist", "Client", "Session"];
+  return tables.every(
+    (name) =>
+      db
+        .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='${name}'`)
+        .get() !== undefined,
+  );
+}
+
 export function checkSchemaVersion(dbPath: string): number | null {
   let db: Database.Database | null = null;
   try {
     db = new Database(dbPath, { readonly: true });
-    const tableExists = db
+
+    const metadataExists = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='Metadata'`)
       .get();
-    if (!tableExists) {
-      return null;
+
+    if (!metadataExists) {
+      return hasKnownAppTables(db) ? LAST_PRE_METADATA_VERSION : null;
     }
 
     const row = db
       .prepare(`SELECT value FROM Metadata WHERE key = 'schema_version'`)
       .get() as { value: string } | undefined;
+
     if (!row) {
-      return null;
+      return hasKnownAppTables(db) ? LAST_PRE_METADATA_VERSION : null;
     }
 
     return parseInt(row.value, 10);
