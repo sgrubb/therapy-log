@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { TriangleAlert } from "lucide-react";
 import { Calendar, dateFnsLocalizer, type View } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay } from "date-fns";
+import { format, parse, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay } from "date-fns";
 import { enGB } from "date-fns/locale";
 import { useTherapist } from "@/context/TherapistContext";
 import { useCalendarData } from "@/hooks/useCalendarData";
@@ -21,26 +22,22 @@ const localizer = dateFnsLocalizer({
 
 function getRangeForDate(date: Date, view: View): { start: Date; end: Date } {
   if (view === "week") {
-    const day = date.getDay();
-    const diff = day === 0 ? -6 : 1 - day;
-    const start = new Date(date);
-    start.setDate(date.getDate() + diff);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
-    return { start, end };
+    return {
+      start: startOfWeek(date, { weekStartsOn: 1 }),
+      end: endOfWeek(date, { weekStartsOn: 1 }),
+    };
   }
-  const start = new Date(date.getFullYear(), date.getMonth(), 1);
-  const end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
-  return { start, end };
+  return {
+    start: startOfMonth(date),
+    end: endOfMonth(date),
+  };
 }
 
 function EventComponent({ event }: { event: CalendarEvent }) {
   return (
     <div className="h-full overflow-hidden px-1 py-0.5 text-xs text-white" title={event.title}>
       {event.isOverlapping && (
-        <span className="mr-1 font-bold" title="Scheduling conflict">⚠</span>
+        <TriangleAlert size={10} className="mr-1 inline shrink-0" aria-label="Scheduling conflict" />
       )}
       {event.title}
     </div>
@@ -170,11 +167,11 @@ export default function CalendarPage() {
               onChange={(e) => setShowPlaceholders(e.target.checked)}
             />
             Show expected sessions
-              {overdueCount > 0 && (
-                <span className="ml-1 rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                  {overdueCount} overdue
-                </span>
-              )}
+            {overdueCount > 0 && (
+              <span className="ml-1 rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                {overdueCount} overdue
+              </span>
+            )}
           </label>
           <label className="text-muted-foreground flex cursor-pointer items-center gap-1.5 text-xs">
             <input
@@ -182,7 +179,7 @@ export default function CalendarPage() {
               checked={showOverlappingOnly}
               onChange={(e) => setShowOverlappingOnly(e.target.checked)}
             />
-            Overlapping only
+            Show overlapping sessions only
           </label>
         </div>
       </div>

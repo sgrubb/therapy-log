@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowUp, ArrowDown } from "lucide-react";
 
 export function useSortableTable<K extends string>(defaultKey: K, defaultDir: "asc" | "desc" = "asc") {
   const [sortKey, setSortKey] = useState<K>(defaultKey);
@@ -17,7 +18,9 @@ export function useSortableTable<K extends string>(defaultKey: K, defaultDir: "a
     if (sortKey !== key) {
       return null;
     }
-    return <span className="ml-1 text-xs">{sortDir === "asc" ? "↑" : "↓"}</span>;
+    return sortDir === "asc"
+      ? <ArrowUp size={12} className="ml-1 inline" />
+      : <ArrowDown size={12} className="ml-1 inline" />;
   }
 
   return { sortKey, sortDir, handleSort, sortIndicator };

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { Check } from "lucide-react";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
 import type { Therapist } from "@/types/ipc";
@@ -76,7 +77,7 @@ export default function TherapistsPage() {
                 </td>
                 {isAdmin && (
                   <td className="py-2 text-center">
-                    {therapist.is_admin ? "✓" : ""}
+                    {therapist.is_admin && <Check size={14} />}
                   </td>
                 )}
               </tr>
