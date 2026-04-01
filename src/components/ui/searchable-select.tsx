@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Popover } from "radix-ui";
 import { ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Option {
   value: string;
@@ -60,7 +61,11 @@ export function SearchableSelect({
           aria-expanded={open}
           aria-label={ariaLabel}
           aria-invalid={ariaInvalid}
-          className={`border-input bg-background flex h-9 w-full items-center justify-between rounded-md border px-3 py-2 text-sm shadow-xs${ariaInvalid ? " border-destructive" : ""}${className ? ` ${className}` : ""}`}
+          className={cn(
+            "border-input bg-background flex h-9 w-full items-center justify-between rounded-md border px-3 py-2 text-sm shadow-xs",
+            ariaInvalid && "border-destructive",
+            className,
+          )}
         >
           <span className={!selectedLabel ? "text-muted-foreground" : ""}>
             {selectedLabel ?? placeholder}

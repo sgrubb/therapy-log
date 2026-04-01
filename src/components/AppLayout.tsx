@@ -7,8 +7,8 @@ import { ipc } from "@/lib/ipc";
 
 const NAV_ITEMS = [
   { to: "/calendar", label: "Calendar" },
-  { to: "/clients", label: "Clients" },
   { to: "/sessions", label: "Sessions" },
+  { to: "/clients", label: "Clients" },
   { to: "/therapists", label: "Therapists" },
 ] as const;
 

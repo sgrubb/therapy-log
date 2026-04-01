@@ -39,7 +39,7 @@ export default function App() {
             </Route>
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="*" element={<Navigate to="/clients" replace />} />
+            <Route path="*" element={<Navigate to="/calendar" replace />} />
           </Route>
         </Routes>
       </HashRouter>
