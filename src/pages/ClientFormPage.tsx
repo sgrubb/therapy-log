@@ -5,6 +5,7 @@ import { useClientForm } from "@/hooks/useClientForm";
 import { SessionDay, Outcome, DeliveryMethod, DELIVERY_METHOD_NAMES } from "@/types/enums";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DurationInput } from "@/components/ui/duration-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/ui/field";
 import { SaveErrorAlert } from "@/components/ui/save-error-alert";
@@ -156,14 +157,12 @@ export default function ClientFormPage() {
           </Field>
 
           <Field label="Session Duration" error={getError("session_duration")} conflictError={getConflictError("session_duration")}>
-            <Input
-              type="time"
+            <DurationInput
               aria-label="Session duration"
               value={form.session_duration ?? ""}
-              onChange={(e) => set("session_duration", e.target.value)}
+              onChange={(v) => set("session_duration", v)}
               onBlur={() => markTouched("session_duration")}
-              min="00:05"
-              max="12:00"
+              aria-invalid={!!getError("session_duration")}
             />
           </Field>
 

@@ -74,10 +74,21 @@ export function useCalendarData({
     showOverlappingOnly,
   ]);
 
+  // Clamp the range end to now so future expected sessions aren't counted as overdue.
+  const overdueRangeEnd = useMemo(() => {
+    const now = new Date();
+    return rangeEnd < now ? rangeEnd : now;
+  }, [rangeEnd]);
+
   const overdueCount = useMemo(
-    () => getOverduePlaceholders(clients, sessions, therapistColors, selectedTherapistIds).length,
-    [clients, sessions, therapistColors, selectedTherapistIds],
+    () => getOverduePlaceholders(clients, sessions, therapistColors, selectedTherapistIds, rangeStart, overdueRangeEnd).length,
+    [clients, sessions, therapistColors, selectedTherapistIds, rangeStart, overdueRangeEnd],
   );
 
-  return { events, overdueCount };
+  const totalOverdueCount = useMemo(
+    () => getOverduePlaceholders(clients, sessions, new Map(), undefined, rangeStart, overdueRangeEnd).length,
+    [clients, sessions, rangeStart, overdueRangeEnd],
+  );
+
+  return { events, overdueCount, totalOverdueCount };
 }

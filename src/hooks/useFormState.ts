@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { z } from "zod";
 
 export type FormState = "idle" | "loading" | "saving" | "error";
@@ -7,7 +7,17 @@ export function useFormState<F extends Record<string, unknown>>(
   schema: z.ZodTypeAny,
   empty: F,
 ) {
-  const [form, setForm] = useState<F>(empty);
+  const [form, setFormReact] = useState<F>(empty);
+  // Ref mirrors form but is updated synchronously so markTouched always
+  // sees the latest value even when called in the same event tick as setForm.
+  const formRef = useRef<F>(empty);
+
+  function setForm(updater: F | ((prev: F) => F)) {
+    const next = typeof updater === "function" ? updater(formRef.current) : updater;
+    formRef.current = next;
+    setFormReact(next);
+  }
+
   const [errors, setErrors] = useState<Partial<Record<keyof F, string>>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const [formState, setFormState] = useState<FormState>("idle");
@@ -24,7 +34,7 @@ export function useFormState<F extends Record<string, unknown>>(
 
   function markTouched(field: string) {
     setTouched((prev) => new Set(prev).add(field));
-    const result = schema.safeParse(form);
+    const result = schema.safeParse(formRef.current);
     const fieldKey = field as keyof F;
     if (result.success) {
       setErrors((prev) => ({ ...prev, [fieldKey]: undefined }));

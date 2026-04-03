@@ -54,10 +54,17 @@ export default function SessionsPage() {
   } = useSessionFilters(sessions);
 
   const overdue = useMemo(() => {
+    const now = new Date();
+    const day = now.getDay();
+    const daysToThisMonday = day === 0 ? 6 : day - 1;
+    const thisMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysToThisMonday, 0, 0, 0, 0);
+    const lastMonday = new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() - 7, 0, 0, 0, 0);
+    const endOfToday = now;
+
     const therapistIds = therapistFilter !== "all"
       ? new Set([Number(therapistFilter)])
       : undefined;
-    let result = getOverduePlaceholders(clients, sessions, new Map(), therapistIds, 2);
+    let result = getOverduePlaceholders(clients, sessions, new Map(), therapistIds, lastMonday, endOfToday);
     if (clientFilter !== "all") {
       result = result.filter((o) => o.clientId === Number(clientFilter));
     }
@@ -170,13 +177,13 @@ export default function SessionsPage() {
       </div>
 
       {overdue.length > 0 && (
-        <div className="border-destructive my-6 w-full rounded-md border px-4 py-3">
+        <div className="my-6 w-full rounded-md border border-red-400 px-4 py-3">
           <button
-            className="text-destructive flex w-full cursor-pointer items-center gap-2 text-sm font-semibold"
+            className="flex w-full cursor-pointer items-center gap-2 text-sm font-semibold text-red-500"
             onClick={() => setOverdueOpen((o) => !o)}
           >
-            Overdue expected sessions
-            <span className="bg-destructive rounded-full px-2 py-0.5 text-xs text-white">
+            Overdue expected sessions since last week
+            <span className="rounded-full bg-red-400 px-2 py-0.5 text-xs text-white">
               {overdue.length}
             </span>
             <span className="ml-auto text-xs">{overdueOpen ? "▲" : "▼"}</span>

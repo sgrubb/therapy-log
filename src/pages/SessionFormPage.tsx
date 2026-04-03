@@ -15,6 +15,7 @@ import {
   MISSED_REASON_NAMES,
 } from "@/types/enums";
 import { Button } from "@/components/ui/button";
+import { DurationInput } from "@/components/ui/duration-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -149,15 +150,12 @@ export default function SessionFormPage() {
           </Field>
 
           <Field label="Duration *" error={getError("duration")} conflictError={getConflictError("duration")}>
-            <Input
-              type="time"
+            <DurationInput
               aria-label="Duration"
               value={form.duration ?? ""}
-              onChange={(e) => set("duration", e.target.value)}
+              onChange={(v) => set("duration", v)}
               onBlur={() => markTouched("duration")}
               aria-invalid={!!getError("duration")}
-              min="00:05"
-              max="12:00"
             />
           </Field>
 

@@ -136,25 +136,17 @@ export function getOverduePlaceholders(
   sessions: SessionWithRelations[],
   therapistColors: Map<number, string>,
   selectedTherapistIds?: Set<number>,
-  weeksBack = 12,
+  rangeStart?: Date,
+  rangeEnd?: Date,
 ): CalendarEvent[] {
   const now = new Date();
-  const yesterday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate() - 1,
-    23, 59, 59, 999
-  );
-  const rangeStart = new Date(
-    yesterday.getFullYear(),
-    yesterday.getMonth(),
-    yesterday.getDate() - weeksBack * 7,
-    0, 0, 0, 0
-  );
+  const end = rangeEnd ?? now;
+  const defaultStart = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 12 * 7, 0, 0, 0, 0);
+  const start = rangeStart ?? defaultStart;
 
   const ids = selectedTherapistIds ?? new Set(clients.map((c) => c.therapist_id));
 
-  return generatePlaceholders(clients, sessions, rangeStart, yesterday, ids, therapistColors);
+  return generatePlaceholders(clients, sessions, start, end, ids, therapistColors);
 }
 
 export function buildTherapistColorMap(

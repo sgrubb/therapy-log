@@ -35,13 +35,15 @@ export default function SettingsPage() {
 
       <section className="space-y-2">
         <h3 className="text-sm font-medium">Database</h3>
-        <p className="text-sm text-muted-foreground">
-          Current location:{" "}
-          <span className="font-mono">{dbPath ?? "Not configured"}</span>
-        </p>
-        <Button variant="outline" onClick={handleChangePath}>
-          Change Database Location
-        </Button>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            Current location:{" "}
+            <span className="font-mono">{dbPath ?? "Not configured"}</span>
+          </p>
+          <Button variant="outline" size="default" onClick={handleChangePath}>
+            Change Database Location
+          </Button>
+        </div>
       </section>
 
       {restartWarning && (

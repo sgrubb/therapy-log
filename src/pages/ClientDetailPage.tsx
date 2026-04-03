@@ -125,7 +125,10 @@ export default function ClientDetailPage() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Sessions</h2>
-          <Button variant="outline" size="sm" disabled>
+          <Button
+            variant="outline"
+            onClick={() => navigate(`/sessions/new?clientId=${clientId}`, { state: { from: `/clients/${clientId}` } })}
+          >
             Add Session
           </Button>
         </div>
@@ -145,7 +148,11 @@ export default function ClientDetailPage() {
             </thead>
             <tbody>
               {sessions.map((s) => (
-                <tr key={s.id} className="border-b">
+                <tr
+                  key={s.id}
+                  className="hover:bg-muted/50 cursor-pointer border-b transition-colors"
+                  onClick={() => navigate(`/sessions/${s.id}`, { state: { from: `/clients/${clientId}`, fromLabel: "Back to Client" } })}
+                >
                   <td className="py-2 pr-4">
                     {s.scheduled_at.toLocaleDateString("en-GB")}
                   </td>

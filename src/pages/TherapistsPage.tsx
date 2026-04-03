@@ -52,7 +52,7 @@ export default function TherapistsPage() {
               </td>
               {isAdmin && (
                 <td className="py-2 text-center">
-                  {therapist.is_admin && <Check size={14} />}
+                  {therapist.is_admin && <Check size={14} className="mx-auto" />}
                 </td>
               )}
             </tr>

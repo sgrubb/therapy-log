@@ -1,4 +1,4 @@
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, useLocation, Link } from "react-router-dom";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
@@ -14,6 +14,10 @@ import { InfoRow } from "@/components/ui/info-row";
 export default function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = location.state as { from?: string; fromLabel?: string } | null;
+  const backTo = locationState?.from ?? "/sessions";
+  const backLabel = locationState?.fromLabel ?? "Back to Sessions";
 
   const sessionId = Number(id);
 
@@ -36,13 +40,18 @@ export default function SessionDetailPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/sessions")}
+          onClick={() => navigate(backTo)}
         >
-          ← Back to Sessions
+          ← {backLabel}
         </Button>
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">
-            {session.client.first_name} {session.client.last_name}
+            <Link
+              to={`/clients/${session.client_id}`}
+              className="hover:underline"
+            >
+              {session.client.first_name} {session.client.last_name}
+            </Link>
           </h1>
           <Button
             variant="outline"

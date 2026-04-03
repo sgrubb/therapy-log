@@ -84,7 +84,7 @@ export default function CalendarPage() {
     [selectedTherapistIds, therapists],
   );
 
-  const { events, overdueCount } = useCalendarData({
+  const { events, overdueCount, totalOverdueCount } = useCalendarData({
     selectedTherapists,
     rangeStart,
     rangeEnd,
@@ -119,7 +119,7 @@ export default function CalendarPage() {
           { state: { from: "/calendar" } },
         );
       } else if (event.sessionId !== undefined) {
-        navigate(`/sessions/${event.sessionId}`);
+        navigate(`/sessions/${event.sessionId}`, { state: { from: "/calendar", fromLabel: "Back to Calendar" } });
       }
     },
     [navigate],
@@ -167,9 +167,9 @@ export default function CalendarPage() {
               onChange={(e) => setShowPlaceholders(e.target.checked)}
             />
             Show expected sessions
-            {overdueCount > 0 && (
-              <span className="ml-1 rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                {overdueCount} overdue
+            {totalOverdueCount > 0 && (
+              <span className="ml-1 rounded-full bg-red-400 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                {overdueCount > 0 ? `${overdueCount} overdue (${totalOverdueCount} total)` : `${totalOverdueCount} total overdue`}
               </span>
             )}
           </label>
