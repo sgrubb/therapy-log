@@ -7,6 +7,7 @@ import { queryKeys } from "@/lib/queryKeys";
 import { getOverduePlaceholders } from "@/lib/calendar-utils";
 import { useSessionFilters } from "@/hooks/useSessionFilters";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { SessionStatus, SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/types/enums";
@@ -82,15 +83,16 @@ export default function SessionsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Sessions</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={reset}>Reset Filters</Button>
-          <Button onClick={() => navigate("/sessions/new")}>Log Session</Button>
+      <PageHeader>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold">Sessions</h1>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={reset}>Reset Filters</Button>
+            <Button onClick={() => navigate("/sessions/new")}>Log Session</Button>
+          </div>
         </div>
-      </div>
 
-      <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3">
         <label className="text-muted-foreground flex flex-col gap-1 text-xs">
           Client
           <SearchableSelect
@@ -174,7 +176,8 @@ export default function SessionsPage() {
             className="w-40"
           />
         </label>
-      </div>
+        </div>
+      </PageHeader>
 
       {overdue.length > 0 && (
         <div className="my-6 w-full rounded-md border border-red-400 px-4 py-3">

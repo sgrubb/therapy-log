@@ -7,6 +7,7 @@ import { useTherapist } from "@/context/TherapistContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InfoRow } from "@/components/ui/info-row";
+import { PageHeader } from "@/components/ui/page-header";
 import { CloseClientDialog } from "@/components/CloseClientDialog";
 import { ReopenClientDialog } from "@/components/ReopenClientDialog";
 
@@ -42,46 +43,48 @@ export default function ClientDetailPage() {
   return (
     <div className="max-w-3xl space-y-6">
       {/* Header */}
-      <div className="space-y-1">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/clients")}
-        >
-          ← Back to Clients
-        </Button>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold">
-              {client.first_name} {client.last_name}
-            </h1>
-            <Badge variant={client.is_closed ? "closed" : "open"}>
-              {client.is_closed ? "Closed" : "Open"}
-            </Badge>
-          </div>
-          <div className="flex gap-2">
-            {canCloseOrReopen && (
-              client.is_closed ? (
-                <ReopenClientDialog
-                  clientId={clientId}
-                  client={client}
-                />
-              ) : (
-                <CloseClientDialog
-                  clientId={clientId}
-                  client={client}
-                />
-              )
-            )}
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/clients/${id}/edit`, { state: { from: `/clients/${id}` } })}
-            >
-              Edit
-            </Button>
+      <PageHeader>
+        <div className="space-y-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/clients")}
+          >
+            ← Back to Clients
+          </Button>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-semibold">
+                {client.first_name} {client.last_name}
+              </h1>
+              <Badge variant={client.is_closed ? "closed" : "open"}>
+                {client.is_closed ? "Closed" : "Open"}
+              </Badge>
+            </div>
+            <div className="flex gap-2">
+              {canCloseOrReopen && (
+                client.is_closed ? (
+                  <ReopenClientDialog
+                    clientId={clientId}
+                    client={client}
+                  />
+                ) : (
+                  <CloseClientDialog
+                    clientId={clientId}
+                    client={client}
+                  />
+                )
+              )}
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/clients/${id}/edit`, { state: { from: `/clients/${id}` } })}
+              >
+                Edit
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Info grid */}
       <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">

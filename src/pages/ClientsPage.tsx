@@ -5,6 +5,7 @@ import { queryKeys } from "@/lib/queryKeys";
 import { useClientFilters } from "@/hooks/useClientFilters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
@@ -35,15 +36,16 @@ export default function ClientsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Clients</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={reset}>Reset Filters</Button>
-          <Button onClick={() => navigate("/clients/new")}>Add Client</Button>
+      <PageHeader>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold">Clients</h1>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={reset}>Reset Filters</Button>
+            <Button onClick={() => navigate("/clients/new")}>Add Client</Button>
+          </div>
         </div>
-      </div>
 
-      <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3">
         <label className="text-muted-foreground flex flex-col gap-1 text-xs">
           Search
           <Input
@@ -99,7 +101,8 @@ export default function ClientsPage() {
             ]}
           />
         </div>
-      </div>
+        </div>
+      </PageHeader>
 
       <div className="min-w-0 overflow-x-auto">
         <table className="min-w-[580px] w-full table-fixed text-sm">

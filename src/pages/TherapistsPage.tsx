@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Check } from "lucide-react";
 import { useTherapist } from "@/context/TherapistContext";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function TherapistsPage() {
   const navigate = useNavigate();
@@ -15,14 +16,16 @@ export default function TherapistsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Therapists</h1>
-        {isAdmin && (
-          <Button onClick={() => navigate("/therapists/new")}>
-            Add Therapist
-          </Button>
-        )}
-      </div>
+      <PageHeader>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold">Therapists</h1>
+          {isAdmin && (
+            <Button onClick={() => navigate("/therapists/new")}>
+              Add Therapist
+            </Button>
+          )}
+        </div>
+      </PageHeader>
 
       {pageError && (
         <div

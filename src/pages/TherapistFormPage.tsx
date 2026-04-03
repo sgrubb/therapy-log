@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { SaveErrorAlert } from "@/components/ui/save-error-alert";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function TherapistFormPage() {
   const { id } = useParams<{ id?: string }>();
@@ -42,9 +43,11 @@ export default function TherapistFormPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-semibold">
-        {isEdit ? "Edit Therapist" : "Add Therapist"}
-      </h1>
+      <PageHeader>
+        <h1 className="text-2xl font-semibold">
+          {isEdit ? "Edit Therapist" : "Add Therapist"}
+        </h1>
+      </PageHeader>
 
       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         <SaveErrorAlert message={saveError} />

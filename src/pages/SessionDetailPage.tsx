@@ -10,6 +10,7 @@ import {
 } from "@/types/enums";
 import { Button } from "@/components/ui/button";
 import { InfoRow } from "@/components/ui/info-row";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -36,31 +37,33 @@ export default function SessionDetailPage() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <div className="space-y-1">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(backTo)}
-        >
-          ← {backLabel}
-        </Button>
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">
-            <Link
-              to={`/clients/${session.client_id}`}
-              className="hover:underline"
-            >
-              {session.client.first_name} {session.client.last_name}
-            </Link>
-          </h1>
+      <PageHeader>
+        <div className="space-y-1">
           <Button
-            variant="outline"
-            onClick={() => navigate(`/sessions/${id}/edit`, { state: { from: `/sessions/${id}` } })}
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(backTo)}
           >
-            Edit
+            ← {backLabel}
           </Button>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-semibold">
+              <Link
+                to={`/clients/${session.client_id}`}
+                className="hover:underline"
+              >
+                {session.client.first_name} {session.client.last_name}
+              </Link>
+            </h1>
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/sessions/${id}/edit`, { state: { from: `/sessions/${id}` } })}
+            >
+              Edit
+            </Button>
+          </div>
         </div>
-      </div>
+      </PageHeader>
 
       <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">
         <InfoRow

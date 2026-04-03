@@ -9,6 +9,7 @@ import { DurationInput } from "@/components/ui/duration-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/ui/field";
 import { SaveErrorAlert } from "@/components/ui/save-error-alert";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Select,
   SelectContent,
@@ -40,9 +41,11 @@ export default function ClientFormPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-semibold">
-        {isEdit ? "Edit Client" : "Add Client"}
-      </h1>
+      <PageHeader>
+        <h1 className="text-2xl font-semibold">
+          {isEdit ? "Edit Client" : "Add Client"}
+        </h1>
+      </PageHeader>
 
       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         <SaveErrorAlert message={saveError} />
