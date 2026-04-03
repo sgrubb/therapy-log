@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TriangleAlert } from "lucide-react";
+import { TriangleAlert, AlertCircle } from "lucide-react";
 import { Calendar, dateFnsLocalizer, type View } from "react-big-calendar";
 import { format, parse, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay } from "date-fns";
 import { enGB } from "date-fns/locale";
@@ -62,7 +62,12 @@ export default function CalendarPage() {
   const [showOverlappingOnly, setShowOverlappingOnly] = useState(false);
 
   useEffect(() => {
-    setSelectedTherapistIds(selectedTherapistId !== null ? [selectedTherapistId.toString()] : []);
+    if (selectedTherapistId !== null) {
+      setSelectedTherapistIds((prev) => {
+        const id = selectedTherapistId.toString();
+        return prev.includes(id) ? prev : [id, ...prev];
+      });
+    }
   }, [selectedTherapistId]);
 
   function reset() {
@@ -84,7 +89,7 @@ export default function CalendarPage() {
     [selectedTherapistIds, therapists],
   );
 
-  const { events, overdueCount, totalOverdueCount } = useCalendarData({
+  const { events, overdueCount } = useCalendarData({
     selectedTherapists,
     rangeStart,
     rangeEnd,
@@ -152,7 +157,16 @@ export default function CalendarPage() {
             <SearchableMultiSelect
               options={therapistOptions}
               value={selectedTherapistIds}
-              onChange={setSelectedTherapistIds}
+              onChange={(ids) => {
+                if (selectedTherapistId !== null) {
+                  const currentId = selectedTherapistId.toString();
+                  setSelectedTherapistIds(
+                    ids.includes(currentId) ? ids : [currentId, ...ids],
+                  );
+                } else {
+                  setSelectedTherapistIds(ids);
+                }
+              }}
               placeholder="Select therapists…"
               maxSelections={5}
             />
@@ -167,9 +181,10 @@ export default function CalendarPage() {
               onChange={(e) => setShowPlaceholders(e.target.checked)}
             />
             Show expected sessions
-            {totalOverdueCount > 0 && (
-              <span className="ml-1 rounded-full bg-red-400 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                {overdueCount > 0 ? `${overdueCount} overdue (${totalOverdueCount} total)` : `${totalOverdueCount} total overdue`}
+            {overdueCount > 0 && (
+              <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-red-400 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                <AlertCircle size={12} />
+                {overdueCount} overdue
               </span>
             )}
           </label>

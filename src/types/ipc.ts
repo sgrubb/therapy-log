@@ -43,6 +43,7 @@ export interface CreateClient {
   first_name: string;
   last_name: string;
   dob: Date;
+  start_date: Date;
   address?: string | null;
   phone?: string | null;
   email?: string | null;
@@ -64,6 +65,7 @@ export interface UpdateClient {
   first_name?: string;
   last_name?: string;
   dob?: Date;
+  start_date?: Date;
   address?: string | null;
   phone?: string | null;
   email?: string | null;

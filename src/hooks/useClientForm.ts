@@ -14,24 +14,27 @@ import type { ClientWithTherapist } from "@/types/ipc";
 // onto IPC payloads without a translation step.
 export type FormFields = z.input<typeof clientFormSchema>;
 
-const EMPTY: FormFields = {
-  first_name: "",
-  last_name: "",
-  hospital_number: "",
-  dob: "",
-  address: "",
-  phone: "",
-  email: "",
-  session_day: "",
-  session_time: "",
-  session_duration: "",
-  session_delivery_method: "",
-  therapist_id: "",
-  pre_score: "",
-  post_score: "",
-  outcome: "",
-  notes: "",
-};
+function emptyForm(): FormFields {
+  return {
+    first_name: "",
+    last_name: "",
+    hospital_number: "",
+    dob: "",
+    start_date: new Date().toISOString().split("T")[0] ?? "",
+    address: "",
+    phone: "",
+    email: "",
+    session_day: "",
+    session_time: "",
+    session_duration: "",
+    session_delivery_method: "",
+    therapist_id: "",
+    pre_score: "",
+    post_score: "",
+    outcome: "",
+    notes: "",
+  };
+}
 
 function minutesToHHMM(minutes: number): string {
   const h = Math.floor(minutes / 60).toString().padStart(2, "0");
@@ -50,6 +53,7 @@ function mapClientToFormFields(client: ClientWithTherapist): FormFields {
     last_name: client.last_name,
     hospital_number: client.hospital_number,
     dob: client.dob.toISOString().split("T")[0] ?? "",
+    start_date: client.start_date.toISOString().split("T")[0] ?? "",
     address: client.address ?? "",
     phone: client.phone ?? "",
     email: client.email ?? "",
@@ -71,6 +75,7 @@ function buildPayload(form: FormFields) {
     last_name: form.last_name.trim(),
     hospital_number: form.hospital_number.trim(),
     dob: new Date(form.dob),
+    start_date: new Date(form.start_date),
     address: (form.address ?? "").trim() || undefined,
     phone: (form.phone ?? "").trim() || undefined,
     email: (form.email ?? "").trim() || undefined,
@@ -101,7 +106,7 @@ export function useClientForm(clientId?: number) {
 
   const [isClosed, setIsClosed] = useState(clientData?.is_closed ?? false);
 
-  const initialForm = clientData ? mapClientToFormFields(clientData) : EMPTY;
+  const initialForm = clientData ? mapClientToFormFields(clientData) : emptyForm();
 
   const {
     form, setForm,
@@ -127,7 +132,7 @@ export function useClientForm(clientId?: number) {
   }, []); // runs once on mount; data is stable after Suspense resolves
 
   const set = <K extends keyof FormFields>(field: K, value: FormFields[K]) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev: FormFields) => ({ ...prev, [field]: value }));
     clearError(field);
     clearConflictField(field);
   };

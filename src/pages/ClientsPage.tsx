@@ -75,7 +75,7 @@ export default function ClientsPage() {
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground text-xs">Therapist</span>
             {selectedTherapistId !== null && (
-              <label className="text-muted-foreground mr-4 flex cursor-pointer items-center gap-1.5 text-xs">
+              <label className="text-muted-foreground mr-3 flex cursor-pointer items-center gap-1.5 text-xs">
                 Mine
                 <input
                   type="checkbox"

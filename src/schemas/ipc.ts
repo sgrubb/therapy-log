@@ -16,6 +16,7 @@ const clientBaseSchema = z.object({
   first_name: z.string(),
   last_name: z.string(),
   dob: z.date(),
+  start_date: z.date(),
   address: z.string().nullable(),
   phone: z.string().nullable(),
   email: z.string().nullable(),

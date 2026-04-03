@@ -76,6 +76,7 @@ model Client {
   first_name      String
   last_name       String
   dob             DateTime
+  start_date      DateTime
   address         String?
   phone           String?
   email           String?

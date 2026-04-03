@@ -1,6 +1,6 @@
-import { eachWeekOfInterval } from "date-fns";
-import { SESSION_DAY_INDEX, SESSION_TYPE_NAMES } from "@/types/enums";
+import { SESSION_TYPE_NAMES } from "@/types/enums";
 import type { SessionWithRelations, ClientWithTherapist, Therapist } from "@/types/ipc";
+import { getExpectedSessions, getWeekStart } from "@/lib/expected-sessions";
 
 export const THERAPIST_COLORS = [
   "#3b82f6", // blue
@@ -49,60 +49,26 @@ export function generatePlaceholders(
   selectedTherapistIds: Set<number>,
   therapistColors: Map<number, string>,
 ): CalendarEvent[] {
-  const openClients = clients.filter(
-    (c) =>
-      !c.is_closed &&
-      c.session_day !== null &&
-      c.session_time !== null &&
-      selectedTherapistIds.has(c.therapist_id),
-  );
-
-  const coveredWeeks = new Set(
-    sessions.map((s) => `${s.client_id}-${getWeekStart(s.scheduled_at)}`),
-  );
-
-  // Build an array of each Monday in the visible range
-  const weekStarts = eachWeekOfInterval(
-    { start: rangeStart, end: rangeEnd },
-    { weekStartsOn: 1 },
-  );
-
-  return weekStarts.flatMap((weekDate) => {
-    const weekKey = weekDate.toISOString().split("T")[0]!;
-    return openClients
-      .filter((client) => !coveredWeeks.has(`${client.id}-${weekKey}`))
-      .flatMap((client) => {
-         const dayIdx = SESSION_DAY_INDEX[client.session_day!];
-        if (dayIdx === undefined) {
-          return [];
-        }
-
-        // dayIdx: Sun=0, Mon=1…Sat=6 → offset from Monday
-        const daysFromMonday = dayIdx === 0 ? 6 : dayIdx - 1;
-        const sessionDate = new Date(weekDate);
-        sessionDate.setDate(weekDate.getDate() + daysFromMonday);
-
-        if (sessionDate < rangeStart || sessionDate > rangeEnd) {
-          return [];
-        }
-
-        const [hStr, mStr] = client.session_time!.split(":");
-        sessionDate.setHours(Number(hStr ?? 0), Number(mStr ?? 0), 0, 0);
-        const durationMs = (client.session_duration ?? 60) * 60_000;
-
-        return [{
-          id: `placeholder-${client.id}-${weekKey}`,
-          title: `${client.first_name} ${client.last_name} (expected)`,
-          start: new Date(sessionDate),
-          end: new Date(sessionDate.getTime() + durationMs),
-          resourceId: client.therapist_id,
-          isPlaceholder: true,
-          isOverlapping: false,
-          clientId: client.id,
-          color: therapistColors.get(client.therapist_id) ?? THERAPIST_COLORS[0]!,
-        }];
-      });
-  });
+  const clientMap = new Map(clients.map((c) => [c.id, c]));
+  return getExpectedSessions(clients, sessions, rangeStart, rangeEnd, selectedTherapistIds)
+    .map((expected) => {
+      const weekKey = getWeekStart(expected.start);
+      const client = clientMap.get(expected.clientId);
+      const title = client
+        ? `${client.first_name} ${client.last_name} (expected)`
+        : "Unknown (expected)";
+      return {
+        id: `placeholder-${expected.clientId}-${weekKey}`,
+        title,
+        start: expected.start,
+        end: expected.end,
+        resourceId: expected.therapistId,
+        isPlaceholder: true,
+        isOverlapping: false,
+        clientId: expected.clientId,
+        color: therapistColors.get(expected.therapistId) ?? THERAPIST_COLORS[0]!,
+      };
+    });
 }
 
 export function detectOverlaps(events: CalendarEvent[]): CalendarEvent[] {
@@ -143,9 +109,7 @@ export function getOverduePlaceholders(
   const end = rangeEnd ?? now;
   const defaultStart = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 12 * 7, 0, 0, 0, 0);
   const start = rangeStart ?? defaultStart;
-
   const ids = selectedTherapistIds ?? new Set(clients.map((c) => c.therapist_id));
-
   return generatePlaceholders(clients, sessions, start, end, ids, therapistColors);
 }
 
@@ -159,19 +123,3 @@ export function buildTherapistColorMap(
   return map;
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-function getWeekStart(date: Date): string {
-  return getWeekStartDate(date).toISOString().split("T")[0]!;
-}
-
-function getWeekStartDate(date: Date): Date {
-  const day = date.getDay(); // 0 = Sun, 1 = Mon…
-  const diff = day === 0 ? -6 : 1 - day;
-  return new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate() + diff,
-    0, 0, 0, 0
-  );
-}

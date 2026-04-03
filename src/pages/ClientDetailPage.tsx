@@ -94,6 +94,10 @@ export default function ClientDetailPage() {
           value={client.dob.toLocaleDateString("en-GB")}
         />
         <InfoRow
+          label="Start Date"
+          value={client.start_date.toLocaleDateString("en-GB")}
+        />
+        <InfoRow
           label="Therapist"
           value={`${client.therapist.first_name} ${client.therapist.last_name}`}
         />

@@ -92,6 +92,18 @@ export default function ClientFormPage() {
               aria-invalid={!!getError("dob")}
             />
           </Field>
+          <Field label="Start Date *" error={getError("start_date")} conflictError={getConflictError("start_date")}>
+            <Input
+              id="start_date"
+              type="date"
+              aria-label="Start date"
+              value={form.start_date}
+              onChange={(e) => set("start_date", e.target.value)}
+              onBlur={() => markTouched("start_date")}
+              aria-invalid={!!getError("start_date")}
+              disabled={isEdit}
+            />
+          </Field>
         </div>
 
         <Field label="Address" error={getError("address")} conflictError={getConflictError("address")}>

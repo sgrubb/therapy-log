@@ -7,9 +7,9 @@ import {
   generatePlaceholders,
   detectOverlaps,
   buildTherapistColorMap,
-  getOverduePlaceholders,
 } from "@/lib/calendar-utils";
 import type { CalendarEvent } from "@/lib/calendar-utils";
+import { getExpectedSessions } from "@/lib/expected-sessions";
 import type { Therapist } from "@/types/ipc";
 
 interface UseCalendarDataOptions {
@@ -81,14 +81,9 @@ export function useCalendarData({
   }, [rangeEnd]);
 
   const overdueCount = useMemo(
-    () => getOverduePlaceholders(clients, sessions, therapistColors, selectedTherapistIds, rangeStart, overdueRangeEnd).length,
-    [clients, sessions, therapistColors, selectedTherapistIds, rangeStart, overdueRangeEnd],
+    () => getExpectedSessions(clients, sessions, rangeStart, overdueRangeEnd, selectedTherapistIds).length,
+    [clients, sessions, selectedTherapistIds, rangeStart, overdueRangeEnd],
   );
 
-  const totalOverdueCount = useMemo(
-    () => getOverduePlaceholders(clients, sessions, new Map(), undefined, rangeStart, overdueRangeEnd).length,
-    [clients, sessions, rangeStart, overdueRangeEnd],
-  );
-
-  return { events, overdueCount, totalOverdueCount };
+  return { events, overdueCount };
 }

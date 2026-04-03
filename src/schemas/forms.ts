@@ -14,6 +14,7 @@ export const clientFormSchema = z
     last_name: z.string().min(1, "Last name is required."),
     hospital_number: z.string().min(1, "Hospital number is required."),
     dob: z.string().min(1, "Date of birth is required."),
+    start_date: z.string().min(1, "Start date is required."),
     address: z.string().optional().or(z.literal("")),
     email: z
       .email("Please enter a valid email address.")
