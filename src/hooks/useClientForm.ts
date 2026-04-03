@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { z } from "zod";
+import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
-import log from "@/lib/logger";
+import { queryKeys } from "@/lib/queryKeys";
 import { clientFormSchema } from "@/schemas/forms";
 import { SessionDay, Outcome } from "@/types/enums";
 import type { DeliveryMethod } from "@/types/enums";
@@ -87,8 +88,20 @@ function buildPayload(form: FormFields) {
 
 export function useClientForm(clientId?: number) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const isEdit = clientId !== undefined;
-  const [isClosed, setIsClosed] = useState(false);
+
+  const { data: clientData } = useSuspenseQuery({
+    queryKey: isEdit ? queryKeys.clients.detail(clientId!) : ["client-form", "new"],
+    queryFn: isEdit
+      ? () => ipc.getClient(clientId!)
+      : (): Promise<ClientWithTherapist | null> => Promise.resolve(null),
+    staleTime: isEdit ? 0 : Infinity,
+  });
+
+  const [isClosed, setIsClosed] = useState(clientData?.is_closed ?? false);
+
+  const initialForm = clientData ? mapClientToFormFields(clientData) : EMPTY;
 
   const {
     form, setForm,
@@ -103,30 +116,15 @@ export function useClientForm(clientId?: number) {
     getConflictError,
     clearConflictField,
     handleConflict,
-  } = useFormState(clientFormSchema, EMPTY);
+  } = useFormState(clientFormSchema, initialForm);
 
   useEffect(() => {
-    if (!isEdit || clientId === undefined) {
-      return;
+    if (clientData) {
+      setOriginalForm(mapClientToFormFields(clientData));
+      setUpdatedAt(clientData.updated_at);
+      setIsClosed(clientData.is_closed);
     }
-    async function load() {
-      setFormState("loading");
-      try {
-        const client = await ipc.getClient(clientId!);
-        const fields = mapClientToFormFields(client);
-        setForm(fields);
-        setOriginalForm(fields);
-        setUpdatedAt(client.updated_at);
-        setIsClosed(client.is_closed);
-      } catch (err) {
-        log.error("Failed to load client:", err);
-        navigate("/clients");
-      } finally {
-        setFormState("idle");
-      }
-    }
-    load();
-  }, [clientId, isEdit, navigate]);
+  }, []); // runs once on mount; data is stable after Suspense resolves
 
   const set = <K extends keyof FormFields>(field: K, value: FormFields[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -136,16 +134,21 @@ export function useClientForm(clientId?: number) {
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      return;
+    }
     setFormState("saving");
     setSaveError(null);
     try {
       const payload = buildPayload(form);
       if (isEdit && clientId !== undefined) {
         await ipc.updateClient(clientId, { ...payload, updated_at: updatedAt! });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(clientId) });
         navigate(`/clients/${clientId}`);
       } else {
         const created = await ipc.createClient(payload);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
         navigate(`/clients/${created.id}`);
       }
     } catch (err) {

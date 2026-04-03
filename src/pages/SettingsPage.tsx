@@ -1,28 +1,18 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
-import { Spinner } from "@/components/ui/spinner";
-import log from "@/lib/logger";
+import { queryKeys } from "@/lib/queryKeys";
 import { Button } from "@/components/ui/button";
 
 export default function SettingsPage() {
-  const [dbPath, setDbPath] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [restartWarning, setRestartWarning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const path = await ipc.getDbPath();
-        setDbPath(path);
-      } catch (err) {
-        log.error("Failed to load database path:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+  const { data: dbPath } = useSuspenseQuery({
+    queryKey: queryKeys.settings.dbPath,
+    queryFn: () => ipc.getDbPath(),
+  });
 
   async function handleChangePath() {
     setError(null);
@@ -32,16 +22,11 @@ export default function SettingsPage() {
         return;
       }
       await ipc.setDbPath(chosen);
-      setDbPath(chosen);
+      queryClient.setQueryData(queryKeys.settings.dbPath, chosen);
       setRestartWarning(true);
     } catch (err) {
-      log.error("Failed to update database path:", err);
       setError(err instanceof IpcError ? err.message : "An unexpected error occurred.");
     }
-  }
-
-  if (loading) {
-    return <div className="flex justify-center py-8"><Spinner /></div>;
   }
 
   return (

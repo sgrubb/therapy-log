@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
-import log from "@/lib/logger";
+import { queryKeys } from "@/lib/queryKeys";
 import {
   sessionsToEvents,
   generatePlaceholders,
@@ -9,7 +10,7 @@ import {
   getOverduePlaceholders,
 } from "@/lib/calendar-utils";
 import type { CalendarEvent } from "@/lib/calendar-utils";
-import type { SessionWithRelations, ClientWithTherapist, Therapist } from "@/types/ipc";
+import type { Therapist } from "@/types/ipc";
 
 interface UseCalendarDataOptions {
   selectedTherapists: Therapist[];
@@ -26,25 +27,15 @@ export function useCalendarData({
   showPlaceholders,
   showOverlappingOnly,
 }: UseCalendarDataOptions) {
-  const [sessions, setSessions] = useState<SessionWithRelations[]>([]);
-  const [clients, setClients] = useState<ClientWithTherapist[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: sessions } = useSuspenseQuery({
+    queryKey: queryKeys.sessions.all,
+    queryFn: () => ipc.listSessions(),
+  });
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      try {
-        const [s, c] = await Promise.all([ipc.listSessions(), ipc.listClients()]);
-        setSessions(s);
-        setClients(c);
-      } catch (err) {
-        log.error("Failed to load calendar data:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+  const { data: clients } = useSuspenseQuery({
+    queryKey: queryKeys.clients.all,
+    queryFn: () => ipc.listClients(),
+  });
 
   const selectedTherapistIds = useMemo(
     () => new Set(selectedTherapists.map((t) => t.id)),
@@ -88,5 +79,5 @@ export function useCalendarData({
     [clients, sessions, therapistColors, selectedTherapistIds],
   );
 
-  return { events, loading, overdueCount };
+  return { events, overdueCount };
 }

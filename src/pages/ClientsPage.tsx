@@ -1,9 +1,7 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Spinner } from "@/components/ui/spinner";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
-import log from "@/lib/logger";
-import type { ClientWithTherapist } from "@/types/ipc";
+import { queryKeys } from "@/lib/queryKeys";
 import { useClientFilters } from "@/hooks/useClientFilters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,22 +18,10 @@ import {
 export default function ClientsPage() {
   const navigate = useNavigate();
 
-  const [clients, setClients] = useState<ClientWithTherapist[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const data = await ipc.listClients();
-        setClients(data);
-      } catch (err) {
-        log.error("Failed to fetch clients:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+  const { data: clients } = useSuspenseQuery({
+    queryKey: queryKeys.clients.all,
+    queryFn: () => ipc.listClients(),
+  });
 
   const {
     search, setSearch,
@@ -115,10 +101,7 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {loading ? (
-        <Spinner />
-      ) : (
-        <div className="min-w-0 overflow-x-auto">
+      <div className="min-w-0 overflow-x-auto">
         <table className="min-w-[580px] w-full table-fixed text-sm">
           <colgroup>
             <col className="w-[28%]" />
@@ -177,8 +160,7 @@ export default function ClientsPage() {
             )}
           </tbody>
         </table>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

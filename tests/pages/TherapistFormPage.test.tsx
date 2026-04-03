@@ -1,10 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Suspense } from "react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { TherapistProvider } from "@/context/TherapistContext";
 import TherapistFormPage from "@/pages/TherapistFormPage";
 import { wrapped, mockTherapists, errorResponse, MOCK_UPDATED_AT } from "../helpers/ipc-mocks";
+import { createTestQueryClient } from "../helpers/query-client";
 
 const mockInvoke = vi.fn();
 
@@ -26,17 +30,24 @@ function renderNewForm() {
     return Promise.resolve(wrapped(null));
   });
 
+  const queryClient = createTestQueryClient();
   return render(
-    <TherapistProvider>
-      <MemoryRouter initialEntries={["/therapists/new"]}>
-        <Routes>
-          <Route path="/therapists">
-            <Route path="new" element={<TherapistFormPage />} />
-            <Route index element={<div data-testid="therapists-list" />} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </TherapistProvider>,
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
+        <Suspense fallback={<div>Loading...</div>}>
+          <TherapistProvider>
+            <MemoryRouter initialEntries={["/therapists/new"]}>
+              <Routes>
+                <Route path="/therapists">
+                  <Route path="new" element={<TherapistFormPage />} />
+                  <Route index element={<div data-testid="therapists-list" />} />
+                </Route>
+              </Routes>
+            </MemoryRouter>
+          </TherapistProvider>
+        </Suspense>
+      </ErrorBoundary>
+    </QueryClientProvider>,
   );
 }
 
@@ -53,17 +64,24 @@ function renderEditForm() {
     return Promise.resolve(wrapped(null));
   });
 
+  const queryClient = createTestQueryClient();
   return render(
-    <TherapistProvider>
-      <MemoryRouter initialEntries={["/therapists/1/edit"]}>
-        <Routes>
-          <Route path="/therapists">
-            <Route path=":id/edit" element={<TherapistFormPage />} />
-            <Route index element={<div data-testid="therapists-list" />} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </TherapistProvider>,
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
+        <Suspense fallback={<div>Loading...</div>}>
+          <TherapistProvider>
+            <MemoryRouter initialEntries={["/therapists/1/edit"]}>
+              <Routes>
+                <Route path="/therapists">
+                  <Route path=":id/edit" element={<TherapistFormPage />} />
+                  <Route index element={<div data-testid="therapists-list" />} />
+                </Route>
+              </Routes>
+            </MemoryRouter>
+          </TherapistProvider>
+        </Suspense>
+      </ErrorBoundary>
+    </QueryClientProvider>,
   );
 }
 
@@ -332,17 +350,24 @@ describe("TherapistFormPage — edit therapist", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient1 = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/therapists/1/edit"]}>
-          <Routes>
-            <Route path="/therapists">
-              <Route path=":id/edit" element={<TherapistFormPage />} />
-              <Route index element={<div data-testid="therapists-list" />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient1}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/therapists/1/edit"]}>
+                <Routes>
+                  <Route path="/therapists">
+                    <Route path=":id/edit" element={<TherapistFormPage />} />
+                    <Route index element={<div data-testid="therapists-list" />} />
+                  </Route>
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
@@ -435,26 +460,34 @@ describe("TherapistFormPage — edit therapist", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient2 = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/therapists/1/edit"]}>
-          <Routes>
-            <Route path="/therapists">
-              <Route path=":id/edit" element={<TherapistFormPage />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient2}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/therapists/1/edit"]}>
+                <Routes>
+                  <Route path="/therapists">
+                    <Route path=":id/edit" element={<TherapistFormPage />} />
+                  </Route>
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
-    await waitFor(() => screen.getByText(/loading/i));
+    expect(screen.getByText(/loading/i)).toBeInTheDocument();
 
     resolveTherapist(mockTherapist);
     await waitFor(() => screen.getByLabelText(/first name/i));
   });
 
-  it("navigates to /therapists when therapist fetch throws", async () => {
+  it("shows error boundary when therapist fetch throws", async () => {
     localStorage.setItem("selectedTherapistId", "1");
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") {
@@ -466,22 +499,30 @@ describe("TherapistFormPage — edit therapist", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient3 = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/therapists/1/edit"]}>
-          <Routes>
-            <Route path="/therapists">
-              <Route path=":id/edit" element={<TherapistFormPage />} />
-              <Route index element={<div data-testid="therapists-list" />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient3}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/therapists/1/edit"]}>
+                <Routes>
+                  <Route path="/therapists">
+                    <Route path=":id/edit" element={<TherapistFormPage />} />
+                    <Route index element={<div data-testid="therapists-list" />} />
+                  </Route>
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("therapists-list")).toBeInTheDocument();
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
     });
+    spy.mockRestore();
   });
 
   it("shows retry message when conflict has no field differences", async () => {
@@ -503,17 +544,24 @@ describe("TherapistFormPage — edit therapist", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient4 = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/therapists/1/edit"]}>
-          <Routes>
-            <Route path="/therapists">
-              <Route path=":id/edit" element={<TherapistFormPage />} />
-              <Route index element={<div data-testid="therapists-list" />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient4}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/therapists/1/edit"]}>
+                <Routes>
+                  <Route path="/therapists">
+                    <Route path=":id/edit" element={<TherapistFormPage />} />
+                    <Route index element={<div data-testid="therapists-list" />} />
+                  </Route>
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => screen.getByLabelText(/first name/i));
@@ -525,8 +573,9 @@ describe("TherapistFormPage — edit therapist", () => {
     });
   });
 
-  it("navigates to /therapists when therapist not found", async () => {
+  it("shows error boundary when therapist not found", async () => {
     localStorage.setItem("selectedTherapistId", "1");
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") {
@@ -538,22 +587,30 @@ describe("TherapistFormPage — edit therapist", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient5 = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/therapists/99/edit"]}>
-          <Routes>
-            <Route path="/therapists">
-              <Route path=":id/edit" element={<TherapistFormPage />} />
-              <Route index element={<div data-testid="therapists-list" />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient5}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/therapists/99/edit"]}>
+                <Routes>
+                  <Route path="/therapists">
+                    <Route path=":id/edit" element={<TherapistFormPage />} />
+                    <Route index element={<div data-testid="therapists-list" />} />
+                  </Route>
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("therapists-list")).toBeInTheDocument();
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
     });
+    spy.mockRestore();
   });
 });
 
@@ -570,17 +627,24 @@ describe("TherapistFormPage — non-admin", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient6 = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/therapists/new"]}>
-          <Routes>
-            <Route path="/therapists">
-              <Route path="new" element={<TherapistFormPage />} />
-              <Route index element={<div data-testid="therapists-list" />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient6}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/therapists/new"]}>
+                <Routes>
+                  <Route path="/therapists">
+                    <Route path="new" element={<TherapistFormPage />} />
+                    <Route index element={<div data-testid="therapists-list" />} />
+                  </Route>
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {

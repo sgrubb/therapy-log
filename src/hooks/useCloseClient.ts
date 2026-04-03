@@ -6,6 +6,8 @@ import type { ClientWithTherapist } from "@/types/ipc";
 import { Outcome } from "@/types/enums";
 import { closeClientSchema } from "@/schemas/forms";
 import { useFormState } from "@/hooks/useFormState";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queryKeys";
 
 export type FormFields = z.input<typeof closeClientSchema>;
 
@@ -15,11 +17,8 @@ const EMPTY: FormFields = {
   closing_notes: "",
 };
 
-export function useCloseClient(
-  clientId: number | undefined,
-  client: ClientWithTherapist | null,
-  onSuccess: (updated: ClientWithTherapist) => void,
-) {
+export function useCloseClient(clientId: number, client: ClientWithTherapist) {
+  const queryClient = useQueryClient();
   const [showCloseDialog, setShowCloseDialog] = useState(false);
 
   const {
@@ -53,7 +52,9 @@ export function useCloseClient(
   }
 
   async function handleCloseClient() {
-    if (!validate()) return;
+    if (!validate()) {
+      return;
+    }
     setFormState("saving");
     setSaveError(null);
     try {
@@ -63,12 +64,13 @@ export function useCloseClient(
       const appendedEntry = `Client closed - ${date}\n${closingNotes}`;
       const notesUpdate = existingNotes ? `${existingNotes}\n\n${appendedEntry}` : appendedEntry;
 
-      const updated = await ipc.closeClient(clientId!, {
+      await ipc.closeClient(clientId, {
         post_score: form.post_score ? Number(form.post_score) : null,
         outcome: form.outcome as Outcome,
         notes: notesUpdate,
       });
-      onSuccess(updated);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(clientId) });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
       setShowCloseDialog(false);
     } catch (err) {
       log.error("Failed to close client:", err);

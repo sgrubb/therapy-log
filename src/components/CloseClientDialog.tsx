@@ -18,10 +18,9 @@ import {
 interface Props {
   clientId: number;
   client: ClientWithTherapist;
-  onSuccess: (updated: ClientWithTherapist) => void;
 }
 
-export function CloseClientDialog({ clientId, client, onSuccess }: Props) {
+export function CloseClientDialog({ clientId, client }: Props) {
   const {
     showCloseDialog,
     form,
@@ -33,7 +32,7 @@ export function CloseClientDialog({ clientId, client, onSuccess }: Props) {
     openCloseDialog,
     dismissCloseDialog,
     handleCloseClient,
-  } = useCloseClient(clientId, client, onSuccess);
+  } = useCloseClient(clientId, client);
 
   const saving = formState === "saving";
 

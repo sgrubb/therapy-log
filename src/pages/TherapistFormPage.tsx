@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Spinner } from "@/components/ui/spinner";
 import { useTherapist } from "@/context/TherapistContext";
 import { useTherapistForm } from "@/hooks/useTherapistForm";
 import { Button } from "@/components/ui/button";
@@ -15,16 +14,15 @@ export default function TherapistFormPage() {
 
   const selectedTherapist = therapists.find((t) => t.id === selectedTherapistId);
   const isAdmin = selectedTherapist?.is_admin ?? false;
-  const therapistsLoaded = therapists.length > 0;
 
   useEffect(() => {
-    if (therapistsLoaded && !isAdmin) {
+    if (!isAdmin) {
       navigate("/therapists", {
         replace: true,
         state: { error: "You do not have permission to manage therapists." },
       });
     }
-  }, [therapistsLoaded, isAdmin, navigate]);
+  }, [isAdmin, navigate]);
 
   const {
     form,
@@ -38,8 +36,8 @@ export default function TherapistFormPage() {
     getError,
   } = useTherapistForm(id !== undefined ? Number(id) : undefined);
 
-  if (!therapistsLoaded || !isAdmin || formState === "loading") {
-    return <div className="flex justify-center py-8"><Spinner /></div>;
+  if (!isAdmin) {
+    return null;
   }
 
   return (

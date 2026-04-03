@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { TherapistProvider } from "@/context/TherapistContext";
 import { Settings } from "lucide-react";
 import TherapistSelector from "@/components/TherapistSelector";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import { Spinner } from "@/components/ui/spinner";
 import { ipc } from "@/lib/ipc";
 
 const NAV_ITEMS = [
@@ -37,9 +39,13 @@ function AppLayout() {
   useEffect(() => {
     window.electronAPI?.onNavigateToNew(() => {
       const path = locationRef.current;
-      if (path.startsWith("/sessions")) navigate("/sessions/new");
-      else if (path.startsWith("/therapists")) navigate("/therapists/new");
-      else navigate("/clients/new");
+      if (path.startsWith("/sessions")) {
+        navigate("/sessions/new");
+      } else if (path.startsWith("/therapists")) {
+        navigate("/therapists/new");
+      } else {
+        navigate("/clients/new");
+      }
     });
   }, [navigate]);
 
@@ -98,7 +104,13 @@ function AppLayout() {
 
         {/* Page content */}
         <main className="flex-1 overflow-auto p-6">
-          <Outlet />
+          <ErrorBoundary>
+            <Suspense fallback={
+              <div className="flex justify-center py-8"><Spinner /></div>
+            }>
+              <Outlet />
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
     </div>
@@ -107,8 +119,10 @@ function AppLayout() {
 
 export default function AppLayoutWithProviders() {
   return (
-    <TherapistProvider>
-      <AppLayout />
-    </TherapistProvider>
+    <Suspense fallback={<div className="flex h-screen items-center justify-center"><Spinner /></div>}>
+      <TherapistProvider>
+        <AppLayout />
+      </TherapistProvider>
+    </Suspense>
   );
 }

@@ -1,9 +1,7 @@
-import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { Spinner } from "@/components/ui/spinner";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
-import log from "@/lib/logger";
-import type { SessionWithRelations } from "@/types/ipc";
+import { queryKeys } from "@/lib/queryKeys";
 import {
   SESSION_TYPE_NAMES,
   DELIVERY_METHOD_NAMES,
@@ -17,41 +15,12 @@ export default function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [session, setSession] = useState<SessionWithRelations | null>(null);
-  const [loading, setLoading] = useState(true);
+  const sessionId = Number(id);
 
-  useEffect(() => {
-    if (!id) {
-      return;
-    }
-    async function load() {
-      setLoading(true);
-      try {
-        const data = await ipc.getSession(Number(id));
-        setSession(data);
-      } catch (err) {
-        log.error("Failed to load session:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [id]);
-
-  if (loading) {
-    return <div className="flex justify-center py-8"><Spinner /></div>;
-  }
-
-  if (!session) {
-    return (
-      <div className="space-y-4">
-        <p className="text-muted-foreground text-sm">Session not found.</p>
-        <Button variant="outline" onClick={() => navigate("/sessions")}>
-          ← Back to Sessions
-        </Button>
-      </div>
-    );
-  }
+  const { data: session } = useSuspenseQuery({
+    queryKey: queryKeys.sessions.detail(sessionId),
+    queryFn: () => ipc.getSession(sessionId),
+  });
 
   const date = session.scheduled_at.toLocaleDateString("en-GB");
   const time = session.scheduled_at.toLocaleTimeString("en-GB", {

@@ -1,10 +1,14 @@
+import { Suspense } from "react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { TherapistProvider } from "@/context/TherapistContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import SessionFormPage from "@/pages/SessionFormPage";
 import { wrapped, mockTherapists, mockClients, mockSession, errorResponse, MOCK_UPDATED_AT } from "../helpers/ipc-mocks";
+import { createTestQueryClient } from "../helpers/query-client";
 
 vi.mock("@/components/ui/select");
 vi.mock("@/components/ui/searchable-select");
@@ -28,18 +32,25 @@ function renderNewForm() {
     return Promise.resolve(wrapped(null));
   });
 
+  const queryClient = createTestQueryClient();
   return render(
-    <TherapistProvider>
-      <MemoryRouter initialEntries={["/sessions/new"]}>
-        <Routes>
-          <Route path="/sessions">
-            <Route path="new" element={<SessionFormPage />} />
-            <Route path=":id" element={<div data-testid="session-detail" />} />
-            <Route index element={<div data-testid="sessions-list" />} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </TherapistProvider>,
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
+        <Suspense fallback={<div>Loading...</div>}>
+          <TherapistProvider>
+            <MemoryRouter initialEntries={["/sessions/new"]}>
+              <Routes>
+                <Route path="/sessions">
+                  <Route path="new" element={<SessionFormPage />} />
+                  <Route path=":id" element={<div data-testid="session-detail" />} />
+                  <Route index element={<div data-testid="sessions-list" />} />
+                </Route>
+              </Routes>
+            </MemoryRouter>
+          </TherapistProvider>
+        </Suspense>
+      </ErrorBoundary>
+    </QueryClientProvider>,
   );
 }
 
@@ -58,18 +69,25 @@ function renderEditForm() {
     return Promise.resolve(wrapped(null));
   });
 
+  const queryClient = createTestQueryClient();
   return render(
-    <TherapistProvider>
-      <MemoryRouter initialEntries={["/sessions/1/edit"]}>
-        <Routes>
-          <Route path="/sessions">
-            <Route path=":id/edit" element={<SessionFormPage />} />
-            <Route path=":id" element={<div data-testid="session-detail" />} />
-            <Route index element={<div data-testid="sessions-list" />} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </TherapistProvider>,
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
+        <Suspense fallback={<div>Loading...</div>}>
+          <TherapistProvider>
+            <MemoryRouter initialEntries={["/sessions/1/edit"]}>
+              <Routes>
+                <Route path="/sessions">
+                  <Route path=":id/edit" element={<SessionFormPage />} />
+                  <Route path=":id" element={<div data-testid="session-detail" />} />
+                  <Route index element={<div data-testid="sessions-list" />} />
+                </Route>
+              </Routes>
+            </MemoryRouter>
+          </TherapistProvider>
+        </Suspense>
+      </ErrorBoundary>
+    </QueryClientProvider>,
   );
 }
 
@@ -487,19 +505,26 @@ describe("SessionFormPage — edit session", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/sessions/1/edit"]}>
-          <Routes>
-            <Route path="/sessions">
-              <Route path=":id/edit" element={<SessionFormPage />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/sessions/1/edit"]}>
+                <Routes>
+                  <Route path="/sessions">
+                    <Route path=":id/edit" element={<SessionFormPage />} />
+                  </Route>
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
-    await waitFor(() => screen.getByText(/loading/i));
+    expect(screen.getByText(/loading/i)).toBeInTheDocument();
 
     resolveSession(mockSession);
     await waitFor(() => screen.getByLabelText(/^date/i));
@@ -546,7 +571,9 @@ describe("SessionFormPage — edit session", () => {
     });
   });
 
-  it("navigates to /sessions when session fetch throws", async () => {
+  it("shows error boundary when session fetch throws", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") {
         return Promise.resolve(wrapped(mockTherapists));
@@ -560,22 +587,31 @@ describe("SessionFormPage — edit session", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/sessions/1/edit"]}>
-          <Routes>
-            <Route path="/sessions">
-              <Route path=":id/edit" element={<SessionFormPage />} />
-              <Route index element={<div data-testid="sessions-list" />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/sessions/1/edit"]}>
+                <Routes>
+                  <Route path="/sessions">
+                    <Route path=":id/edit" element={<SessionFormPage />} />
+                    <Route index element={<div data-testid="sessions-list" />} />
+                  </Route>
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("sessions-list")).toBeInTheDocument();
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
     });
+
+    spy.mockRestore();
   });
 
   it("shows retry message when conflict has no field differences", async () => {
@@ -599,17 +635,24 @@ describe("SessionFormPage — edit session", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/sessions/1/edit"]}>
-          <Routes>
-            <Route path="/sessions">
-              <Route path=":id/edit" element={<SessionFormPage />} />
-              <Route path=":id" element={<div data-testid="session-detail" />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/sessions/1/edit"]}>
+                <Routes>
+                  <Route path="/sessions">
+                    <Route path=":id/edit" element={<SessionFormPage />} />
+                    <Route path=":id" element={<div data-testid="session-detail" />} />
+                  </Route>
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => screen.getByLabelText(/^date/i));
@@ -621,7 +664,9 @@ describe("SessionFormPage — edit session", () => {
     });
   });
 
-  it("navigates to /sessions when session is not found", async () => {
+  it("shows error boundary when session is not found", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") {
         return Promise.resolve(wrapped(mockTherapists));
@@ -635,22 +680,31 @@ describe("SessionFormPage — edit session", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/sessions/999/edit"]}>
-          <Routes>
-            <Route path="/sessions">
-              <Route path=":id/edit" element={<SessionFormPage />} />
-              <Route index element={<div data-testid="sessions-list" />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/sessions/999/edit"]}>
+                <Routes>
+                  <Route path="/sessions">
+                    <Route path=":id/edit" element={<SessionFormPage />} />
+                    <Route index element={<div data-testid="sessions-list" />} />
+                  </Route>
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("sessions-list")).toBeInTheDocument();
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
     });
+
+    spy.mockRestore();
   });
 
   it("navigates to /sessions when Cancel is clicked", async () => {
@@ -691,18 +745,25 @@ describe("SessionFormPage — edit session", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/sessions/1/edit"]}>
-          <Routes>
-            <Route path="/sessions">
-              <Route path=":id/edit" element={<SessionFormPage />} />
-              <Route path=":id" element={<div data-testid="session-detail" />} />
-              <Route index element={<div data-testid="sessions-list" />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/sessions/1/edit"]}>
+                <Routes>
+                  <Route path="/sessions">
+                    <Route path=":id/edit" element={<SessionFormPage />} />
+                    <Route path=":id" element={<div data-testid="session-detail" />} />
+                    <Route index element={<div data-testid="sessions-list" />} />
+                  </Route>
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => screen.getByLabelText(/^date/i));
@@ -742,16 +803,23 @@ describe("SessionFormPage — edit session", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/sessions/1/edit"]}>
-          <Routes>
-            <Route path="/sessions">
-              <Route path=":id/edit" element={<SessionFormPage />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/sessions/1/edit"]}>
+                <Routes>
+                  <Route path="/sessions">
+                    <Route path=":id/edit" element={<SessionFormPage />} />
+                  </Route>
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {

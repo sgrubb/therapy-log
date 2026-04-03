@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
+import React, { Suspense } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { TherapistProvider, useTherapist } from "@/context/TherapistContext";
 import { wrapped, mockTherapists } from "../helpers/ipc-mocks";
+import { createTestQueryClient } from "../helpers/query-client";
 
 const mockInvoke = vi.fn();
 
@@ -13,9 +16,17 @@ beforeEach(() => {
 });
 
 function renderTherapistHook() {
-  return renderHook(() => useTherapist(), {
-    wrapper: TherapistProvider,
-  });
+  const queryClient = createTestQueryClient();
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <Suspense fallback={<div>Loading...</div>}>
+          <TherapistProvider>{children}</TherapistProvider>
+        </Suspense>
+      </QueryClientProvider>
+    );
+  }
+  return renderHook(() => useTherapist(), { wrapper: Wrapper });
 }
 
 describe("TherapistProvider", () => {
@@ -33,19 +44,22 @@ describe("TherapistProvider", () => {
     });
   });
 
-  it("defaults selectedTherapistId to null when localStorage is empty", () => {
+  it("defaults selectedTherapistId to null when localStorage is empty", async () => {
     const { result } = renderTherapistHook();
+    await waitFor(() => expect(result.current).not.toBeNull());
     expect(result.current.selectedTherapistId).toBeNull();
   });
 
-  it("restores selectedTherapistId from localStorage on mount", () => {
+  it("restores selectedTherapistId from localStorage on mount", async () => {
     localStorage.setItem("selectedTherapistId", "2");
     const { result } = renderTherapistHook();
+    await waitFor(() => expect(result.current).not.toBeNull());
     expect(result.current.selectedTherapistId).toBe(2);
   });
 
   it("persists selectedTherapistId to localStorage when changed", async () => {
     const { result } = renderTherapistHook();
+    await waitFor(() => expect(result.current).not.toBeNull());
 
     act(() => {
       result.current.setSelectedTherapistId(1);
@@ -58,6 +72,7 @@ describe("TherapistProvider", () => {
   it("removes from localStorage when set to null", async () => {
     localStorage.setItem("selectedTherapistId", "1");
     const { result } = renderTherapistHook();
+    await waitFor(() => expect(result.current).not.toBeNull());
 
     act(() => {
       result.current.setSelectedTherapistId(null);

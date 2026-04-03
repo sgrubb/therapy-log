@@ -1,9 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { Suspense } from "react";
 import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { TherapistProvider } from "@/context/TherapistContext";
 import SessionDetailPage from "@/pages/SessionDetailPage";
 import { wrapped, mockTherapists, mockSession, errorResponse } from "../helpers/ipc-mocks";
+import { createTestQueryClient } from "../helpers/query-client";
 
 function EditFormSpy() {
   const location = useLocation();
@@ -39,19 +43,26 @@ function renderDetailPage(sessionOverride?: Partial<typeof mockSession> | null) 
     return Promise.resolve(wrapped(null));
   });
 
+  const queryClient = createTestQueryClient();
   return render(
-    <TherapistProvider>
-      <MemoryRouter initialEntries={["/sessions/1"]}>
-        <Routes>
-          <Route path="/sessions">
-            <Route path=":id" element={<SessionDetailPage />} />
-            <Route path=":id/edit" element={<EditFormSpy />} />
-            <Route index element={<div data-testid="sessions-list" />} />
-          </Route>
-          <Route path="/clients/:id" element={<div data-testid="client-detail" />} />
-        </Routes>
-      </MemoryRouter>
-    </TherapistProvider>,
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
+        <Suspense fallback={<div>Loading...</div>}>
+          <TherapistProvider>
+            <MemoryRouter initialEntries={["/sessions/1"]}>
+              <Routes>
+                <Route path="/sessions">
+                  <Route path=":id" element={<SessionDetailPage />} />
+                  <Route path=":id/edit" element={<EditFormSpy />} />
+                  <Route index element={<div data-testid="sessions-list" />} />
+                </Route>
+                <Route path="/clients/:id" element={<div data-testid="client-detail" />} />
+              </Routes>
+            </MemoryRouter>
+          </TherapistProvider>
+        </Suspense>
+      </ErrorBoundary>
+    </QueryClientProvider>,
   );
 }
 
@@ -111,22 +122,14 @@ describe("SessionDetailPage", () => {
   });
 
   it("shows not-found state when session does not exist", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     renderDetailPage(null);
     await waitFor(() => {
-      expect(screen.getByText(/session not found/i)).toBeInTheDocument();
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
     });
-    expect(screen.getByRole("button", { name: /back to sessions/i })).toBeInTheDocument();
-  });
 
-  it("navigates to sessions list from not-found back button", async () => {
-    renderDetailPage(null);
-    await waitFor(() => screen.getByText(/session not found/i));
-
-    fireEvent.click(screen.getByRole("button", { name: /back to sessions/i }));
-
-    await waitFor(() => {
-      expect(screen.getByTestId("sessions-list")).toBeInTheDocument();
-    });
+    spy.mockRestore();
   });
 
   it("navigates to edit form when Edit is clicked", async () => {
@@ -200,6 +203,8 @@ describe("SessionDetailPage", () => {
   });
 
   it("shows not-found state when fetch fails", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") {
         return Promise.resolve(wrapped(mockTherapists));
@@ -210,18 +215,27 @@ describe("SessionDetailPage", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/sessions/1"]}>
-          <Routes>
-            <Route path="/sessions/:id" element={<SessionDetailPage />} />
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/sessions/1"]}>
+                <Routes>
+                  <Route path="/sessions/:id" element={<SessionDetailPage />} />
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/session not found/i)).toBeInTheDocument();
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
     });
+
+    spy.mockRestore();
   });
 });

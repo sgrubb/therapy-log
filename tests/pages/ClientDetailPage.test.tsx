@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Suspense } from "react";
 import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 function EditFormSpy() {
   const location = useLocation();
@@ -15,6 +18,7 @@ function EditFormSpy() {
 import { TherapistProvider } from "@/context/TherapistContext";
 import ClientDetailPage from "@/pages/ClientDetailPage";
 import { wrapped, mockTherapists, mockClient, mockSession, mockSessions, errorResponse } from "../helpers/ipc-mocks";
+import { createTestQueryClient } from "../helpers/query-client";
 
 vi.mock("@/components/ui/select");
 
@@ -45,18 +49,25 @@ function renderDetailPage(clientOverride?: Partial<typeof mockClient> | null) {
     return Promise.resolve(wrapped(null));
   });
 
+  const queryClient = createTestQueryClient();
   return render(
-    <TherapistProvider>
-      <MemoryRouter initialEntries={["/clients/1"]}>
-        <Routes>
-          <Route path="/clients">
-            <Route path=":id" element={<ClientDetailPage />} />
-            <Route path=":id/edit" element={<EditFormSpy />} />
-            <Route index element={<div data-testid="clients-list" />} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </TherapistProvider>,
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
+        <Suspense fallback={<div>Loading...</div>}>
+          <TherapistProvider>
+            <MemoryRouter initialEntries={["/clients/1"]}>
+              <Routes>
+                <Route path="/clients">
+                  <Route path=":id" element={<ClientDetailPage />} />
+                  <Route path=":id/edit" element={<EditFormSpy />} />
+                  <Route index element={<div data-testid="clients-list" />} />
+                </Route>
+              </Routes>
+            </MemoryRouter>
+          </TherapistProvider>
+        </Suspense>
+      </ErrorBoundary>
+    </QueryClientProvider>,
   );
 }
 
@@ -113,14 +124,21 @@ describe("ClientDetailPage", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/clients/1"]}>
-          <Routes>
-            <Route path="/clients/:id" element={<ClientDetailPage />} />
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/clients/1"]}>
+                <Routes>
+                  <Route path="/clients/:id" element={<ClientDetailPage />} />
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
@@ -167,11 +185,15 @@ describe("ClientDetailPage", () => {
   });
 
   it("redirects to /clients when client is not found", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     renderDetailPage(null);
 
     await waitFor(() => {
-      expect(screen.getByTestId("clients-list")).toBeInTheDocument();
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
     });
+
+    spy.mockRestore();
   });
 
   it("formats date of birth in en-GB locale", async () => {
@@ -233,14 +255,21 @@ describe("ClientDetailPage", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/clients/1"]}>
-          <Routes>
-            <Route path="/clients/:id" element={<ClientDetailPage />} />
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/clients/1"]}>
+                <Routes>
+                  <Route path="/clients/:id" element={<ClientDetailPage />} />
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
@@ -250,6 +279,8 @@ describe("ClientDetailPage", () => {
   });
 
   it("navigates to /clients when fetch throws", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") {
         return Promise.resolve(wrapped(mockTherapists));
@@ -263,22 +294,31 @@ describe("ClientDetailPage", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/clients/1"]}>
-          <Routes>
-            <Route path="/clients">
-              <Route path=":id" element={<ClientDetailPage />} />
-              <Route index element={<div data-testid="clients-list" />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/clients/1"]}>
+                <Routes>
+                  <Route path="/clients">
+                    <Route path=":id" element={<ClientDetailPage />} />
+                    <Route index element={<div data-testid="clients-list" />} />
+                  </Route>
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("clients-list")).toBeInTheDocument();
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
     });
+
+    spy.mockRestore();
   });
 
   it("only shows sessions belonging to the current client", async () => {
@@ -301,14 +341,21 @@ describe("ClientDetailPage", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/clients/1"]}>
-          <Routes>
-            <Route path="/clients/:id" element={<ClientDetailPage />} />
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/clients/1"]}>
+                <Routes>
+                  <Route path="/clients/:id" element={<ClientDetailPage />} />
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => screen.getByText("Child"));
@@ -337,14 +384,21 @@ describe("ClientDetailPage", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/clients/1"]}>
-          <Routes>
-            <Route path="/clients/:id" element={<ClientDetailPage />} />
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/clients/1"]}>
+                <Routes>
+                  <Route path="/clients/:id" element={<ClientDetailPage />} />
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => screen.getByText("Child"));
@@ -449,14 +503,21 @@ describe("ClientDetailPage — close client", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/clients/1"]}>
-          <Routes>
-            <Route path="/clients/:id" element={<ClientDetailPage />} />
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/clients/1"]}>
+                <Routes>
+                  <Route path="/clients/:id" element={<ClientDetailPage />} />
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => screen.getByRole("button", { name: /close client/i }));
@@ -522,14 +583,21 @@ describe("ClientDetailPage — close client", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/clients/1"]}>
-          <Routes>
-            <Route path="/clients/:id" element={<ClientDetailPage />} />
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/clients/1"]}>
+                <Routes>
+                  <Route path="/clients/:id" element={<ClientDetailPage />} />
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => screen.getByRole("button", { name: /close client/i }));
@@ -573,14 +641,21 @@ describe("ClientDetailPage — close client", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/clients/1"]}>
-          <Routes>
-            <Route path="/clients/:id" element={<ClientDetailPage />} />
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/clients/1"]}>
+                <Routes>
+                  <Route path="/clients/:id" element={<ClientDetailPage />} />
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => screen.getByRole("button", { name: /close client/i }));
@@ -684,14 +759,21 @@ describe("ClientDetailPage — reopen client", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/clients/1"]}>
-          <Routes>
-            <Route path="/clients/:id" element={<ClientDetailPage />} />
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/clients/1"]}>
+                <Routes>
+                  <Route path="/clients/:id" element={<ClientDetailPage />} />
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => screen.getByRole("button", { name: /reopen client/i }));
@@ -751,14 +833,21 @@ describe("ClientDetailPage — reopen client", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/clients/1"]}>
-          <Routes>
-            <Route path="/clients/:id" element={<ClientDetailPage />} />
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/clients/1"]}>
+                <Routes>
+                  <Route path="/clients/:id" element={<ClientDetailPage />} />
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => screen.getByRole("button", { name: /reopen client/i }));
@@ -802,14 +891,21 @@ describe("ClientDetailPage — reopen client", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient2 = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/clients/1"]}>
-          <Routes>
-            <Route path="/clients/:id" element={<ClientDetailPage />} />
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient2}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <TherapistProvider>
+              <MemoryRouter initialEntries={["/clients/1"]}>
+                <Routes>
+                  <Route path="/clients/:id" element={<ClientDetailPage />} />
+                </Routes>
+              </MemoryRouter>
+            </TherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => screen.getByRole("button", { name: /reopen client/i }));

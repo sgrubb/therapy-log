@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { Spinner } from "@/components/ui/spinner";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useTherapist } from "@/context/TherapistContext";
 import { useSessionForm } from "@/hooks/useSessionForm";
 import { ipc } from "@/lib/ipc";
-import log from "@/lib/logger";
+import { queryKeys } from "@/lib/queryKeys";
 import {
   SessionType,
   DeliveryMethod,
@@ -14,7 +14,6 @@ import {
   DELIVERY_METHOD_NAMES,
   MISSED_REASON_NAMES,
 } from "@/types/enums";
-import type { ClientWithTherapist } from "@/types/ipc";
 import { Button } from "@/components/ui/button";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Input } from "@/components/ui/input";
@@ -38,7 +37,10 @@ export default function SessionFormPage() {
 
   const cancelTarget = (location.state as { from?: string } | null)?.from ?? "/sessions";
 
-  const [clients, setClients] = useState<ClientWithTherapist[]>([]);
+  const { data: clients } = useSuspenseQuery({
+    queryKey: queryKeys.clients.all,
+    queryFn: () => ipc.listClients(),
+  });
 
   const sessionId = id !== undefined ? Number(id) : undefined;
   const defaults = sessionId === undefined
@@ -65,19 +67,10 @@ export default function SessionFormPage() {
   } = useSessionForm(sessionId, defaults);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const data = await ipc.listClients();
-        setClients(data);
-        if (defaults?.clientId) {
-          setClient(defaults.clientId, data);
-        }
-      } catch (err) {
-        log.error("Failed to fetch clients:", err);
-      }
+    if (defaults?.clientId) {
+      setClient(defaults.clientId, clients);
     }
-    load();
-  }, []);
+  }, []); // runs once on mount; clients is stable after Suspense resolves
 
   // Sort: current therapist's clients first, then alphabetically
   const sortedClients = [...clients].sort((a, b) => {
@@ -98,10 +91,6 @@ export default function SessionFormPage() {
   });
 
   const showMissedReason = !!form.status && form.status !== SessionStatus.Attended;
-
-  if (formState === "loading") {
-    return <div className="flex justify-center py-8"><Spinner /></div>;
-  }
 
   return (
     <div className="max-w-2xl space-y-6">

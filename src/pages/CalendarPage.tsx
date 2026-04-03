@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TriangleAlert } from "lucide-react";
-import { Spinner } from "@/components/ui/spinner";
 import { Calendar, dateFnsLocalizer, type View } from "react-big-calendar";
 import { format, parse, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay } from "date-fns";
 import { enGB } from "date-fns/locale";
@@ -85,7 +84,7 @@ export default function CalendarPage() {
     [selectedTherapistIds, therapists],
   );
 
-  const { events, loading, overdueCount } = useCalendarData({
+  const { events, overdueCount } = useCalendarData({
     selectedTherapists,
     rangeStart,
     rangeEnd,
@@ -184,8 +183,6 @@ export default function CalendarPage() {
           </label>
         </div>
       </div>
-
-      {loading && <Spinner />}
 
       <div className="min-h-0 flex-1">
         <Calendar

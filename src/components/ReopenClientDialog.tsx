@@ -9,10 +9,9 @@ import { SaveErrorAlert } from "@/components/ui/save-error-alert";
 interface Props {
   clientId: number;
   client: ClientWithTherapist;
-  onSuccess: (updated: ClientWithTherapist) => void;
 }
 
-export function ReopenClientDialog({ clientId, client, onSuccess }: Props) {
+export function ReopenClientDialog({ clientId, client }: Props) {
   const {
     showReopenDialog,
     form,
@@ -24,7 +23,7 @@ export function ReopenClientDialog({ clientId, client, onSuccess }: Props) {
     openReopenDialog,
     dismissReopenDialog,
     handleReopenClient,
-  } = useReopenClient(clientId, client, onSuccess);
+  } = useReopenClient(clientId, client);
 
   const saving = formState === "saving";
 

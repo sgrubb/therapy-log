@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Spinner } from "@/components/ui/spinner";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
-import log from "@/lib/logger";
-import type { ClientWithTherapist, SessionWithRelations } from "@/types/ipc";
+import { queryKeys } from "@/lib/queryKeys";
 import { useTherapist } from "@/context/TherapistContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,48 +15,28 @@ export default function ClientDetailPage() {
   const navigate = useNavigate();
   const { therapists: contextTherapists, selectedTherapistId } = useTherapist();
 
-  const [client, setClient] = useState<ClientWithTherapist | null>(null);
-  const [sessions, setSessions] = useState<SessionWithRelations[]>([]);
-  const [loading, setLoading] = useState(true);
+  const clientId = Number(id);
+
+  const { data: client } = useSuspenseQuery({
+    queryKey: queryKeys.clients.detail(clientId),
+    queryFn: () => ipc.getClient(clientId),
+  });
+
+  const { data: allSessions } = useSuspenseQuery({
+    queryKey: queryKeys.sessions.all,
+    queryFn: () => ipc.listSessions(),
+  });
+
+  const sessions = useMemo(
+    () =>
+      allSessions
+        .filter((s) => s.client_id === clientId)
+        .sort((a, b) => b.scheduled_at.getTime() - a.scheduled_at.getTime()),
+    [allSessions, clientId],
+  );
 
   const selectedTherapist = contextTherapists.find((t) => t.id === selectedTherapistId);
   const isAdmin = selectedTherapist?.is_admin ?? false;
-
-  useEffect(() => {
-    if (!id) {
-      return;
-    }
-    async function load() {
-      setLoading(true);
-      try {
-        const [clientData, sessionData] = await Promise.all([
-          ipc.getClient(Number(id)),
-          ipc.listSessions(),
-        ]);
-        setClient(clientData);
-        setSessions(
-          sessionData
-            .filter((s) => s.client_id === Number(id))
-            .sort((a, b) => b.scheduled_at.getTime() - a.scheduled_at.getTime()),
-        );
-      } catch (err) {
-        log.error("Failed to load client:", err);
-        navigate("/clients");
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [id, navigate]);
-
-  if (loading) {
-    return <div className="flex justify-center py-8"><Spinner /></div>;
-  }
-
-  if (!client) {
-    return null;
-  }
-
   const canCloseOrReopen = isAdmin || selectedTherapistId === client.therapist_id;
 
   return (
@@ -84,15 +63,13 @@ export default function ClientDetailPage() {
             {canCloseOrReopen && (
               client.is_closed ? (
                 <ReopenClientDialog
-                  clientId={Number(id)}
+                  clientId={clientId}
                   client={client}
-                  onSuccess={setClient}
                 />
               ) : (
                 <CloseClientDialog
-                  clientId={Number(id)}
+                  clientId={clientId}
                   client={client}
-                  onSuccess={setClient}
                 />
               )
             )}

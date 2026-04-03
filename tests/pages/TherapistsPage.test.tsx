@@ -1,9 +1,12 @@
+import { Suspense } from "react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { TherapistProvider } from "@/context/TherapistContext";
 import TherapistsPage from "@/pages/TherapistsPage";
 import { wrapped, mockTherapists } from "../helpers/ipc-mocks";
+import { createTestQueryClient } from "../helpers/query-client";
 
 const mockInvoke = vi.fn();
 
@@ -21,18 +24,23 @@ function renderPage() {
     return Promise.resolve(wrapped(null));
   });
 
+  const queryClient = createTestQueryClient();
   return render(
-    <TherapistProvider>
-      <MemoryRouter initialEntries={["/therapists"]}>
-        <Routes>
-          <Route path="/therapists">
-            <Route index element={<TherapistsPage />} />
-            <Route path="new" element={<div data-testid="therapist-new-form" />} />
-            <Route path=":id/edit" element={<div data-testid="therapist-edit-form" />} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </TherapistProvider>,
+    <QueryClientProvider client={queryClient}>
+      <Suspense fallback={<div>Loading...</div>}>
+        <TherapistProvider>
+          <MemoryRouter initialEntries={["/therapists"]}>
+            <Routes>
+              <Route path="/therapists">
+                <Route index element={<TherapistsPage />} />
+                <Route path="new" element={<div data-testid="therapist-new-form" />} />
+                <Route path=":id/edit" element={<div data-testid="therapist-edit-form" />} />
+              </Route>
+            </Routes>
+          </MemoryRouter>
+        </TherapistProvider>
+      </Suspense>
+    </QueryClientProvider>,
   );
 }
 
@@ -56,14 +64,19 @@ describe("TherapistsPage", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/therapists"]}>
-          <Routes>
-            <Route path="/therapists" element={<TherapistsPage />} />
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <Suspense fallback={<div>Loading...</div>}>
+          <TherapistProvider>
+            <MemoryRouter initialEntries={["/therapists"]}>
+              <Routes>
+                <Route path="/therapists" element={<TherapistsPage />} />
+              </Routes>
+            </MemoryRouter>
+          </TherapistProvider>
+        </Suspense>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
@@ -132,10 +145,10 @@ describe("TherapistsPage", () => {
     renderPage();
     await waitFor(() => screen.getByText("Alice Morgan"));
 
-    // Alice is admin — should show tick; Bob is not — tick absent for his row
+    // Alice is admin — should show tick (SVG icon); Bob is not
     const rows = screen.getAllByRole("row").slice(1); // skip header
-    expect(rows[0]).toHaveTextContent("✓"); // Alice
-    expect(rows[1]).not.toHaveTextContent("✓"); // Bob
+    expect(rows[0]!.querySelector("svg")).toBeInTheDocument(); // Alice has icon
+    expect(rows[1]!.querySelector("svg")).not.toBeInTheDocument(); // Bob has no icon
   });
 
   it("hides admin column for non-admin users", async () => {
@@ -154,16 +167,21 @@ describe("TherapistsPage", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter
-          initialEntries={[{ pathname: "/therapists", state: { error: "Access denied." } }]}
-        >
-          <Routes>
-            <Route path="/therapists" element={<TherapistsPage />} />
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <Suspense fallback={<div>Loading...</div>}>
+          <TherapistProvider>
+            <MemoryRouter
+              initialEntries={[{ pathname: "/therapists", state: { error: "Access denied." } }]}
+            >
+              <Routes>
+                <Route path="/therapists" element={<TherapistsPage />} />
+              </Routes>
+            </MemoryRouter>
+          </TherapistProvider>
+        </Suspense>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {
@@ -179,14 +197,19 @@ describe("TherapistsPage", () => {
       return Promise.resolve(wrapped(null));
     });
 
+    const queryClient = createTestQueryClient();
     render(
-      <TherapistProvider>
-        <MemoryRouter initialEntries={["/therapists"]}>
-          <Routes>
-            <Route path="/therapists" element={<TherapistsPage />} />
-          </Routes>
-        </MemoryRouter>
-      </TherapistProvider>,
+      <QueryClientProvider client={queryClient}>
+        <Suspense fallback={<div>Loading...</div>}>
+          <TherapistProvider>
+            <MemoryRouter initialEntries={["/therapists"]}>
+              <Routes>
+                <Route path="/therapists" element={<TherapistsPage />} />
+              </Routes>
+            </MemoryRouter>
+          </TherapistProvider>
+        </Suspense>
+      </QueryClientProvider>,
     );
 
     await waitFor(() => {

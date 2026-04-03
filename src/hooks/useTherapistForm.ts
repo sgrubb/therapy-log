@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { z } from "zod";
+import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
-import log from "@/lib/logger";
+import { queryKeys } from "@/lib/queryKeys";
 import { therapistFormSchema } from "@/schemas/forms";
 import { useFormState } from "@/hooks/useFormState";
-import { useTherapist } from "@/context/TherapistContext";
 import type { Therapist } from "@/types/ipc";
 
 export type FormFields = z.input<typeof therapistFormSchema>;
@@ -34,8 +34,18 @@ function buildPayload(form: FormFields) {
 
 export function useTherapistForm(therapistId?: number) {
   const navigate = useNavigate();
-  const { refreshTherapists } = useTherapist();
+  const queryClient = useQueryClient();
   const isEdit = therapistId !== undefined;
+
+  const { data: therapistData } = useSuspenseQuery({
+    queryKey: isEdit ? queryKeys.therapists.detail(therapistId!) : ["therapist-form", "new"],
+    queryFn: isEdit
+      ? () => ipc.getTherapist(therapistId!)
+      : (): Promise<Therapist | null> => Promise.resolve(null),
+    staleTime: isEdit ? 0 : Infinity,
+  });
+
+  const initialForm = therapistData ? mapTherapistToFormFields(therapistData) : EMPTY;
 
   const {
     form, setForm,
@@ -50,29 +60,14 @@ export function useTherapistForm(therapistId?: number) {
     getConflictError,
     clearConflictField,
     handleConflict,
-  } = useFormState(therapistFormSchema, EMPTY);
+  } = useFormState(therapistFormSchema, initialForm);
 
   useEffect(() => {
-    if (!isEdit || therapistId === undefined) {
-      return;
+    if (therapistData) {
+      setOriginalForm(mapTherapistToFormFields(therapistData));
+      setUpdatedAt(therapistData.updated_at);
     }
-    async function load() {
-      setFormState("loading");
-      try {
-        const therapist = await ipc.getTherapist(therapistId!);
-        const fields = mapTherapistToFormFields(therapist);
-        setForm(fields);
-        setOriginalForm(fields);
-        setUpdatedAt(therapist.updated_at);
-      } catch (err) {
-        log.error("Failed to load therapist:", err);
-        navigate("/therapists");
-      } finally {
-        setFormState("idle");
-      }
-    }
-    load();
-  }, [therapistId, isEdit, navigate]);
+  }, []); // runs once on mount; data is stable after Suspense resolves
 
   const set = <K extends keyof FormFields>(field: K, value: FormFields[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -82,17 +77,21 @@ export function useTherapistForm(therapistId?: number) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      return;
+    }
     setFormState("saving");
     setSaveError(null);
     try {
       const payload = buildPayload(form);
       if (isEdit && therapistId !== undefined) {
         await ipc.updateTherapist(therapistId, { ...payload, updated_at: updatedAt! });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.therapists.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.therapists.detail(therapistId) });
       } else {
         await ipc.createTherapist(payload);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.therapists.all });
       }
-      await refreshTherapists();
       navigate("/therapists");
     } catch (err) {
       if (err instanceof IpcError && err.code === "CONFLICT" && therapistId !== undefined) {
@@ -101,7 +100,6 @@ export function useTherapistForm(therapistId?: number) {
           return { form: mapTherapistToFormFields(fresh), updated_at: fresh.updated_at };
         });
       } else {
-        log.error("Failed to save therapist:", err);
         setSaveError("Failed to save therapist. Please try again.");
       }
       setFormState("error");

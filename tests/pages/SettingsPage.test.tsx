@@ -1,9 +1,12 @@
+import { Suspense } from "react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
 import SettingsPage from "@/pages/SettingsPage";
 import { wrapped, errorResponse } from "../helpers/ipc-mocks";
+import { createTestQueryClient } from "../helpers/query-client";
 
 const mockInvoke = vi.fn();
 
@@ -13,10 +16,15 @@ beforeEach(() => {
 });
 
 function renderPage() {
+  const queryClient = createTestQueryClient();
   return render(
-    <MemoryRouter>
-      <SettingsPage />
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <Suspense fallback={<div>Loading...</div>}>
+        <MemoryRouter>
+          <SettingsPage />
+        </MemoryRouter>
+      </Suspense>
+    </QueryClientProvider>,
   );
 }
 

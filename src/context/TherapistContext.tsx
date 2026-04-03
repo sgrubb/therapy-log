@@ -1,19 +1,18 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useState,
   type ReactNode,
 } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
-import log from "@/lib/logger";
+import { queryKeys } from "@/lib/queryKeys";
 import type { Therapist } from "@/types/ipc";
 
 interface TherapistContextValue {
   therapists: Therapist[];
   selectedTherapistId: number | null;
   setSelectedTherapistId: (id: number | null) => void;
-  refreshTherapists: () => Promise<void>;
 }
 
 const TherapistContext = createContext<TherapistContextValue | null>(null);
@@ -21,24 +20,15 @@ const TherapistContext = createContext<TherapistContextValue | null>(null);
 const STORAGE_KEY = "selectedTherapistId";
 
 export function TherapistProvider({ children }: { children: ReactNode }) {
-  const [therapists, setTherapists] = useState<Therapist[]>([]);
+  const { data: therapists } = useSuspenseQuery({
+    queryKey: queryKeys.therapists.all,
+    queryFn: () => ipc.listTherapists(),
+  });
+
   const [selectedTherapistId, setSelectedTherapistIdState] = useState<number | null>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     return stored ? Number(stored) : null;
   });
-
-  async function refreshTherapists() {
-    try {
-      const list = await ipc.listTherapists();
-      setTherapists(list);
-    } catch (err) {
-      log.error("Failed to fetch therapists:", err);
-    }
-  }
-
-  useEffect(() => {
-    refreshTherapists();
-  }, []);
 
   function setSelectedTherapistId(id: number | null) {
     setSelectedTherapistIdState(id);
@@ -51,7 +41,7 @@ export function TherapistProvider({ children }: { children: ReactNode }) {
 
   return (
     <TherapistContext.Provider
-      value={{ therapists, selectedTherapistId, setSelectedTherapistId, refreshTherapists }}
+      value={{ therapists, selectedTherapistId, setSelectedTherapistId }}
     >
       {children}
     </TherapistContext.Provider>

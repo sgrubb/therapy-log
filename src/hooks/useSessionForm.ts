@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { z } from "zod";
+import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
-import log from "@/lib/logger";
+import { queryKeys } from "@/lib/queryKeys";
 import { sessionFormSchema } from "@/schemas/forms";
 import { SessionStatus, SESSION_DAY_INDEX } from "@/types/enums";
 import type { SessionType, DeliveryMethod, MissedReason } from "@/types/enums";
@@ -89,18 +90,33 @@ export interface SessionFormDefaults {
 
 export function useSessionForm(sessionId?: number, defaults?: SessionFormDefaults) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const isEdit = sessionId !== undefined;
 
-  const initialForm: FormFields = defaults && !isEdit
-    ? {
+  const { data: sessionData } = useSuspenseQuery({
+    queryKey: isEdit ? queryKeys.sessions.detail(sessionId!) : ["session-form", "new"],
+    queryFn: isEdit
+      ? () => ipc.getSession(sessionId!)
+      : (): Promise<SessionWithRelations | null> => Promise.resolve(null),
+    staleTime: isEdit ? 0 : Infinity,
+  });
+
+  const initialForm: FormFields = (() => {
+    if (sessionData) {
+      return mapSessionToFormFields(sessionData);
+    }
+    if (defaults) {
+      return {
         ...EMPTY,
         client_id: defaults.clientId ?? "",
         therapist_id: defaults.therapistId ?? "",
         date: defaults.date ?? "",
         time: defaults.time ?? "",
         duration: defaults.durationMins ? minutesToHHMM(Number(defaults.durationMins)) : "",
-      }
-    : EMPTY;
+      };
+    }
+    return EMPTY;
+  })();
 
   const {
     form, setForm,
@@ -118,26 +134,11 @@ export function useSessionForm(sessionId?: number, defaults?: SessionFormDefault
   } = useFormState(sessionFormSchema, initialForm);
 
   useEffect(() => {
-    if (!isEdit || sessionId === undefined) {
-      return;
+    if (sessionData) {
+      setOriginalForm(mapSessionToFormFields(sessionData));
+      setUpdatedAt(sessionData.updated_at);
     }
-    async function load() {
-      setFormState("loading");
-      try {
-        const session = await ipc.getSession(sessionId!);
-        const fields = mapSessionToFormFields(session);
-        setForm(fields);
-        setOriginalForm(fields);
-        setUpdatedAt(session.updated_at);
-      } catch (err) {
-        log.error("Failed to load session:", err);
-        navigate("/sessions");
-      } finally {
-        setFormState("idle");
-      }
-    }
-    load();
-  }, [sessionId, isEdit, navigate]);
+  }, []); // runs once on mount; data is stable after Suspense resolves
 
   const set = <K extends keyof FormFields>(field: K, value: FormFields[K]) => {
     setForm((prev) => {
@@ -174,16 +175,21 @@ export function useSessionForm(sessionId?: number, defaults?: SessionFormDefault
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      return;
+    }
     setFormState("saving");
     setSaveError(null);
     try {
       const payload = buildPayload(form);
       if (isEdit && sessionId !== undefined) {
         await ipc.updateSession(sessionId, { ...payload, updated_at: updatedAt! });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.sessions.detail(sessionId) });
         navigate(`/sessions/${sessionId}`);
       } else {
         const created = await ipc.createSession(payload);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
         navigate(`/sessions/${created.id}`);
       }
     } catch (err) {

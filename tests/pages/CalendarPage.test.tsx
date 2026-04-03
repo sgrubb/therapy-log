@@ -1,9 +1,12 @@
+import { Suspense } from "react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { TherapistProvider } from "@/context/TherapistContext";
 import CalendarPage from "@/pages/CalendarPage";
 import { wrapped, mockTherapists, mockSessions, mockClients } from "../helpers/ipc-mocks";
+import { createTestQueryClient } from "../helpers/query-client";
 
 // react-big-calendar renders a complex calendar that's not practical to test in jsdom.
 // We mock it to verify our data pipeline reaches the component correctly.
@@ -41,37 +44,42 @@ beforeEach(() => {
 });
 
 function renderCalendarPage() {
+  const queryClient = createTestQueryClient();
   return render(
-    <TherapistProvider>
-      <MemoryRouter initialEntries={["/calendar"]}>
-        <Routes>
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/sessions/new" element={<div data-testid="session-form" />} />
-          <Route path="/sessions/:id" element={<div data-testid="session-detail" />} />
-        </Routes>
-      </MemoryRouter>
-    </TherapistProvider>,
+    <QueryClientProvider client={queryClient}>
+      <Suspense fallback={<div>Loading...</div>}>
+        <TherapistProvider>
+          <MemoryRouter initialEntries={["/calendar"]}>
+            <Routes>
+              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/sessions/new" element={<div data-testid="session-form" />} />
+              <Route path="/sessions/:id" element={<div data-testid="session-detail" />} />
+            </Routes>
+          </MemoryRouter>
+        </TherapistProvider>
+      </Suspense>
+    </QueryClientProvider>,
   );
 }
 
 async function waitForLoad() {
   await waitFor(() => {
-    expect(screen.queryByText("Loading…")).not.toBeInTheDocument();
+    expect(screen.queryByText("Loading...")).not.toBeInTheDocument();
   });
 }
 
 describe("CalendarPage", () => {
   it("renders the calendar heading and mock calendar", async () => {
     renderCalendarPage();
-    expect(screen.getByText("Calendar")).toBeInTheDocument();
     await waitFor(() => {
+      expect(screen.getByText("Calendar")).toBeInTheDocument();
       expect(screen.getByTestId("mock-calendar")).toBeInTheDocument();
     });
   });
 
   it("shows loading state then resolves", async () => {
     renderCalendarPage();
-    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    expect(screen.getByText("Loading...")).toBeInTheDocument();
     await waitForLoad();
   });
 
@@ -115,14 +123,14 @@ describe("CalendarPage", () => {
   it("renders the Overlapping only checkbox unchecked by default", async () => {
     renderCalendarPage();
     await waitForLoad();
-    const checkbox = screen.getByLabelText("Overlapping only");
+    const checkbox = screen.getByLabelText("Show overlapping sessions only");
     expect(checkbox).not.toBeChecked();
   });
 
   it("checking Overlapping only updates the checkbox state", async () => {
     renderCalendarPage();
     await waitForLoad();
-    const checkbox = screen.getByLabelText("Overlapping only");
+    const checkbox = screen.getByLabelText("Show overlapping sessions only");
     fireEvent.click(checkbox);
     expect(checkbox).toBeChecked();
   });

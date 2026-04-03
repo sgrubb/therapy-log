@@ -1,16 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Spinner } from "@/components/ui/spinner";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ipc } from "@/lib/ipc";
-import log from "@/lib/logger";
-import type { SessionWithRelations, ClientWithTherapist } from "@/types/ipc";
-import { SessionStatus, SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/types/enums";
+import { queryKeys } from "@/lib/queryKeys";
 import { getOverduePlaceholders } from "@/lib/calendar-utils";
 import { useSessionFilters } from "@/hooks/useSessionFilters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { SessionStatus, SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/types/enums";
 import {
   Select,
   SelectContent,
@@ -30,24 +29,15 @@ function formatDate(d: Date): string {
 export default function SessionsPage() {
   const navigate = useNavigate();
 
-  const [sessions, setSessions] = useState<SessionWithRelations[]>([]);
-  const [clients, setClients] = useState<ClientWithTherapist[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: sessions } = useSuspenseQuery({
+    queryKey: queryKeys.sessions.all,
+    queryFn: () => ipc.listSessions(),
+  });
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [s, c] = await Promise.all([ipc.listSessions(), ipc.listClients()]);
-        setSessions(s);
-        setClients(c);
-      } catch (err) {
-        log.error("Failed to fetch sessions:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+  const { data: clients } = useSuspenseQuery({
+    queryKey: queryKeys.clients.all,
+    queryFn: () => ipc.listClients(),
+  });
 
   const [overdueOpen, setOverdueOpen] = useState(false);
 
@@ -179,7 +169,7 @@ export default function SessionsPage() {
         </label>
       </div>
 
-      {!loading && overdue.length > 0 && (
+      {overdue.length > 0 && (
         <div className="border-destructive my-6 w-full rounded-md border px-4 py-3">
           <button
             className="text-destructive flex w-full cursor-pointer items-center gap-2 text-sm font-semibold"
@@ -248,10 +238,7 @@ export default function SessionsPage() {
         </div>
       )}
 
-      {loading ? (
-        <Spinner />
-      ) : (
-        <div className="min-w-0 overflow-x-auto">
+      <div className="min-w-0 overflow-x-auto">
         <table className="min-w-[640px] w-full table-fixed text-sm">
           <colgroup>
             <col className="w-[12%]" />
@@ -333,8 +320,7 @@ export default function SessionsPage() {
             )}
           </tbody>
         </table>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
