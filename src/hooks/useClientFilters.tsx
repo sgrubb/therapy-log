@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTherapist } from "@/context/TherapistContext";
 import type { ClientWithTherapist } from "@/types/ipc";
-import { useSortableTable } from "@/hooks/useSortableTable";
+import { useSortableTable, SortDir } from "@/hooks/useSortableTable";
 import { sortableName } from "@/lib/utils";
+
+export const ClientStatusFilter = {
+  Open: "open",
+  Closed: "closed",
+  All: "all",
+} as const;
+export type ClientStatusFilter = (typeof ClientStatusFilter)[keyof typeof ClientStatusFilter];
 
 type ClientSortKey = "name" | "hospital_number" | "therapist" | "session_day" | "status";
 
@@ -10,7 +17,7 @@ export function useClientFilters(clients: ClientWithTherapist[]) {
   const { therapists, selectedTherapistId } = useTherapist();
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"open" | "closed" | "all">("open");
+  const [statusFilter, setStatusFilter] = useState<ClientStatusFilter>(ClientStatusFilter.Open);
   const [therapistFilter, setTherapistFilter] = useState(
     () => selectedTherapistId !== null ? String(selectedTherapistId) : "all",
   );
@@ -32,8 +39,8 @@ export function useClientFilters(clients: ClientWithTherapist[]) {
     const searchQuery = search.trim().toLowerCase();
     return clients
       .filter((c) =>
-        statusFilter === "open" ? !c.is_closed
-        : statusFilter === "closed" ? c.is_closed
+        statusFilter === ClientStatusFilter.Open ? !c.is_closed
+        : statusFilter === ClientStatusFilter.Closed ? c.is_closed
         : true
       )
       .filter((c) => therapistFilter === "all" || c.therapist_id === Number(therapistFilter))
@@ -57,13 +64,13 @@ export function useClientFilters(clients: ClientWithTherapist[]) {
               return Number(a.is_closed) - Number(b.is_closed);
           }
         })();
-        return sortDir === "asc" ? cmp : -cmp;
+        return sortDir === SortDir.Asc ? cmp : -cmp;
       });
   }, [clients, statusFilter, therapistFilter, search, sortKey, sortDir]);
 
   function reset() {
     setSearch("");
-    setStatusFilter("open");
+    setStatusFilter(ClientStatusFilter.Open);
     setTherapistFilter(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
   }
 

@@ -1,7 +1,15 @@
 // ── Enums ──────────────────────────────────────────────────────────────────
+
 // Defined as const objects so Object.values() works at runtime, plus a type
 // alias so they can be used as type annotations.
 // Used by renderer only — electron code uses Prisma-generated enums directly.
+
+export const FormState = {
+  Idle: "idle",
+  Saving: "saving",
+  Error: "error",
+} as const;
+export type FormState = (typeof FormState)[keyof typeof FormState];
 
 export const SessionDay = {
   Monday: "Monday",

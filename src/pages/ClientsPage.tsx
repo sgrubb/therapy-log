@@ -2,8 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
-import { useClientFilters } from "@/hooks/useClientFilters";
-import { Badge } from "@/components/ui/badge";
+import { useClientFilters, ClientStatusFilter } from "@/hooks/useClientFilters";
+import { Badge, BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
@@ -59,15 +59,15 @@ export default function ClientsPage() {
           Status
           <Select
             value={statusFilter}
-            onValueChange={(v) => setStatusFilter(v as "open" | "closed" | "all")}
+            onValueChange={(v) => setStatusFilter(v as ClientStatusFilter)}
           >
             <SelectTrigger className="w-36" aria-label="Status filter">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="open">Open</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value={ClientStatusFilter.Open}>Open</SelectItem>
+              <SelectItem value={ClientStatusFilter.Closed}>Closed</SelectItem>
+              <SelectItem value={ClientStatusFilter.All}>All</SelectItem>
             </SelectContent>
           </Select>
         </label>
@@ -148,7 +148,7 @@ export default function ClientsPage() {
                 </td>
                 <td className="py-2 pr-4">{client.session_day ?? "—"}</td>
                 <td className="py-2">
-                  <Badge variant={client.is_closed ? "closed" : "open"}>
+                  <Badge variant={client.is_closed ? BadgeVariant.Closed : BadgeVariant.Open}>
                     {client.is_closed ? "Closed" : "Open"}
                   </Badge>
                 </td>

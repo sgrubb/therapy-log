@@ -5,7 +5,7 @@ import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
 import { clientFormSchema } from "@/schemas/forms";
-import { SessionDay, Outcome } from "@/types/enums";
+import { SessionDay, Outcome, FormState } from "@/types/enums";
 import type { DeliveryMethod } from "@/types/enums";
 import { useFormState } from "@/hooks/useFormState";
 import type { ClientWithTherapist } from "@/types/ipc";
@@ -142,7 +142,7 @@ export function useClientForm(clientId?: number) {
     if (!validate()) {
       return;
     }
-    setFormState("saving");
+    setFormState(FormState.Saving);
     setSaveError(null);
     try {
       const payload = buildPayload(form);
@@ -167,7 +167,7 @@ export function useClientForm(clientId?: number) {
       } else {
         setSaveError("Failed to save client. Please try again.");
       }
-      setFormState("error");
+      setFormState(FormState.Error);
     }
   }
 

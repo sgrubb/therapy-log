@@ -1,6 +1,7 @@
 import { Dialog } from "radix-ui";
 import type { ClientWithTherapist } from "@/types/ipc";
 import { useReopenClient } from "@/hooks/useReopenClient";
+import { FormState } from "@/types/enums";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,7 +26,7 @@ export function ReopenClientDialog({ clientId, client }: Props) {
     handleReopenClient,
   } = useReopenClient(clientId, client);
 
-  const saving = formState === "saving";
+  const saving = formState === FormState.Saving;
 
   return (
     <Dialog.Root open={showReopenDialog} onOpenChange={(open) => { if (!open) { dismissReopenDialog(); } }}>

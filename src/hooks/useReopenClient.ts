@@ -5,6 +5,7 @@ import log from "@/lib/logger";
 import type { ClientWithTherapist } from "@/types/ipc";
 import { reopenClientSchema } from "@/schemas/forms";
 import { useFormState } from "@/hooks/useFormState";
+import { FormState } from "@/types/enums";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
 
@@ -39,7 +40,7 @@ export function useReopenClient(clientId: number, client: ClientWithTherapist) {
   function openReopenDialog() {
     setForm(EMPTY);
     setSaveError(null);
-    setFormState("idle");
+    setFormState(FormState.Idle);
     setShowReopenDialog(true);
   }
 
@@ -52,7 +53,7 @@ export function useReopenClient(clientId: number, client: ClientWithTherapist) {
     if (!validate()) {
       return;
     }
-    setFormState("saving");
+    setFormState(FormState.Saving);
     setSaveError(null);
     try {
       const reopenNotes = (form.reopen_notes ?? "").trim();
@@ -68,7 +69,7 @@ export function useReopenClient(clientId: number, client: ClientWithTherapist) {
     } catch (err) {
       log.error("Failed to reopen client:", err);
       setSaveError("Failed to reopen client. Please try again.");
-      setFormState("error");
+      setFormState(FormState.Error);
     }
   }
 

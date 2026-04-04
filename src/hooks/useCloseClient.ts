@@ -3,7 +3,7 @@ import type { z } from "zod";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
 import type { ClientWithTherapist } from "@/types/ipc";
-import { Outcome } from "@/types/enums";
+import { Outcome, FormState } from "@/types/enums";
 import { closeClientSchema } from "@/schemas/forms";
 import { useFormState } from "@/hooks/useFormState";
 import { useQueryClient } from "@tanstack/react-query";
@@ -42,7 +42,7 @@ export function useCloseClient(clientId: number, client: ClientWithTherapist) {
   function openCloseDialog() {
     setForm(EMPTY);
     setSaveError(null);
-    setFormState("idle");
+    setFormState(FormState.Idle);
     setShowCloseDialog(true);
   }
 
@@ -55,7 +55,7 @@ export function useCloseClient(clientId: number, client: ClientWithTherapist) {
     if (!validate()) {
       return;
     }
-    setFormState("saving");
+    setFormState(FormState.Saving);
     setSaveError(null);
     try {
       const closingNotes = (form.closing_notes ?? "").trim();
@@ -75,7 +75,7 @@ export function useCloseClient(clientId: number, client: ClientWithTherapist) {
     } catch (err) {
       log.error("Failed to close client:", err);
       setSaveError("Failed to close client. Please try again.");
-      setFormState("error");
+      setFormState(FormState.Error);
     }
   }
 

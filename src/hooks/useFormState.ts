@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { z } from "zod";
-
-export type FormState = "idle" | "loading" | "saving" | "error";
+import { FormState } from "@/types/enums";
+export { FormState };
 
 export function useFormState<F extends Record<string, unknown>>(
   schema: z.ZodTypeAny,
@@ -20,7 +20,7 @@ export function useFormState<F extends Record<string, unknown>>(
 
   const [errors, setErrors] = useState<Partial<Record<keyof F, string>>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [formState, setFormState] = useState<FormState>("idle");
+  const [formState, setFormState] = useState<FormState>(FormState.Idle);
   const [touched, setTouched] = useState<Set<string>>(new Set());
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [originalForm, setOriginalForm] = useState<F | null>(null);

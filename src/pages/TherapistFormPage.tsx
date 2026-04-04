@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { SaveErrorAlert } from "@/components/ui/save-error-alert";
 import { PageHeader } from "@/components/ui/page-header";
+import { FormState } from "@/types/enums";
 
 export default function TherapistFormPage() {
   const { id } = useParams<{ id?: string }>();
@@ -85,8 +86,8 @@ export default function TherapistFormPage() {
         </Field>
 
         <div className="flex gap-3">
-          <Button type="submit" disabled={formState === "saving"}>
-            {formState === "saving"
+          <Button type="submit" disabled={formState === FormState.Saving}>
+            {formState === FormState.Saving
               ? "Saving…"
               : isEdit
                 ? "Save Changes"

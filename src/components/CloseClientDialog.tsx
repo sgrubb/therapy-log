@@ -1,5 +1,5 @@
 import { Dialog } from "radix-ui";
-import { Outcome } from "@/types/enums";
+import { Outcome, FormState } from "@/types/enums";
 import type { ClientWithTherapist } from "@/types/ipc";
 import { useCloseClient } from "@/hooks/useCloseClient";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ export function CloseClientDialog({ clientId, client }: Props) {
     handleCloseClient,
   } = useCloseClient(clientId, client);
 
-  const saving = formState === "saving";
+  const saving = formState === FormState.Saving;
 
   return (
     <Dialog.Root open={showCloseDialog} onOpenChange={(open) => { if (!open) { dismissCloseDialog(); } }}>

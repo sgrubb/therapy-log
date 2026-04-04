@@ -1,16 +1,22 @@
 import { useState } from "react";
 import { ArrowUp, ArrowDown } from "lucide-react";
 
-export function useSortableTable<K extends string>(defaultKey: K, defaultDir: "asc" | "desc" = "asc") {
+export const SortDir = {
+  Asc: "asc",
+  Desc: "desc",
+} as const;
+export type SortDir = (typeof SortDir)[keyof typeof SortDir];
+
+export function useSortableTable<K extends string>(defaultKey: K, defaultDir: SortDir = SortDir.Asc) {
   const [sortKey, setSortKey] = useState<K>(defaultKey);
-  const [sortDir, setSortDir] = useState<"asc" | "desc">(defaultDir);
+  const [sortDir, setSortDir] = useState<SortDir>(defaultDir);
 
   function handleSort(key: K) {
     if (key === sortKey) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      setSortDir((d) => (d === SortDir.Asc ? SortDir.Desc : SortDir.Asc));
     } else {
       setSortKey(key);
-      setSortDir("asc");
+      setSortDir(SortDir.Asc);
     }
   }
 
@@ -18,7 +24,7 @@ export function useSortableTable<K extends string>(defaultKey: K, defaultDir: "a
     if (sortKey !== key) {
       return null;
     }
-    return sortDir === "asc"
+    return sortDir === SortDir.Asc
       ? <ArrowUp size={12} className="ml-1 inline" />
       : <ArrowDown size={12} className="ml-1 inline" />;
   }

@@ -2,12 +2,18 @@ import { useEffect, useMemo, useState } from "react";
 import { useTherapist } from "@/context/TherapistContext";
 import type { SessionWithRelations } from "@/types/ipc";
 import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/types/enums";
-import { useSortableTable } from "@/hooks/useSortableTable";
+import { useSortableTable, SortDir } from "@/hooks/useSortableTable";
 import { sortableName } from "@/lib/utils";
 
 type SessionSortKey = "scheduled_at" | "client" | "therapist" | "session_type" | "status" | "delivery_method";
 
-export type DatePreset = "this_week" | "this_month" | "all_time" | "custom";
+export const DatePreset = {
+  ThisWeek: "this_week",
+  ThisMonth: "this_month",
+  AllTime: "all_time",
+  Custom: "custom",
+} as const;
+export type DatePreset = (typeof DatePreset)[keyof typeof DatePreset];
 
 function toDateString(d: Date): string {
   return d.toISOString().split("T")[0] ?? "";
@@ -15,14 +21,14 @@ function toDateString(d: Date): string {
 
 function getPresetRange(preset: DatePreset): { from: string; to: string } {
   const now = new Date();
-  if (preset === "this_week") {
+  if (preset === DatePreset.ThisWeek) {
     const day = now.getDay();
     const daysToMonday = day === 0 ? 6 : day - 1;
     const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysToMonday);
     const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
     return { from: toDateString(monday), to: toDateString(sunday) };
   }
-  if (preset === "this_month") {
+  if (preset === DatePreset.ThisMonth) {
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return { from: toDateString(firstDay), to: toDateString(lastDay) };
@@ -38,8 +44,8 @@ export function useSessionFilters(sessions: SessionWithRelations[]) {
     () => selectedTherapistId !== null ? String(selectedTherapistId) : "all",
   );
   const [statusFilter, setStatusFilter] = useState("all");
-  const [datePreset, setDatePresetState] = useState<DatePreset>("this_week");
-  const initialRange = getPresetRange("this_week");
+  const [datePreset, setDatePresetState] = useState<DatePreset>(DatePreset.ThisWeek);
+  const initialRange = getPresetRange(DatePreset.ThisWeek);
   const [dateFromFilter, setDateFromFilterState] = useState(initialRange.from);
   const [dateToFilter, setDateToFilterState] = useState(initialRange.to);
 
@@ -52,19 +58,19 @@ export function useSessionFilters(sessions: SessionWithRelations[]) {
 
   function setDateFromFilter(value: string) {
     setDateFromFilterState(value);
-    setDatePresetState("custom");
+    setDatePresetState(DatePreset.Custom);
   }
 
   function setDateToFilter(value: string) {
     setDateToFilterState(value);
-    setDatePresetState("custom");
+    setDatePresetState(DatePreset.Custom);
   }
 
   useEffect(() => {
     setTherapistFilter(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
   }, [selectedTherapistId]);
 
-  const { sortKey, sortDir, handleSort, sortIndicator } = useSortableTable<SessionSortKey>("scheduled_at", "desc");
+  const { sortKey, sortDir, handleSort, sortIndicator } = useSortableTable<SessionSortKey>("scheduled_at", SortDir.Desc);
 
   const showMine = selectedTherapistId !== null && therapistFilter === String(selectedTherapistId);
 
@@ -116,16 +122,16 @@ export function useSessionFilters(sessions: SessionWithRelations[]) {
                 .localeCompare(DELIVERY_METHOD_NAMES[b.delivery_method] ?? b.delivery_method);
           }
         })();
-        return sortDir === "asc" ? cmp : -cmp;
+        return sortDir === SortDir.Asc ? cmp : -cmp;
       });
   }, [sessions, clientFilter, therapistFilter, statusFilter, dateFromFilter, dateToFilter, sortKey, sortDir]);
 
   function reset() {
-    const range = getPresetRange("this_week");
+    const range = getPresetRange(DatePreset.ThisWeek);
     setClientFilter("all");
     setTherapistFilter(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
     setStatusFilter("all");
-    setDatePresetState("this_week");
+    setDatePresetState(DatePreset.ThisWeek);
     setDateFromFilterState(range.from);
     setDateToFilterState(range.to);
   }

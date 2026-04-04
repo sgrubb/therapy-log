@@ -4,7 +4,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
 import { useTherapist } from "@/context/TherapistContext";
-import { Badge } from "@/components/ui/badge";
+import { Badge, BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InfoRow } from "@/components/ui/info-row";
 import { PageHeader } from "@/components/ui/page-header";
@@ -57,7 +57,7 @@ export default function ClientDetailPage() {
               <h1 className="text-2xl font-semibold">
                 {client.first_name} {client.last_name}
               </h1>
-              <Badge variant={client.is_closed ? "closed" : "open"}>
+              <Badge variant={client.is_closed ? BadgeVariant.Closed : BadgeVariant.Open}>
                 {client.is_closed ? "Closed" : "Open"}
               </Badge>
             </div>

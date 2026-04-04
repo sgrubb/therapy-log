@@ -2,7 +2,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useTherapist } from "@/context/TherapistContext";
 import { useClientForm } from "@/hooks/useClientForm";
-import { SessionDay, Outcome, DeliveryMethod, DELIVERY_METHOD_NAMES } from "@/types/enums";
+import { SessionDay, Outcome, DeliveryMethod, DELIVERY_METHOD_NAMES, FormState } from "@/types/enums";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DurationInput } from "@/components/ui/duration-input";
@@ -278,8 +278,8 @@ export default function ClientFormPage() {
         </Field>
 
         <div className="flex gap-3">
-          <Button type="submit" disabled={formState === "saving"}>
-            {formState === "saving"
+          <Button type="submit" disabled={formState === FormState.Saving}>
+            {formState === FormState.Saving
               ? "Saving…"
               : isEdit
                 ? "Save Changes"

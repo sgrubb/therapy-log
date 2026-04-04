@@ -6,13 +6,13 @@ import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
 import { getExpectedSessions } from "@/lib/expected-sessions";
 import { useSessionFilters } from "@/hooks/useSessionFilters";
-import { useSortableTable } from "@/hooks/useSortableTable";
+import { useSortableTable, SortDir } from "@/hooks/useSortableTable";
 import { sortableName } from "@/lib/utils";
 import { AlertCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
-import type { DatePreset } from "@/hooks/useSessionFilters";
+import { DatePreset } from "@/hooks/useSessionFilters";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { SessionStatus, SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/types/enums";
 import {
@@ -109,7 +109,7 @@ export default function SessionsPage() {
           }
         }
       })();
-      return expectedSortDir === "asc" ? cmp : -cmp;
+      return expectedSortDir === SortDir.Asc ? cmp : -cmp;
     });
   }, [clients, sessions, therapistFilter, clientFilter, dateFromFilter, dateToFilter, clientMap, expectedSortKey, expectedSortDir]);
 
@@ -200,10 +200,10 @@ export default function SessionsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="this_week">This week</SelectItem>
-              <SelectItem value="this_month">This month</SelectItem>
-              <SelectItem value="all_time">All time</SelectItem>
-              <SelectItem value="custom">Custom range</SelectItem>
+              <SelectItem value={DatePreset.ThisWeek}>This week</SelectItem>
+              <SelectItem value={DatePreset.ThisMonth}>This month</SelectItem>
+              <SelectItem value={DatePreset.AllTime}>All time</SelectItem>
+              <SelectItem value={DatePreset.Custom}>Custom range</SelectItem>
             </SelectContent>
           </Select>
         </label>

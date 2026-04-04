@@ -5,7 +5,7 @@ import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
 import { sessionFormSchema } from "@/schemas/forms";
-import { SessionStatus, SESSION_DAY_INDEX } from "@/types/enums";
+import { SessionStatus, SESSION_DAY_INDEX, FormState } from "@/types/enums";
 import type { SessionType, DeliveryMethod, MissedReason } from "@/types/enums";
 import type { ClientWithTherapist, SessionWithRelations } from "@/types/ipc";
 import { useFormState } from "@/hooks/useFormState";
@@ -178,7 +178,7 @@ export function useSessionForm(sessionId?: number, defaults?: SessionFormDefault
     if (!validate()) {
       return;
     }
-    setFormState("saving");
+    setFormState(FormState.Saving);
     setSaveError(null);
     try {
       const payload = buildPayload(form);
@@ -201,7 +201,7 @@ export function useSessionForm(sessionId?: number, defaults?: SessionFormDefault
       } else {
         setSaveError("Failed to save session. Please try again.");
       }
-      setFormState("error");
+      setFormState(FormState.Error);
     }
   }
 

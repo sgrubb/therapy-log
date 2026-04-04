@@ -13,6 +13,7 @@ import {
   SESSION_TYPE_NAMES,
   DELIVERY_METHOD_NAMES,
   MISSED_REASON_NAMES,
+  FormState,
 } from "@/types/enums";
 import { Button } from "@/components/ui/button";
 import { DurationInput } from "@/components/ui/duration-input";
@@ -269,8 +270,8 @@ export default function SessionFormPage() {
         </Field>
 
         <div className="flex gap-3">
-          <Button type="submit" disabled={formState === "saving"}>
-            {formState === "saving"
+          <Button type="submit" disabled={formState === FormState.Saving}>
+            {formState === FormState.Saving
               ? "Saving…"
               : isEdit
                 ? "Save Changes"

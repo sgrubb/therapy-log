@@ -6,6 +6,7 @@ import { ipc, IpcError } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
 import { therapistFormSchema } from "@/schemas/forms";
 import { useFormState } from "@/hooks/useFormState";
+import { FormState } from "@/types/enums";
 import type { Therapist } from "@/types/ipc";
 
 export type FormFields = z.input<typeof therapistFormSchema>;
@@ -80,7 +81,7 @@ export function useTherapistForm(therapistId?: number) {
     if (!validate()) {
       return;
     }
-    setFormState("saving");
+    setFormState(FormState.Saving);
     setSaveError(null);
     try {
       const payload = buildPayload(form);
@@ -102,7 +103,7 @@ export function useTherapistForm(therapistId?: number) {
       } else {
         setSaveError("Failed to save therapist. Please try again.");
       }
-      setFormState("error");
+      setFormState(FormState.Error);
     }
   }
 
