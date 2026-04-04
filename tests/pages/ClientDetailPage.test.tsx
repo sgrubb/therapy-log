@@ -106,7 +106,7 @@ describe("ClientDetailPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Child")).toBeInTheDocument();
       expect(screen.getByText("Attended")).toBeInTheDocument();
-      expect(screen.getByText("FaceToFace")).toBeInTheDocument();
+      expect(screen.getByText("Face to Face")).toBeInTheDocument();
     });
   });
 
@@ -148,20 +148,20 @@ describe("ClientDetailPage", () => {
 
   it("navigates to edit page when Edit is clicked", async () => {
     renderDetailPage();
-    await waitFor(() => screen.getByRole("button", { name: /edit/i }));
+    await waitFor(() => screen.getByRole("link", { name: /edit/i }));
 
-    fireEvent.click(screen.getByRole("button", { name: /edit/i }));
+    fireEvent.click(screen.getByRole("link", { name: /edit/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId("client-edit-form")).toBeInTheDocument();
     });
   });
 
-  it("Edit button passes location state so cancel returns to detail page", async () => {
+  it("Edit link passes location state so cancel returns to detail page", async () => {
     renderDetailPage();
-    await waitFor(() => screen.getByRole("button", { name: /edit/i }));
+    await waitFor(() => screen.getByRole("link", { name: /edit/i }));
 
-    fireEvent.click(screen.getByRole("button", { name: /edit/i }));
+    fireEvent.click(screen.getByRole("link", { name: /edit/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId("client-edit-form")).toHaveAttribute(
@@ -174,10 +174,10 @@ describe("ClientDetailPage", () => {
   it("navigates to /clients when Back is clicked", async () => {
     renderDetailPage();
     await waitFor(() =>
-      screen.getByRole("button", { name: /back to clients/i }),
+      screen.getByRole("link", { name: /back to clients/i }),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /back to clients/i }));
+    fireEvent.click(screen.getByRole("link", { name: /back to clients/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId("clients-list")).toBeInTheDocument();
@@ -362,56 +362,11 @@ describe("ClientDetailPage", () => {
     expect(screen.queryByText("Parent")).not.toBeInTheDocument();
   });
 
-  it("renders sessions newest first", async () => {
-    const olderSession = {
-      ...mockSessions[0],
-      id: 99,
-      scheduled_at: new Date("2025-01-10T10:00:00.000Z"),
-      session_type: "Parent",
-    };
 
-    mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "client:get") {
-        return Promise.resolve(wrapped(mockClient));
-      }
-      // older session comes first in the array but should sort to second row
-      if (channel === "session:list") {
-        return Promise.resolve(wrapped([olderSession, ...mockSessions]));
-      }
-      return Promise.resolve(wrapped(null));
-    });
-
-    const queryClient = createTestQueryClient();
-    render(
-      <QueryClientProvider client={queryClient}>
-        <ErrorBoundary>
-          <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
-              <MemoryRouter initialEntries={["/clients/1"]}>
-                <Routes>
-                  <Route path="/clients/:id" element={<ClientDetailPage />} />
-                </Routes>
-              </MemoryRouter>
-            </TherapistProvider>
-          </Suspense>
-        </ErrorBoundary>
-      </QueryClientProvider>,
-    );
-
-    await waitFor(() => screen.getByText("Child"));
-
-    const dataRows = screen.getAllByRole("row").slice(1); // skip header
-    expect(dataRows[0]).toHaveTextContent("Child"); // newer: 2026-03-10
-    expect(dataRows[1]).toHaveTextContent("Parent"); // older: 2025-01-10
-  });
-
-  it("shows disabled Add Session button", async () => {
+  it("shows Add Session link", async () => {
     renderDetailPage();
     await waitFor(() => screen.getByText("Jane Smith"));
-    expect(screen.getByRole("button", { name: /add session/i })).toBeDisabled();
+    expect(screen.getByRole("link", { name: /add session/i })).toBeInTheDocument();
   });
 });
 

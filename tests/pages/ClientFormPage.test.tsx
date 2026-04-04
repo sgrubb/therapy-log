@@ -85,12 +85,12 @@ function renderEditForm() {
 }
 
 // The mocked Select renders native <select> elements in this order:
-// 0 = session_day, 1 = session_delivery_method, 2 = therapist_id, 3 = outcome (only when closed)
+// 0 = session_day, 1 = duration-hours, 2 = duration-minutes, 3 = session_delivery_method, 4 = therapist_id, 5 = outcome (only when closed)
 function getTherapistSelect() {
-  return screen.getAllByRole("combobox")[2]!;
+  return screen.getAllByRole("combobox")[4]!;
 }
 function getSessionDeliveryMethodSelect() {
-  return screen.getAllByRole("combobox")[1]!;
+  return screen.getAllByRole("combobox")[3]!;
 }
 
 // ── New client ────────────────────────────────────────────────────────
@@ -197,6 +197,7 @@ describe("ClientFormPage — new client", () => {
     await user.type(screen.getByLabelText(/last name/i), "Smith");
     await user.type(screen.getByLabelText(/hospital number/i), "HN999");
     await user.type(screen.getByLabelText(/date of birth/i), "2000-01-01");
+    fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: "2025-09-01" } });
     await user.type(screen.getByLabelText(/phone/i), "07700900123");
     fireEvent.change(getTherapistSelect(), { target: { value: "1" } });
 
@@ -240,6 +241,7 @@ describe("ClientFormPage — new client", () => {
     await user.type(screen.getByLabelText(/last name/i), "Smith");
     await user.type(screen.getByLabelText(/hospital number/i), "HN001");
     await user.type(screen.getByLabelText(/date of birth/i), "2000-01-01");
+    fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: "2025-09-01" } });
     await user.type(screen.getByLabelText(/phone/i), "07700900123");
     fireEvent.change(getTherapistSelect(), { target: { value: "1" } });
 
@@ -322,6 +324,7 @@ describe("ClientFormPage — new client", () => {
     await user.type(screen.getByLabelText(/last name/i), "Smith");
     await user.type(screen.getByLabelText(/hospital number/i), "HN999");
     await user.type(screen.getByLabelText(/date of birth/i), "2000-01-01");
+    fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: "2025-09-01" } });
     await user.type(screen.getByLabelText(/phone/i), "07700900123");
     fireEvent.change(getTherapistSelect(), { target: { value: "1" } });
 
@@ -353,6 +356,7 @@ describe("ClientFormPage — new client", () => {
     await user.type(screen.getByLabelText(/last name/i), "Smith");
     await user.type(screen.getByLabelText(/hospital number/i), "HN999");
     await user.type(screen.getByLabelText(/date of birth/i), "2000-01-01");
+    fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: "2025-09-01" } });
     await user.type(screen.getByLabelText(/email/i), "jane@example.com");
     fireEvent.change(getTherapistSelect(), { target: { value: "1" } });
 
@@ -418,6 +422,7 @@ describe("ClientFormPage — new client", () => {
     await user.type(screen.getByLabelText(/last name/i), "Smith");
     await user.type(screen.getByLabelText(/hospital number/i), "HN999");
     await user.type(screen.getByLabelText(/date of birth/i), "2000-01-01");
+    fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: "2025-09-01" } });
     await user.type(screen.getByLabelText(/phone/i), "07700900123");
     fireEvent.change(getTherapistSelect(), { target: { value: "1" } });
 
@@ -683,8 +688,8 @@ describe("ClientFormPage — edit client", () => {
   it("pre-populates session duration and delivery method", async () => {
     renderEditForm();
     await waitFor(() => {
-      // mockClient.session_duration = 60 → "01:00"
-      expect(screen.getByLabelText(/session duration/i)).toHaveValue("01:00");
+      // mockClient.session_duration = 60 → 1 hour, checked via Hours select (aria-label="Session duration")
+      expect(screen.getByLabelText(/session duration/i)).toHaveValue("1");
       expect(getSessionDeliveryMethodSelect()).toHaveValue("FaceToFace");
     });
   });
@@ -708,9 +713,11 @@ describe("ClientFormPage — edit client", () => {
     await user.type(screen.getByLabelText(/last name/i), "Smith");
     await user.type(screen.getByLabelText(/hospital number/i), "HN999");
     await user.type(screen.getByLabelText(/date of birth/i), "2000-01-01");
+    fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: "2025-09-01" } });
     await user.type(screen.getByLabelText(/phone/i), "07700900123");
     fireEvent.change(getTherapistSelect(), { target: { value: "1" } });
-    fireEvent.change(screen.getByLabelText(/session duration/i), { target: { value: "01:30" } });
+    fireEvent.change(screen.getByLabelText(/session duration/i), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText("Minutes"), { target: { value: "30" } });
 
     fireEvent.click(screen.getByRole("button", { name: /add client/i }));
 

@@ -4,6 +4,12 @@
 // alias so they can be used as type annotations.
 // Used by renderer only — electron code uses Prisma-generated enums directly.
 
+export const SortDir = {
+  Asc: "asc",
+  Desc: "desc",
+} as const;
+export type SortDir = (typeof SortDir)[keyof typeof SortDir];
+
 export const FormState = {
   Idle: "idle",
   Saving: "saving",

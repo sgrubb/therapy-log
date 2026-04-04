@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
 import { useTherapist } from "@/context/TherapistContext";
 import type { SessionWithRelations } from "@/types/ipc";
-import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/types/enums";
-import { useSortableTable, SortDir } from "@/hooks/useSortableTable";
-import { sortableName } from "@/lib/utils";
-
 type SessionSortKey = "scheduled_at" | "client" | "therapist" | "session_type" | "status" | "delivery_method";
 
 export const DatePreset = {
@@ -15,8 +12,8 @@ export const DatePreset = {
 } as const;
 export type DatePreset = (typeof DatePreset)[keyof typeof DatePreset];
 
-function toDateString(d: Date): string {
-  return d.toISOString().split("T")[0] ?? "";
+function toDateString(date: Date): string {
+  return format(date, "yyyy-MM-dd");
 }
 
 function getPresetRange(preset: DatePreset): { from: string; to: string } {
@@ -70,12 +67,14 @@ export function useSessionFilters(sessions: SessionWithRelations[]) {
     setTherapistFilter(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
   }, [selectedTherapistId]);
 
-  const { sortKey, sortDir, handleSort, sortIndicator } = useSortableTable<SessionSortKey>("scheduled_at", SortDir.Desc);
-
   const showMine = selectedTherapistId !== null && therapistFilter === String(selectedTherapistId);
 
   const sortedTherapists = useMemo(
-    () => [...therapists].sort((a, b) => sortableName(a).localeCompare(sortableName(b))),
+    () => [...therapists].sort((a, b) => {
+      const nameA = `${a.last_name} ${a.first_name}`;
+      const nameB = `${b.last_name} ${b.first_name}`;
+      return nameA.localeCompare(nameB);
+    }),
     [therapists],
   );
 
@@ -97,34 +96,13 @@ export function useSessionFilters(sessions: SessionWithRelations[]) {
     const from = dateFromFilter ? new Date(dateFromFilter) : null;
     const to = dateToFilter ? new Date(`${dateToFilter}T23:59:59`) : null;
 
-    return [...sessions]
+    return sessions
       .filter((s) => clientFilter === "all" || s.client_id === Number(clientFilter))
       .filter((s) => therapistFilter === "all" || s.therapist_id === Number(therapistFilter))
       .filter((s) => statusFilter === "all" || s.status === statusFilter)
       .filter((s) => !from || s.scheduled_at >= from)
-      .filter((s) => !to || s.scheduled_at <= to)
-      .sort((a, b) => {
-        const cmp = (() => {
-          switch (sortKey) {
-            case "scheduled_at":
-              return a.scheduled_at.getTime() - b.scheduled_at.getTime();
-            case "client":
-              return sortableName(a.client).localeCompare(sortableName(b.client));
-            case "therapist":
-              return sortableName(a.therapist).localeCompare(sortableName(b.therapist));
-            case "session_type":
-              return (SESSION_TYPE_NAMES[a.session_type] ?? a.session_type)
-                .localeCompare(SESSION_TYPE_NAMES[b.session_type] ?? b.session_type);
-            case "status":
-              return a.status.localeCompare(b.status);
-            case "delivery_method":
-              return (DELIVERY_METHOD_NAMES[a.delivery_method] ?? a.delivery_method)
-                .localeCompare(DELIVERY_METHOD_NAMES[b.delivery_method] ?? b.delivery_method);
-          }
-        })();
-        return sortDir === SortDir.Asc ? cmp : -cmp;
-      });
-  }, [sessions, clientFilter, therapistFilter, statusFilter, dateFromFilter, dateToFilter, sortKey, sortDir]);
+      .filter((s) => !to || s.scheduled_at <= to);
+  }, [sessions, clientFilter, therapistFilter, statusFilter, dateFromFilter, dateToFilter]);
 
   function reset() {
     const range = getPresetRange(DatePreset.ThisWeek);
@@ -143,9 +121,11 @@ export function useSessionFilters(sessions: SessionWithRelations[]) {
     datePreset, setDatePreset,
     dateFromFilter, setDateFromFilter,
     dateToFilter, setDateToFilter,
-    handleSort, sortIndicator,
     filtered, uniqueClients, sortedTherapists,
     showMine, selectedTherapistId,
     reset,
   };
 }
+
+// Re-export sort key type for use in column definitions
+export type { SessionSortKey };

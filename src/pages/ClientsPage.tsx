@@ -15,6 +15,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Link } from "react-router-dom";
+import { DataTable } from "@/components/ui/data-table";
+import { buttonVariants } from "@/components/ui/button";
+import { sortableName } from "@/lib/utils";
+import type { Column } from "@/components/ui/data-table";
+import type { ClientWithTherapist } from "@/types/ipc";
+
+const columns: Column<ClientWithTherapist>[] = [
+  {
+    key: "name",
+    label: "Name",
+    sortFn: (a, b) => sortableName(a).localeCompare(sortableName(b)),
+    render: (c) => `${c.first_name} ${c.last_name}`,
+  },
+  {
+    key: "hospital_number",
+    label: "Hospital No.",
+    sortFn: (a, b) => a.hospital_number.localeCompare(b.hospital_number),
+    render: (c) => c.hospital_number,
+  },
+  {
+    key: "therapist",
+    label: "Therapist",
+    sortFn: (a, b) => sortableName(a.therapist).localeCompare(sortableName(b.therapist)),
+    render: (c) => `${c.therapist.first_name} ${c.therapist.last_name}`,
+  },
+  {
+    key: "session_day",
+    label: "Session Day",
+    sortFn: (a, b) => (a.session_day ?? "").localeCompare(b.session_day ?? ""),
+    render: (c) => c.session_day ?? "—",
+  },
+  {
+    key: "status",
+    label: "Status",
+    sortFn: (a, b) => Number(a.is_closed) - Number(b.is_closed),
+    render: (c) => (
+      <Badge variant={c.is_closed ? BadgeVariant.Closed : BadgeVariant.Open}>
+        {c.is_closed ? "Closed" : "Open"}
+      </Badge>
+    ),
+  },
+];
 
 export default function ClientsPage() {
   const navigate = useNavigate();
@@ -28,8 +71,7 @@ export default function ClientsPage() {
     search, setSearch,
     statusFilter, setStatusFilter,
     therapistFilter, setTherapistFilter,
-    handleSort, sortIndicator,
-    sorted, sortedTherapists,
+    filtered, sortedTherapists,
     showMine, selectedTherapistId,
     reset,
   } = useClientFilters(clients);
@@ -41,7 +83,7 @@ export default function ClientsPage() {
           <h1 className="text-2xl font-semibold">Clients</h1>
           <div className="flex gap-2">
             <Button variant="outline" onClick={reset}>Reset Filters</Button>
-            <Button onClick={() => navigate("/clients/new")}>Add Client</Button>
+            <Link to="/clients/new" className={buttonVariants()}>Add Client</Link>
           </div>
         </div>
 
@@ -104,66 +146,14 @@ export default function ClientsPage() {
         </div>
       </PageHeader>
 
-      <div className="min-w-0 overflow-x-auto">
-        <table className="min-w-[580px] w-full table-fixed text-sm">
-          <colgroup>
-            <col className="w-[28%]" />
-            <col className="w-[18%]" />
-            <col className="w-[28%]" />
-            <col className="w-[16%]" />
-            <col className="w-[10%]" />
-          </colgroup>
-          <thead>
-            <tr className="text-muted-foreground border-b text-left">
-              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("name")}>
-                Name{sortIndicator("name")}
-              </th>
-              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("hospital_number")}>
-                Hospital No.{sortIndicator("hospital_number")}
-              </th>
-              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("therapist")}>
-                Therapist{sortIndicator("therapist")}
-              </th>
-              <th className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium" onClick={() => handleSort("session_day")}>
-                Session Day{sortIndicator("session_day")}
-              </th>
-              <th className="hover:text-foreground cursor-pointer select-none py-2 font-medium" onClick={() => handleSort("status")}>
-                Status{sortIndicator("status")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((client) => (
-              <tr
-                key={client.id}
-                className="hover:bg-muted/50 cursor-pointer border-b transition-colors"
-                onClick={() => navigate(`/clients/${client.id}`)}
-              >
-                <td className="py-2 pr-4">
-                  {client.first_name} {client.last_name}
-                </td>
-                <td className="py-2 pr-4">{client.hospital_number}</td>
-                <td className="py-2 pr-4">
-                  {client.therapist.first_name} {client.therapist.last_name}
-                </td>
-                <td className="py-2 pr-4">{client.session_day ?? "—"}</td>
-                <td className="py-2">
-                  <Badge variant={client.is_closed ? BadgeVariant.Closed : BadgeVariant.Open}>
-                    {client.is_closed ? "Closed" : "Open"}
-                  </Badge>
-                </td>
-              </tr>
-            ))}
-            {sorted.length === 0 && (
-              <tr>
-                <td colSpan={5} className="text-muted-foreground py-6 text-center">
-                  No clients found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        data={filtered}
+        columns={columns}
+        keyFn={(c) => c.id}
+        defaultSortKey="name"
+        onRowClick={(c) => navigate(`/clients/${c.id}`)}
+        emptyMessage="No clients found."
+      />
     </div>
   );
 }

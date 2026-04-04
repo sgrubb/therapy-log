@@ -7,7 +7,15 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { TherapistProvider } from "@/context/TherapistContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import SessionFormPage from "@/pages/SessionFormPage";
-import { wrapped, mockTherapists, mockClients, mockSession, errorResponse, MOCK_UPDATED_AT } from "../helpers/ipc-mocks";
+import {
+  wrapped,
+  mockTherapists,
+  mockClients,
+  mockSession,
+  errorResponse,
+  MOCK_UPDATED_AT,
+  MOCK_SESSION_DATE_RECENT,
+} from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
 
 vi.mock("@/components/ui/select");
@@ -92,15 +100,15 @@ function renderEditForm() {
 }
 
 // Select order in new form:
-// 0 = client, 1 = therapist, 2 = session_type, 3 = delivery_method, 4 = status
+// 0 = client, 1 = therapist, 2 = duration-hours, 3 = duration-minutes, 4 = session_type, 5 = delivery_method, 6 = status
 function getSelect(index: number) {
   return screen.getAllByRole("combobox")[index]!;
 }
 function getClientSelect() { return getSelect(0); }
 function getTherapistSelect() { return getSelect(1); }
-function getSessionTypeSelect() { return getSelect(2); }
-function getDeliveryMethodSelect() { return getSelect(3); }
-function getStatusSelect() { return getSelect(4); }
+function getSessionTypeSelect() { return getSelect(4); }
+function getDeliveryMethodSelect() { return getSelect(5); }
+function getStatusSelect() { return getSelect(6); }
 
 // ── New session ───────────────────────────────────────────────────────
 
@@ -120,7 +128,7 @@ describe("SessionFormPage — new session", () => {
 
     expect(screen.getByLabelText(/^date/i)).toHaveValue("");
     expect(screen.getByLabelText(/^time/i)).toHaveValue("");
-    expect(screen.getByLabelText(/^duration/i)).toHaveValue("");
+    expect(screen.getByLabelText(/^duration/i)).toHaveValue("0");
     expect(screen.getByLabelText(/notes/i)).toHaveValue("");
   });
 
@@ -177,7 +185,7 @@ describe("SessionFormPage — new session", () => {
     fireEvent.change(getClientSelect(), { target: { value: "1" } });
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/^duration/i)).toHaveValue("01:00");
+      expect(screen.getByLabelText(/^duration/i)).toHaveValue("1");
       expect(getDeliveryMethodSelect()).toHaveValue("FaceToFace");
     });
   });
@@ -188,13 +196,13 @@ describe("SessionFormPage — new session", () => {
 
     // First select Jane (sets duration to "01:00")
     fireEvent.change(getClientSelect(), { target: { value: "1" } });
-    await waitFor(() => expect(screen.getByLabelText(/^duration/i)).toHaveValue("01:00"));
+    await waitFor(() => expect(screen.getByLabelText(/^duration/i)).toHaveValue("1"));
 
     // Then switch to Tom Jones (no session_duration) — duration should be preserved
     fireEvent.change(getClientSelect(), { target: { value: "2" } });
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/^duration/i)).toHaveValue("01:00");
+      expect(screen.getByLabelText(/^duration/i)).toHaveValue("1");
     });
   });
 
@@ -433,9 +441,9 @@ describe("SessionFormPage — edit session", () => {
   it("pre-populates all fields from existing session data", async () => {
     renderEditForm();
     await waitFor(() => {
-      expect(screen.getByLabelText(/^date/i)).toHaveValue("2026-03-10");
-      expect(screen.getByLabelText(/^time/i)).toHaveValue("10:00");
-      expect(screen.getByLabelText(/^duration/i)).toHaveValue("01:00");
+      expect(screen.getByLabelText(/^date/i)).toHaveValue(MOCK_SESSION_DATE_RECENT.toISOString().split("T")[0]!);
+      expect(screen.getByLabelText(/^time/i)).toHaveValue(MOCK_SESSION_DATE_RECENT.toISOString().split("T")[1]!.slice(0, 5));
+      expect(screen.getByLabelText(/^duration/i)).toHaveValue("1");
       expect(getClientSelect()).toHaveValue("1");
       expect(getTherapistSelect()).toHaveValue("1");
       expect(getSessionTypeSelect()).toHaveValue("Child");

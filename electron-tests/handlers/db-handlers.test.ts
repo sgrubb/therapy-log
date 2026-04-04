@@ -157,6 +157,7 @@ describe("client:create", () => {
       last_name: "Client",
       dob: new Date("2010-01-01"),
       therapist_id: ids.therapistAlice,
+      start_date: new Date("2025-03-01"),
     });
     assert(result.success);
     expect(result.data).toMatchObject({
@@ -172,6 +173,7 @@ describe("client:create", () => {
       last_name: "Client",
       dob: new Date("2010-01-01"),
       therapist_id: ids.therapistAlice,
+      start_date: new Date("2025-03-01"),
     });
     assert(!result.success);
     expect(result.error.code).toBe("UNIQUE_CONSTRAINT");

@@ -1,8 +1,12 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Check } from "lucide-react";
 import { useTherapist } from "@/context/TherapistContext";
-import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import { Link } from "react-router-dom";
+import { DataTable } from "@/components/ui/data-table";
+import { buttonVariants } from "@/components/ui/button";
+import { sortableName } from "@/lib/utils";
+import type { Column } from "@/components/ui/data-table";
 
 export default function TherapistsPage() {
   const navigate = useNavigate();
@@ -14,15 +18,35 @@ export default function TherapistsPage() {
   const selectedTherapist = therapists.find((t) => t.id === selectedTherapistId);
   const isAdmin = selectedTherapist?.is_admin ?? false;
 
+  type Therapist = (typeof therapists)[number];
+
+  const columns: Column<Therapist>[] = [
+    {
+      key: "name",
+      label: "Name",
+      sortFn: (a, b) => sortableName(a).localeCompare(sortableName(b)),
+      render: (t) => `${t.first_name} ${t.last_name}`,
+    },
+    ...(isAdmin ? [{
+      key: "admin",
+      label: "Admin",
+      render: (t: Therapist) => (
+        t.is_admin
+          ? <div className="flex justify-center"><Check size={14} /></div>
+          : null
+      ),
+    }] : []),
+  ];
+
   return (
     <div className="space-y-4">
       <PageHeader>
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">Therapists</h1>
           {isAdmin && (
-            <Button onClick={() => navigate("/therapists/new")}>
+            <Link to="/therapists/new" className={buttonVariants()}>
               Add Therapist
-            </Button>
+            </Link>
           )}
         </div>
       </PageHeader>
@@ -36,42 +60,14 @@ export default function TherapistsPage() {
         </div>
       )}
 
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-muted-foreground border-b text-left">
-            <th className="py-2 pr-4 font-medium">Name</th>
-            {isAdmin && <th className="py-2 text-center font-medium">Admin</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {therapists.map((therapist) => (
-            <tr
-              key={therapist.id}
-              className={`border-b transition-colors${isAdmin ? " hover:bg-muted/50 cursor-pointer" : ""}`}
-              onClick={isAdmin ? () => navigate(`/therapists/${therapist.id}/edit`) : undefined}
-            >
-              <td className="py-2 pr-4">
-                {therapist.first_name} {therapist.last_name}
-              </td>
-              {isAdmin && (
-                <td className="py-2 text-center">
-                  {therapist.is_admin && <Check size={14} className="mx-auto" />}
-                </td>
-              )}
-            </tr>
-          ))}
-          {therapists.length === 0 && (
-            <tr>
-              <td
-                colSpan={isAdmin ? 2 : 1}
-                className="text-muted-foreground py-6 text-center"
-              >
-                No therapists found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      <DataTable
+        data={therapists}
+        columns={columns}
+        keyFn={(t) => t.id}
+        defaultSortKey="name"
+        onRowClick={isAdmin ? (t) => navigate(`/therapists/${t.id}/edit`) : undefined}
+        emptyMessage="No therapists found."
+      />
     </div>
   );
 }

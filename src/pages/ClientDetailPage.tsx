@@ -5,11 +5,16 @@ import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
 import { useTherapist } from "@/context/TherapistContext";
 import { Badge, BadgeVariant } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { InfoRow } from "@/components/ui/info-row";
 import { PageHeader } from "@/components/ui/page-header";
 import { CloseClientDialog } from "@/components/CloseClientDialog";
 import { ReopenClientDialog } from "@/components/ReopenClientDialog";
+import { Link } from "react-router-dom";
+import { DataTable } from "@/components/ui/data-table";
+import { SortDir } from "@/types/enums";
+import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/types/enums";
+import { buttonVariants } from "@/components/ui/button";
+import type { Column } from "@/components/ui/data-table";
 
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -29,12 +34,38 @@ export default function ClientDetailPage() {
   });
 
   const sessions = useMemo(
-    () =>
-      allSessions
-        .filter((s) => s.client_id === clientId)
-        .sort((a, b) => b.scheduled_at.getTime() - a.scheduled_at.getTime()),
+    () => allSessions.filter((s) => s.client_id === clientId),
     [allSessions, clientId],
   );
+
+  type Session = (typeof sessions)[number];
+
+  const sessionColumns: Column<Session>[] = [
+    {
+      key: "date",
+      label: "Date",
+      sortFn: (a, b) => a.scheduled_at.getTime() - b.scheduled_at.getTime(),
+      render: (s) => s.scheduled_at.toLocaleDateString("en-GB"),
+    },
+    {
+      key: "type",
+      label: "Type",
+      sortFn: (a, b) => a.session_type.localeCompare(b.session_type),
+      render: (s) => SESSION_TYPE_NAMES[s.session_type] ?? s.session_type,
+    },
+    {
+      key: "status",
+      label: "Status",
+      sortFn: (a, b) => a.status.localeCompare(b.status),
+      render: (s) => s.status,
+    },
+    {
+      key: "delivery",
+      label: "Delivery",
+      sortFn: (a, b) => a.delivery_method.localeCompare(b.delivery_method),
+      render: (s) => DELIVERY_METHOD_NAMES[s.delivery_method] ?? s.delivery_method,
+    },
+  ];
 
   const selectedTherapist = contextTherapists.find((t) => t.id === selectedTherapistId);
   const isAdmin = selectedTherapist?.is_admin ?? false;
@@ -45,13 +76,9 @@ export default function ClientDetailPage() {
       {/* Header */}
       <PageHeader>
         <div className="space-y-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/clients")}
-          >
+          <Link to="/clients" className={buttonVariants({ variant: "ghost", size: "sm" })}>
             ← Back to Clients
-          </Button>
+          </Link>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-semibold">
@@ -75,12 +102,13 @@ export default function ClientDetailPage() {
                   />
                 )
               )}
-              <Button
-                variant="outline"
-                onClick={() => navigate(`/clients/${id}/edit`, { state: { from: `/clients/${id}` } })}
+              <Link
+                to={`/clients/${id}/edit`}
+                state={{ from: `/clients/${id}` }}
+                className={buttonVariants({ variant: "outline" })}
               >
                 Edit
-              </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -132,45 +160,25 @@ export default function ClientDetailPage() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Sessions</h2>
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/sessions/new?clientId=${clientId}`, { state: { from: `/clients/${clientId}` } })}
+          <Link
+            to={`/sessions/new?clientId=${clientId}`}
+            state={{ from: `/clients/${clientId}` }}
+            className={buttonVariants({ variant: "outline" })}
           >
             Add Session
-          </Button>
+          </Link>
         </div>
-        {sessions.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            No sessions recorded.
-          </p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-muted-foreground border-b text-left">
-                <th className="py-2 pr-4 font-medium">Date</th>
-                <th className="py-2 pr-4 font-medium">Type</th>
-                <th className="py-2 pr-4 font-medium">Status</th>
-                <th className="py-2 font-medium">Delivery</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sessions.map((s) => (
-                <tr
-                  key={s.id}
-                  className="hover:bg-muted/50 cursor-pointer border-b transition-colors"
-                  onClick={() => navigate(`/sessions/${s.id}`, { state: { from: `/clients/${clientId}`, fromLabel: "Back to Client" } })}
-                >
-                  <td className="py-2 pr-4">
-                    {s.scheduled_at.toLocaleDateString("en-GB")}
-                  </td>
-                  <td className="py-2 pr-4">{s.session_type}</td>
-                  <td className="py-2 pr-4">{s.status}</td>
-                  <td className="py-2">{s.delivery_method}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <DataTable
+          data={sessions}
+          columns={sessionColumns}
+          keyFn={(s) => s.id}
+          defaultSortKey="date"
+          defaultSortDir={SortDir.Desc}
+          onRowClick={(s) => navigate(`/sessions/${s.id}`, {
+            state: { from: `/clients/${clientId}`, fromLabel: "Back to Client" },
+          })}
+          emptyMessage="No sessions recorded."
+        />
       </div>
     </div>
   );

@@ -23,6 +23,14 @@ export type ClientWithTherapist = z.infer<typeof clientWithTherapistSchema>;
 export type Session = z.infer<typeof sessionSchema>;
 export type SessionWithRelations = z.infer<typeof sessionWithRelationsSchema>;
 
+export interface ExpectedSession {
+  id: string;
+  clientId: number;
+  therapistId: number;
+  start: Date;
+  end: Date;
+}
+
 // ── IPC input types (data SENT to IPC — structured clone preserves Date) ────
 
 export interface CreateTherapist {

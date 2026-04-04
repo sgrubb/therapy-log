@@ -1,4 +1,4 @@
-import { useNavigate, useParams, useLocation, Link } from "react-router-dom";
+import { useParams, useLocation, Link } from "react-router-dom";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
@@ -8,13 +8,12 @@ import {
   MISSED_REASON_NAMES,
   SessionStatus,
 } from "@/types/enums";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { InfoRow } from "@/components/ui/info-row";
 import { PageHeader } from "@/components/ui/page-header";
 
 export default function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const location = useLocation();
   const locationState = location.state as { from?: string; fromLabel?: string } | null;
   const backTo = locationState?.from ?? "/sessions";
@@ -39,13 +38,9 @@ export default function SessionDetailPage() {
     <div className="max-w-3xl space-y-6">
       <PageHeader>
         <div className="space-y-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(backTo)}
-          >
+          <Link to={backTo} className={buttonVariants({ variant: "ghost", size: "sm" })}>
             ← {backLabel}
-          </Button>
+          </Link>
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-semibold">
               <Link
@@ -55,12 +50,13 @@ export default function SessionDetailPage() {
                 {session.client.first_name} {session.client.last_name}
               </Link>
             </h1>
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/sessions/${id}/edit`, { state: { from: `/sessions/${id}` } })}
+            <Link
+              to={`/sessions/${id}/edit`}
+              state={{ from: `/sessions/${id}` }}
+              className={buttonVariants({ variant: "outline" })}
             >
               Edit
-            </Button>
+            </Link>
           </div>
         </div>
       </PageHeader>

@@ -27,6 +27,13 @@ export const errorResponse = {
 
 export const MOCK_UPDATED_AT = new Date("2026-01-01T00:00:00.000Z");
 
+// Session dates anchored relative to today so they fall within the default
+// "this week" filter regardless of when the tests run.
+const now = new Date();
+const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+export const MOCK_SESSION_DATE_RECENT = new Date(todayMidnight.getTime() + 10 * 60 * 60 * 1000); // today 10:00
+export const MOCK_SESSION_DATE_OLDER = new Date(todayMidnight.getTime() - 24 * 60 * 60 * 1000 + 14 * 60 * 60 * 1000); // yesterday 14:00
+
 // ── Therapists ───────────────────────────────────────────────────────────────
 
 export const mockTherapists = [
@@ -41,6 +48,7 @@ export const mockTherapist = mockTherapists[0]!;
 export const mockClientBase = {
   hospital_number: "HN001",
   dob: new Date("2000-01-01T00:00:00.000Z"),
+  start_date: new Date("2025-09-01T00:00:00.000Z"),
   address: null,
   phone: "07700900001",
   email: null,
@@ -93,7 +101,7 @@ export const mockSession = {
   id: 1,
   client_id: 1,
   therapist_id: 1,
-  scheduled_at: new Date("2026-03-10T10:00:00.000Z"),
+  scheduled_at: MOCK_SESSION_DATE_RECENT,
   occurred_at: null,
   duration: 60,
   status: "Attended" as const,
@@ -118,7 +126,7 @@ export const mockSessions = [
     id: 2,
     client_id: 2,
     therapist_id: 2,
-    scheduled_at: new Date("2026-02-20T14:00:00.000Z"),
+    scheduled_at: MOCK_SESSION_DATE_OLDER,
     occurred_at: null,
     duration: 50,
     status: "DNA" as const,

@@ -84,33 +84,33 @@ describe("TherapistsPage", () => {
     await waitFor(() => screen.getByText("Alice Morgan"));
   });
 
-  it("shows Add Therapist button to admin users", async () => {
+  it("shows Add Therapist link to admin users", async () => {
     localStorage.setItem("selectedTherapistId", "1"); // Alice Morgan, is_admin: true
     renderPage();
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /add therapist/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /add therapist/i })).toBeInTheDocument();
     });
   });
 
-  it("hides Add Therapist button from non-admin users", async () => {
+  it("hides Add Therapist link from non-admin users", async () => {
     localStorage.setItem("selectedTherapistId", "2"); // Bob Chen, is_admin: false
     renderPage();
     await waitFor(() => screen.getByText("Alice Morgan"));
-    expect(screen.queryByRole("button", { name: /add therapist/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /add therapist/i })).not.toBeInTheDocument();
   });
 
-  it("hides Add Therapist button when no therapist is selected", async () => {
+  it("hides Add Therapist link when no therapist is selected", async () => {
     renderPage();
     await waitFor(() => screen.getByText("Alice Morgan"));
-    expect(screen.queryByRole("button", { name: /add therapist/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /add therapist/i })).not.toBeInTheDocument();
   });
 
   it("navigates to /therapists/new when Add Therapist is clicked", async () => {
     localStorage.setItem("selectedTherapistId", "1");
     renderPage();
-    await waitFor(() => screen.getByRole("button", { name: /add therapist/i }));
+    await waitFor(() => screen.getByRole("link", { name: /add therapist/i }));
 
-    fireEvent.click(screen.getByRole("button", { name: /add therapist/i }));
+    fireEvent.click(screen.getByRole("link", { name: /add therapist/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId("therapist-new-form")).toBeInTheDocument();
@@ -145,10 +145,10 @@ describe("TherapistsPage", () => {
     renderPage();
     await waitFor(() => screen.getByText("Alice Morgan"));
 
-    // Alice is admin — should show tick (SVG icon); Bob is not
+    // Sorted by last name asc: Chen (Bob) before Morgan (Alice)
     const rows = screen.getAllByRole("row").slice(1); // skip header
-    expect(rows[0]!.querySelector("svg")).toBeInTheDocument(); // Alice has icon
-    expect(rows[1]!.querySelector("svg")).not.toBeInTheDocument(); // Bob has no icon
+    expect(rows[0]!.querySelector("svg")).not.toBeInTheDocument(); // Bob has no icon
+    expect(rows[1]!.querySelector("svg")).toBeInTheDocument(); // Alice has icon
   });
 
   it("hides admin column for non-admin users", async () => {

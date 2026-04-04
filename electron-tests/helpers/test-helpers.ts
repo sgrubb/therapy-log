@@ -69,6 +69,7 @@ export async function seedTestData(prisma: PrismaClient): Promise<SeedIds> {
       session_day: "Tuesday",
       session_time: "10:00",
       therapist_id: alice.id,
+      start_date: new Date("2025-01-07"),
     },
   });
 
@@ -79,6 +80,7 @@ export async function seedTestData(prisma: PrismaClient): Promise<SeedIds> {
       last_name: "Evans",
       dob: new Date("2014-07-22"),
       therapist_id: bob.id,
+      start_date: new Date("2025-02-10"),
     },
   });
 

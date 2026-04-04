@@ -1,20 +1,18 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
 import { getExpectedSessions } from "@/lib/expected-sessions";
-import { useSessionFilters } from "@/hooks/useSessionFilters";
-import { useSortableTable, SortDir } from "@/hooks/useSortableTable";
+import { useSessionFilters, DatePreset } from "@/hooks/useSessionFilters";
 import { sortableName } from "@/lib/utils";
 import { AlertCircle, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
-import { DatePreset } from "@/hooks/useSessionFilters";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { SessionStatus, SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/types/enums";
+import { SessionStatus, SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES, SortDir } from "@/types/enums";
 import {
   Select,
   SelectContent,
@@ -22,6 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DataTable } from "@/components/ui/data-table";
+import type { Column } from "@/components/ui/data-table";
+import type { SessionWithRelations } from "@/types/ipc";
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString("en-GB", {
@@ -30,6 +31,99 @@ function formatDate(d: Date): string {
     year: "numeric",
   });
 }
+
+interface ExpectedSessionRow {
+  id: string;
+  start: Date;
+  clientName: string;
+  therapistName: string;
+  isOverdue: boolean;
+  logUrl: string;
+}
+
+const expectedColumns: Column<ExpectedSessionRow>[] = [
+  {
+    key: "expected_date",
+    label: "Expected date",
+    sortFn: (a, b) => a.start.getTime() - b.start.getTime(),
+    render: (s) => (
+      <span className="flex items-center gap-2">
+        {format(s.start, "dd MMM yyyy")}
+        {s.isOverdue && <AlertCircle size={14} className="shrink-0 text-red-400" />}
+      </span>
+    ),
+  },
+  {
+    key: "client",
+    label: "Client",
+    sortFn: (a, b) => a.clientName.localeCompare(b.clientName),
+    render: (s) => s.clientName,
+  },
+  {
+    key: "therapist",
+    label: "Therapist",
+    sortFn: (a, b) => a.therapistName.localeCompare(b.therapistName),
+    render: (s) => s.therapistName,
+  },
+  {
+    key: "action",
+    label: "",
+    render: (s) => (
+      <div className="flex justify-end">
+        <Link
+          to={s.logUrl}
+          state={{ from: "/sessions" }}
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
+          Log
+        </Link>
+      </div>
+    ),
+  },
+];
+
+const sessionColumns: Column<SessionWithRelations>[] = [
+  {
+    key: "scheduled_at",
+    label: "Date",
+    sortFn: (a, b) => a.scheduled_at.getTime() - b.scheduled_at.getTime(),
+    render: (s) => formatDate(s.scheduled_at),
+  },
+  {
+    key: "client",
+    label: "Client",
+    sortFn: (a, b) => sortableName(a.client).localeCompare(sortableName(b.client)),
+    render: (s) => `${s.client.first_name} ${s.client.last_name}`,
+  },
+  {
+    key: "therapist",
+    label: "Therapist",
+    sortFn: (a, b) => sortableName(a.therapist).localeCompare(sortableName(b.therapist)),
+    render: (s) => `${s.therapist.first_name} ${s.therapist.last_name}`,
+  },
+  {
+    key: "session_type",
+    label: "Type",
+    sortFn: (a, b) =>
+      (SESSION_TYPE_NAMES[a.session_type] ?? a.session_type)
+        .localeCompare(SESSION_TYPE_NAMES[b.session_type] ?? b.session_type),
+    render: (s) => SESSION_TYPE_NAMES[s.session_type] ?? s.session_type,
+  },
+  {
+    key: "status",
+    label: "Status",
+    sortFn: (a, b) => a.status.localeCompare(b.status),
+    render: (s) => s.status,
+  },
+  {
+    key: "delivery_method",
+    label: "Delivery",
+    sortFn: (a, b) =>
+      (DELIVERY_METHOD_NAMES[a.delivery_method] ?? a.delivery_method)
+        .localeCompare(DELIVERY_METHOD_NAMES[b.delivery_method] ?? b.delivery_method),
+    render: (s) => DELIVERY_METHOD_NAMES[s.delivery_method] ?? s.delivery_method,
+  },
+];
 
 export default function SessionsPage() {
   const navigate = useNavigate();
@@ -53,27 +147,19 @@ export default function SessionsPage() {
     datePreset, setDatePreset,
     dateFromFilter, setDateFromFilter,
     dateToFilter, setDateToFilter,
-    handleSort, sortIndicator,
     filtered, uniqueClients, sortedTherapists,
     showMine, selectedTherapistId,
     reset,
   } = useSessionFilters(sessions);
-
-  const {
-    sortKey: expectedSortKey,
-    sortDir: expectedSortDir,
-    handleSort: handleExpectedSort,
-    sortIndicator: expectedSortIndicator,
-  } = useSortableTable<"expected_date" | "client" | "therapist">("expected_date", "asc");
 
   const clientMap = useMemo(
     () => new Map(clients.map((c) => [c.id, c])),
     [clients],
   );
 
-  const expectedSessions = useMemo(() => {
+  const expectedSessionRows = useMemo((): ExpectedSessionRow[] => {
     const now = new Date();
-    const rangeStart = dateFromFilter ? new Date(dateFromFilter) : (() => {
+    const rangeStart = dateFromFilter ? parse(dateFromFilter, "yyyy-MM-dd", new Date()) : (() => {
       const day = now.getDay();
       const daysToMonday = day === 0 ? 6 : day - 1;
       const thisMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysToMonday, 0, 0, 0, 0);
@@ -87,36 +173,26 @@ export default function SessionsPage() {
       ? new Set([Number(therapistFilter)])
       : undefined;
 
-    const results = getExpectedSessions(clients, sessions, rangeStart, rangeEnd, therapistIds)
-      .filter((s) => clientFilter === "all" || s.clientId === Number(clientFilter));
+    return getExpectedSessions(clients, sessions, rangeStart, rangeEnd, therapistIds)
+      .filter((s) => clientFilter === "all" || s.clientId === Number(clientFilter))
+      .map((s) => {
+        const client = clientMap.get(s.clientId);
+        const therapist = client?.therapist;
+        return {
+          id: s.id,
+          start: s.start,
+          clientName: client ? `${client.first_name} ${client.last_name}` : "—",
+          therapistName: therapist ? `${therapist.first_name} ${therapist.last_name}` : "—",
+          isOverdue: s.start < now,
+          logUrl: `/sessions/new?clientId=${s.clientId}&date=${format(s.start, "yyyy-MM-dd")}&time=${format(s.start, "HH:mm")}`,
+        };
+      });
+  }, [clients, sessions, therapistFilter, clientFilter, dateFromFilter, dateToFilter, clientMap]);
 
-    return [...results].sort((a, b) => {
-      const cmp = (() => {
-        switch (expectedSortKey) {
-          case "expected_date":
-            return a.start.getTime() - b.start.getTime();
-          case "client": {
-            const ca = clientMap.get(a.clientId);
-            const cb = clientMap.get(b.clientId);
-            return sortableName(ca ?? { first_name: "", last_name: "" })
-              .localeCompare(sortableName(cb ?? { first_name: "", last_name: "" }));
-          }
-          case "therapist": {
-            const ta = clientMap.get(a.clientId)?.therapist;
-            const tb = clientMap.get(b.clientId)?.therapist;
-            return sortableName(ta ?? { first_name: "", last_name: "" })
-              .localeCompare(sortableName(tb ?? { first_name: "", last_name: "" }));
-          }
-        }
-      })();
-      return expectedSortDir === SortDir.Asc ? cmp : -cmp;
-    });
-  }, [clients, sessions, therapistFilter, clientFilter, dateFromFilter, dateToFilter, clientMap, expectedSortKey, expectedSortDir]);
-
-  const overdueCount = useMemo(() => {
-    const now = new Date();
-    return expectedSessions.filter((s) => s.start < now).length;
-  }, [expectedSessions]);
+  const overdueCount = useMemo(
+    () => expectedSessionRows.filter((s) => s.isOverdue).length,
+    [expectedSessionRows],
+  );
 
   return (
     <div className="space-y-4">
@@ -125,7 +201,7 @@ export default function SessionsPage() {
           <h1 className="text-2xl font-semibold">Sessions</h1>
           <div className="flex gap-2">
             <Button variant="outline" onClick={reset}>Reset Filters</Button>
-            <Button onClick={() => navigate("/sessions/new")}>Log Session</Button>
+            <Link to="/sessions/new" className={buttonVariants()}>Log Session</Link>
           </div>
         </div>
 
@@ -252,7 +328,7 @@ export default function SessionsPage() {
         </div>
       </PageHeader>
 
-      {expectedSessions.length > 0 && (
+      {expectedSessionRows.length > 0 && (
         <div className="my-6 w-full rounded-md border px-4 py-3">
           <button
             className="flex w-full cursor-pointer items-center gap-2 text-sm font-semibold"
@@ -268,168 +344,28 @@ export default function SessionsPage() {
             <span className="ml-auto text-xs">{expectedOpen ? "▲" : "▼"}</span>
           </button>
           {expectedOpen && (
-            <div className="mt-3 min-w-0 overflow-x-auto">
-              <table className="w-full min-w-[480px] table-fixed text-sm">
-                <colgroup>
-                  <col className="w-[26%]" />
-                  <col className="w-[26%]" />
-                  <col className="w-[26%]" />
-                  <col className="w-[22%]" />
-                </colgroup>
-                <thead>
-                  <tr className="text-muted-foreground border-b text-left">
-                    <th
-                      className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium"
-                      onClick={() => handleExpectedSort("expected_date")}
-                    >
-                      Expected date{expectedSortIndicator("expected_date")}
-                    </th>
-                    <th
-                      className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium"
-                      onClick={() => handleExpectedSort("client")}
-                    >
-                      Client{expectedSortIndicator("client")}
-                    </th>
-                    <th
-                      className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium"
-                      onClick={() => handleExpectedSort("therapist")}
-                    >
-                      Therapist{expectedSortIndicator("therapist")}
-                    </th>
-                    <th className="py-2 font-medium" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {expectedSessions.map((s) => {
-                    const client = clients.find((c) => c.id === s.clientId);
-                    const therapist = client?.therapist;
-                    const dateStr = format(s.start, "yyyy-MM-dd");
-                    const timeStr = format(s.start, "HH:mm");
-                    const isOverdue = s.start < new Date();
-                    return (
-                      <tr key={s.id} className="border-b">
-                        <td className="py-2 pr-4">
-                          <span className="flex items-center justify-between pr-4">
-                            {format(s.start, "dd MMM yyyy")}
-                            {isOverdue && (
-                              <AlertCircle size={14} className="shrink-0 text-red-400" />
-                            )}
-                          </span>
-                        </td>
-                        <td className="py-2 pr-4">
-                          {client ? `${client.first_name} ${client.last_name}` : "—"}
-                        </td>
-                        <td className="py-2 pr-4">
-                          {therapist ? `${therapist.first_name} ${therapist.last_name}` : "—"}
-                        </td>
-                        <td className="py-2 text-right">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(
-                                `/sessions/new?clientId=${s.clientId}&date=${dateStr}&time=${timeStr}`,
-                                { state: { from: "/sessions" } },
-                              );
-                            }}
-                          >
-                            Log
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="mt-3">
+              <DataTable
+                data={expectedSessionRows}
+                columns={expectedColumns}
+                keyFn={(s) => s.id}
+                defaultSortKey="expected_date"
+                emptyMessage="No expected sessions."
+              />
             </div>
           )}
         </div>
       )}
 
-      <div className="min-w-0 overflow-x-auto">
-        <table className="min-w-[640px] w-full table-fixed text-sm">
-          <colgroup>
-            <col className="w-[16%]" />
-            <col className="w-[20%]" />
-            <col className="w-[20%]" />
-            <col className="w-[20%]" />
-            <col className="w-[12%]" />
-            <col className="w-[12%]" />
-          </colgroup>
-          <thead>
-            <tr className="text-muted-foreground border-b text-left">
-              <th
-                className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium"
-                onClick={() => handleSort("scheduled_at")}
-              >
-                Date{sortIndicator("scheduled_at")}
-              </th>
-              <th
-                className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium"
-                onClick={() => handleSort("client")}
-              >
-                Client{sortIndicator("client")}
-              </th>
-              <th
-                className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium"
-                onClick={() => handleSort("therapist")}
-              >
-                Therapist{sortIndicator("therapist")}
-              </th>
-              <th
-                className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium"
-                onClick={() => handleSort("session_type")}
-              >
-                Type{sortIndicator("session_type")}
-              </th>
-              <th
-                className="hover:text-foreground cursor-pointer select-none py-2 pr-4 font-medium"
-                onClick={() => handleSort("status")}
-              >
-                Status{sortIndicator("status")}
-              </th>
-              <th
-                className="hover:text-foreground cursor-pointer select-none py-2 font-medium"
-                onClick={() => handleSort("delivery_method")}
-              >
-                Delivery{sortIndicator("delivery_method")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((session) => (
-              <tr
-                key={session.id}
-                className="hover:bg-muted/50 cursor-pointer border-b transition-colors"
-                onClick={() => navigate(`/sessions/${session.id}`)}
-              >
-                <td className="py-2 pr-4">{formatDate(session.scheduled_at)}</td>
-                <td className="py-2 pr-4">
-                  {session.client.first_name} {session.client.last_name}
-                </td>
-                <td className="py-2 pr-4">
-                  {session.therapist.first_name} {session.therapist.last_name}
-                </td>
-                <td className="py-2 pr-4">
-                  {SESSION_TYPE_NAMES[session.session_type] ?? session.session_type}
-                </td>
-                <td className="py-2 pr-4">{session.status}</td>
-                <td className="py-2">
-                  {DELIVERY_METHOD_NAMES[session.delivery_method] ?? session.delivery_method}
-                </td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={6} className="text-muted-foreground py-6 text-center">
-                  No sessions found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        data={filtered}
+        columns={sessionColumns}
+        keyFn={(s) => s.id}
+        defaultSortKey="scheduled_at"
+        defaultSortDir={SortDir.Desc}
+        onRowClick={(s) => navigate(`/sessions/${s.id}`)}
+        emptyMessage="No sessions found."
+      />
     </div>
   );
 }

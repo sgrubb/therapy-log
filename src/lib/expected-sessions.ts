@@ -1,14 +1,6 @@
 import { eachWeekOfInterval } from "date-fns";
 import { SESSION_DAY_INDEX } from "@/types/enums";
-import type { SessionWithRelations, ClientWithTherapist } from "@/types/ipc";
-
-export interface ExpectedSession {
-  id: string;
-  clientId: number;
-  therapistId: number;
-  start: Date;
-  end: Date;
-}
+import type { SessionWithRelations, ClientWithTherapist, ExpectedSession } from "@/types/ipc";
 
 /**
  * Returns expected (placeholder) sessions for open clients with a session schedule,

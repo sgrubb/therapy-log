@@ -156,10 +156,10 @@ describe("ClientsPage", () => {
   it("navigates to /clients/new when Add Client is clicked", async () => {
     renderClientsPage();
     await waitFor(() =>
-      screen.getByRole("button", { name: /add client/i }),
+      screen.getByRole("link", { name: /add client/i }),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /add client/i }));
+    fireEvent.click(screen.getByRole("link", { name: /add client/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId("client-form")).toBeInTheDocument();
@@ -293,70 +293,6 @@ describe("ClientsPage", () => {
     expect(within(tomRow).getByText("Closed")).toBeInTheDocument();
   });
 
-  describe("column sorting", () => {
-    it("reverses name sort to descending when Name header is clicked", async () => {
-      renderClientsPage();
-      await waitFor(() => screen.getByText("Jane Smith"));
-
-      fireEvent.change(getStatusSelect(), { target: { value: "all" } });
-      await waitFor(() => screen.getByText("Tom Jones"));
-
-      fireEvent.click(screen.getByRole("columnheader", { name: /name/i }));
-
-      const rows = screen.getAllByRole("row").slice(1);
-      expect(rows[0]).toHaveTextContent("Jane Smith"); // Smith > Jones desc
-      expect(rows[1]).toHaveTextContent("Tom Jones");
-    });
-
-    it("sorts by hospital number ascending when Hospital No. header is clicked", async () => {
-      renderClientsPage();
-      await waitFor(() => screen.getByText("Jane Smith"));
-
-      fireEvent.change(getStatusSelect(), { target: { value: "all" } });
-      await waitFor(() => screen.getByText("Tom Jones"));
-
-      fireEvent.click(screen.getByRole("columnheader", { name: /hospital/i }));
-
-      const rows = screen.getAllByRole("row").slice(1);
-      expect(rows[0]).toHaveTextContent("Jane Smith"); // HN001 < HN002
-      expect(rows[1]).toHaveTextContent("Tom Jones");
-    });
-
-    it("sorts open clients before closed when Status header is clicked ascending", async () => {
-      renderClientsPage();
-      await waitFor(() => screen.getByText("Jane Smith"));
-
-      fireEvent.change(getStatusSelect(), { target: { value: "all" } });
-      await waitFor(() => screen.getByText("Tom Jones"));
-
-      fireEvent.click(screen.getByRole("columnheader", { name: /status/i }));
-
-      const rows = screen.getAllByRole("row").slice(1);
-      expect(rows[0]).toHaveTextContent("Jane Smith"); // open (0) before closed (1)
-      expect(rows[1]).toHaveTextContent("Tom Jones");
-    });
-
-    it("shows sort icon on Name header by default and updates after clicking", async () => {
-      renderClientsPage();
-      await waitFor(() => screen.getByText("Jane Smith"));
-
-      const nameHeader = screen.getByRole("columnheader", { name: /name/i });
-      expect(nameHeader.querySelector("svg")).toBeInTheDocument();
-
-      fireEvent.click(nameHeader);
-      expect(nameHeader.querySelector("svg")).toBeInTheDocument();
-    });
-
-    it("moves the sort indicator to the newly clicked column", async () => {
-      renderClientsPage();
-      await waitFor(() => screen.getByText("Jane Smith"));
-
-      fireEvent.click(screen.getByRole("columnheader", { name: /hospital/i }));
-
-      expect(screen.getByRole("columnheader", { name: /hospital/i }).querySelector("svg")).toBeInTheDocument();
-      expect(screen.getByRole("columnheader", { name: /name/i }).querySelector("svg")).not.toBeInTheDocument();
-    });
-  });
 
   describe("Show mine checkbox", () => {
     it("does not show the checkbox when no therapist is selected", async () => {

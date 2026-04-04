@@ -134,20 +134,20 @@ describe("SessionDetailPage", () => {
 
   it("navigates to edit form when Edit is clicked", async () => {
     renderDetailPage();
-    await waitFor(() => screen.getByRole("button", { name: /edit/i }));
+    await waitFor(() => screen.getByRole("link", { name: /edit/i }));
 
-    fireEvent.click(screen.getByRole("button", { name: /edit/i }));
+    fireEvent.click(screen.getByRole("link", { name: /edit/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId("session-edit-form")).toBeInTheDocument();
     });
   });
 
-  it("Edit button passes location state so cancel returns to detail page", async () => {
+  it("Edit link passes location state so cancel returns to detail page", async () => {
     renderDetailPage();
-    await waitFor(() => screen.getByRole("button", { name: /edit/i }));
+    await waitFor(() => screen.getByRole("link", { name: /edit/i }));
 
-    fireEvent.click(screen.getByRole("button", { name: /edit/i }));
+    fireEvent.click(screen.getByRole("link", { name: /edit/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId("session-edit-form")).toHaveAttribute(
@@ -159,9 +159,9 @@ describe("SessionDetailPage", () => {
 
   it("navigates to sessions list when Back is clicked", async () => {
     renderDetailPage();
-    await waitFor(() => screen.getByRole("button", { name: /back to sessions/i }));
+    await waitFor(() => screen.getByRole("link", { name: /back to sessions/i }));
 
-    fireEvent.click(screen.getByRole("button", { name: /back to sessions/i }));
+    fireEvent.click(screen.getByRole("link", { name: /back to sessions/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId("sessions-list")).toBeInTheDocument();
