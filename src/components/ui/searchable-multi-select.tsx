@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Checkbox, Popover } from "radix-ui";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, ChevronUp } from "lucide-react";
 
 interface Option {
   value: string;
@@ -65,7 +65,10 @@ export function SearchableMultiSelect({
           <span className={value.length === 0 ? "text-muted-foreground" : ""}>
             {triggerLabel}
           </span>
-          <ChevronDown size={14} className="text-muted-foreground ml-2 shrink-0" />
+          {open
+            ? <ChevronUp size={14} className="text-muted-foreground ml-2 shrink-0" />
+            : <ChevronDown size={14} className="text-muted-foreground ml-2 shrink-0" />
+          }
         </button>
       </Popover.Trigger>
       <Popover.Portal>

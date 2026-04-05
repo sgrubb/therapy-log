@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { format } from "date-fns";
 import type { z } from "zod";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
@@ -58,7 +59,7 @@ export function useReopenClient(clientId: number, client: ClientWithTherapist) {
     try {
       const reopenNotes = (form.reopen_notes ?? "").trim();
       const existingNotes = client?.notes ?? "";
-      const date = new Date().toLocaleDateString("en-GB");
+      const date = format(new Date(), "dd/MM/yyyy");
       const appendedEntry = `Client reopened - ${date}\n${reopenNotes}`;
       const notesUpdate = existingNotes ? `${existingNotes}\n\n${appendedEntry}` : appendedEntry;
 

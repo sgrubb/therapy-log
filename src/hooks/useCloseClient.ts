@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { format } from "date-fns";
 import type { z } from "zod";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
@@ -60,7 +61,7 @@ export function useCloseClient(clientId: number, client: ClientWithTherapist) {
     try {
       const closingNotes = (form.closing_notes ?? "").trim();
       const existingNotes = client?.notes ?? "";
-      const date = new Date().toLocaleDateString("en-GB");
+      const date = format(new Date(), "dd/MM/yyyy");
       const appendedEntry = `Client closed - ${date}\n${closingNotes}`;
       const notesUpdate = existingNotes ? `${existingNotes}\n\n${appendedEntry}` : appendedEntry;
 

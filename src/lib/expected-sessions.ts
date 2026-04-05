@@ -1,4 +1,4 @@
-import { eachWeekOfInterval } from "date-fns";
+import { eachWeekOfInterval, format, startOfWeek } from "date-fns";
 import { SESSION_DAY_INDEX } from "@/types/enums";
 import type { SessionWithRelations, ClientWithTherapist, ExpectedSession } from "@/types/ipc";
 
@@ -33,7 +33,7 @@ export function getExpectedSessions(
   );
 
   return weekStarts.flatMap((weekDate) => {
-    const weekKey = weekDate.toISOString().split("T")[0]!;
+    const weekKey = format(weekDate, "yyyy-MM-dd");
     return eligibleClients
       .filter((client) => !coveredWeeks.has(`${client.id}-${weekKey}`))
       .flatMap((client): ExpectedSession[] => {
@@ -70,12 +70,5 @@ export function getExpectedSessions(
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 export function getWeekStart(date: Date): string {
-  const day = date.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  return new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate() + diff,
-    0, 0, 0, 0,
-  ).toISOString().split("T")[0]!;
+  return format(startOfWeek(date, { weekStartsOn: 1 }), "yyyy-MM-dd");
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { format } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { useTherapist } from "@/context/TherapistContext";
 import type { SessionWithRelations } from "@/types/ipc";
 type SessionSortKey = "scheduled_at" | "client" | "therapist" | "session_type" | "status" | "delivery_method";
@@ -12,23 +12,19 @@ export const DatePreset = {
 } as const;
 export type DatePreset = (typeof DatePreset)[keyof typeof DatePreset];
 
-function toDateString(date: Date): string {
-  return format(date, "yyyy-MM-dd");
-}
-
 function getPresetRange(preset: DatePreset): { from: string; to: string } {
   const now = new Date();
   if (preset === DatePreset.ThisWeek) {
-    const day = now.getDay();
-    const daysToMonday = day === 0 ? 6 : day - 1;
-    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysToMonday);
-    const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
-    return { from: toDateString(monday), to: toDateString(sunday) };
+    return {
+      from: format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd"),
+      to: format(endOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd"),
+    };
   }
   if (preset === DatePreset.ThisMonth) {
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return { from: toDateString(firstDay), to: toDateString(lastDay) };
+    return {
+      from: format(startOfMonth(now), "yyyy-MM-dd"),
+      to: format(endOfMonth(now), "yyyy-MM-dd"),
+    };
   }
   return { from: "", to: "" };
 }
@@ -47,10 +43,12 @@ export function useSessionFilters(sessions: SessionWithRelations[]) {
   const [dateToFilter, setDateToFilterState] = useState(initialRange.to);
 
   function setDatePreset(preset: DatePreset) {
-    const range = getPresetRange(preset);
     setDatePresetState(preset);
-    setDateFromFilterState(range.from);
-    setDateToFilterState(range.to);
+    if (preset !== DatePreset.Custom) {
+      const range = getPresetRange(preset);
+      setDateFromFilterState(range.from);
+      setDateToFilterState(range.to);
+    }
   }
 
   function setDateFromFilter(value: string) {

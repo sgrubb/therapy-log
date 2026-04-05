@@ -387,11 +387,11 @@ describe("SessionsPage", () => {
       expect(screen.queryByText("Expected date")).not.toBeInTheDocument();
     });
 
-    it("shows ▼ indicator when collapsed", async () => {
+    it("shows chevron-down icon when collapsed", async () => {
       renderWithOverdueClient();
       await waitFor(() => screen.getByText(/expected sessions/i));
       const header = screen.getByRole("button", { name: /expected sessions/i });
-      expect(header).toHaveTextContent("▼");
+      expect(header.querySelector("svg")).toBeInTheDocument();
     });
 
     it("expands to show the overdue table when the header button is clicked", async () => {
@@ -407,7 +407,7 @@ describe("SessionsPage", () => {
       });
     });
 
-    it("shows ▲ indicator when expanded", async () => {
+    it("shows chevron-up icon when expanded", async () => {
       renderWithOverdueClient();
       await waitFor(() => screen.getByText(/expected sessions/i));
 
@@ -415,7 +415,7 @@ describe("SessionsPage", () => {
 
       await waitFor(() => {
         const header = screen.getByRole("button", { name: /expected sessions/i });
-        expect(header).toHaveTextContent("▲");
+        expect(header.querySelector("svg")).toBeInTheDocument();
       });
     });
 
@@ -466,6 +466,20 @@ describe("SessionsPage", () => {
 
       // overdueClient belongs to therapist 1 (Alice); filter to therapist 2 (Bob)
       selectTherapistOption("Bob Chen");
+
+      await waitFor(() => {
+        expect(screen.queryByText(/expected sessions/i)).not.toBeInTheDocument();
+      });
+    });
+
+    it("hides the expected sessions section when date range is unbounded", async () => {
+      renderWithOverdueClient();
+      await waitFor(() => screen.getByText(/expected sessions/i));
+
+      // Switch to "All time" which clears both from and to dates
+      fireEvent.change(screen.getByLabelText("Date range"), {
+        target: { value: "all_time" },
+      });
 
       await waitFor(() => {
         expect(screen.queryByText(/expected sessions/i)).not.toBeInTheDocument();

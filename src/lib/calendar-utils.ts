@@ -1,3 +1,4 @@
+import { subWeeks } from "date-fns";
 import { SESSION_TYPE_NAMES } from "@/types/enums";
 import type { SessionWithRelations, ClientWithTherapist, Therapist } from "@/types/ipc";
 import { getExpectedSessions, getWeekStart } from "@/lib/expected-sessions";
@@ -107,7 +108,7 @@ export function getOverduePlaceholders(
 ): CalendarEvent[] {
   const now = new Date();
   const end = rangeEnd ?? now;
-  const defaultStart = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 12 * 7, 0, 0, 0, 0);
+  const defaultStart = subWeeks(end, 12);
   const start = rangeStart ?? defaultStart;
   const ids = selectedTherapistIds ?? new Set(clients.map((c) => c.therapist_id));
   return generatePlaceholders(clients, sessions, start, end, ids, therapistColors);

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { addYears } from "date-fns";
 import { SessionDay, Outcome, SessionType, DeliveryMethod, SessionStatus, MissedReason } from "@/types/enums";
 
 const sessionDayValues = Object.values(SessionDay) as [
@@ -82,9 +83,7 @@ export const sessionFormSchema = z
     }
     if (data.date) {
       const d = new Date(data.date);
-      const oneYearFromNow = new Date();
-      oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
-      if (!isNaN(d.getTime()) && d > oneYearFromNow) {
+      if (!isNaN(d.getTime()) && d > addYears(new Date(), 1)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Date cannot be more than 1 year in the future.",

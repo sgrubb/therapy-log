@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import type { z } from "zod";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
@@ -20,7 +21,7 @@ function emptyForm(): FormFields {
     last_name: "",
     hospital_number: "",
     dob: "",
-    start_date: new Date().toISOString().split("T")[0] ?? "",
+    start_date: format(new Date(), "yyyy-MM-dd"),
     address: "",
     phone: "",
     email: "",
@@ -52,8 +53,8 @@ function mapClientToFormFields(client: ClientWithTherapist): FormFields {
     first_name: client.first_name,
     last_name: client.last_name,
     hospital_number: client.hospital_number,
-    dob: client.dob.toISOString().split("T")[0] ?? "",
-    start_date: client.start_date.toISOString().split("T")[0] ?? "",
+    dob: format(client.dob, "yyyy-MM-dd"),
+    start_date: format(client.start_date, "yyyy-MM-dd"),
     address: client.address ?? "",
     phone: client.phone ?? "",
     email: client.email ?? "",

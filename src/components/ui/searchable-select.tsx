@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Popover } from "radix-ui";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Option {
@@ -70,7 +70,10 @@ export function SearchableSelect({
           <span className={!selectedLabel ? "text-muted-foreground" : ""}>
             {selectedLabel ?? placeholder}
           </span>
-          <ChevronDown size={14} className="text-muted-foreground ml-2 shrink-0" />
+          {open
+            ? <ChevronUp size={14} className="text-muted-foreground ml-2 shrink-0" />
+            : <ChevronDown size={14} className="text-muted-foreground ml-2 shrink-0" />
+          }
         </button>
       </Popover.Trigger>
       <Popover.Portal>

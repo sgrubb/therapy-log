@@ -6,8 +6,8 @@ import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
 import { getExpectedSessions } from "@/lib/expected-sessions";
 import { useSessionFilters, DatePreset } from "@/hooks/useSessionFilters";
-import { sortableName } from "@/lib/utils";
-import { AlertCircle, X } from "lucide-react";
+import { cn, sortableName } from "@/lib/utils";
+import { AlertCircle, ChevronDown, ChevronUp, X } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
@@ -43,15 +43,16 @@ interface ExpectedSessionRow {
 
 const expectedColumns: Column<ExpectedSessionRow>[] = [
   {
+    key: "overdue_icon",
+    label: "",
+    className: "w-6",
+    render: (s) => s.isOverdue ? <AlertCircle size={14} className="text-red-400" /> : null,
+  },
+  {
     key: "expected_date",
     label: "Expected date",
     sortFn: (a, b) => a.start.getTime() - b.start.getTime(),
-    render: (s) => (
-      <span className="flex items-center gap-2">
-        {format(s.start, "dd MMM yyyy")}
-        {s.isOverdue && <AlertCircle size={14} className="shrink-0 text-red-400" />}
-      </span>
-    ),
+    render: (s) => format(s.start, "dd MMM yyyy"),
   },
   {
     key: "client",
@@ -157,17 +158,16 @@ export default function SessionsPage() {
     [clients],
   );
 
+  const hasBoundedRange = dateFromFilter !== "" && dateToFilter !== "";
+
   const expectedSessionRows = useMemo((): ExpectedSessionRow[] => {
+    if (!hasBoundedRange) {
+      return [];
+    }
+
     const now = new Date();
-    const rangeStart = dateFromFilter ? parse(dateFromFilter, "yyyy-MM-dd", new Date()) : (() => {
-      const day = now.getDay();
-      const daysToMonday = day === 0 ? 6 : day - 1;
-      const thisMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysToMonday, 0, 0, 0, 0);
-      return new Date(thisMonday.getFullYear(), thisMonday.getMonth(), thisMonday.getDate() - 7, 0, 0, 0, 0);
-    })();
-    const rangeEnd = dateToFilter
-      ? new Date(`${dateToFilter}T23:59:59`)
-      : now;
+    const rangeStart = parse(dateFromFilter, "yyyy-MM-dd", new Date());
+    const rangeEnd = new Date(`${dateToFilter}T23:59:59`);
 
     const therapistIds = therapistFilter !== "all"
       ? new Set([Number(therapistFilter)])
@@ -187,7 +187,7 @@ export default function SessionsPage() {
           logUrl: `/sessions/new?clientId=${s.clientId}&date=${format(s.start, "yyyy-MM-dd")}&time=${format(s.start, "HH:mm")}`,
         };
       });
-  }, [clients, sessions, therapistFilter, clientFilter, dateFromFilter, dateToFilter, clientMap]);
+  }, [clients, sessions, therapistFilter, clientFilter, dateFromFilter, dateToFilter, clientMap, hasBoundedRange]);
 
   const overdueCount = useMemo(
     () => expectedSessionRows.filter((s) => s.isOverdue).length,
@@ -206,8 +206,8 @@ export default function SessionsPage() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-        <label className="text-muted-foreground flex flex-col gap-1 text-xs">
-          Client
+        <label className="flex flex-col gap-1 text-xs">
+          <span className="text-muted-foreground">Client</span>
           <SearchableSelect
             className="w-52"
             aria-label="Client filter"
@@ -252,8 +252,8 @@ export default function SessionsPage() {
           />
         </div>
 
-        <label className="text-muted-foreground flex flex-col gap-1 text-xs">
-          Status
+        <label className="flex flex-col gap-1 text-xs">
+          <span className="text-muted-foreground">Status</span>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-40" aria-label="Status filter">
               <SelectValue placeholder="All statuses" />
@@ -269,61 +269,69 @@ export default function SessionsPage() {
           </Select>
         </label>
 
-        <label className="text-muted-foreground flex flex-col gap-1 text-xs">
-          Date range
-          <Select value={datePreset} onValueChange={(v) => setDatePreset(v as DatePreset)}>
-            <SelectTrigger className="w-36" aria-label="Date range preset">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={DatePreset.ThisWeek}>This week</SelectItem>
-              <SelectItem value={DatePreset.ThisMonth}>This month</SelectItem>
-              <SelectItem value={DatePreset.AllTime}>All time</SelectItem>
-              <SelectItem value={DatePreset.Custom}>Custom range</SelectItem>
-            </SelectContent>
-          </Select>
-        </label>
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground text-xs">From</span>
-            {dateFromFilter && (
-              <button
-                className="text-muted-foreground hover:text-foreground mr-3"
-                onClick={() => setDateFromFilter("")}
-                aria-label="Clear from date"
-              >
-                <X size={10} />
-              </button>
-            )}
+        <div className="flex items-end gap-2">
+          <label className="flex flex-col gap-1 text-xs">
+            <span className="text-muted-foreground">Date range</span>
+            <Select value={datePreset} onValueChange={(v) => setDatePreset(v as DatePreset)}>
+              <SelectTrigger className="w-36" aria-label="Date range preset">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={DatePreset.ThisWeek}>This week</SelectItem>
+                <SelectItem value={DatePreset.ThisMonth}>This month</SelectItem>
+                <SelectItem value={DatePreset.AllTime}>All time</SelectItem>
+                <SelectItem value={DatePreset.Custom}>Custom range</SelectItem>
+              </SelectContent>
+            </Select>
+          </label>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground text-xs">From</span>
+              {dateFromFilter && (
+                <button
+                  className="text-muted-foreground hover:text-foreground mr-3"
+                  onClick={() => setDateFromFilter("")}
+                  aria-label="Clear from date"
+                >
+                  <X size={10} />
+                </button>
+              )}
+            </div>
+            <Input
+              type="date"
+              aria-label="From date"
+              value={dateFromFilter}
+              onChange={(e) => setDateFromFilter(e.target.value)}
+              className={cn(
+                "w-40",
+                datePreset !== DatePreset.Custom && "text-muted-foreground"
+              )}
+            />
           </div>
-          <Input
-            type="date"
-            aria-label="From date"
-            value={dateFromFilter}
-            onChange={(e) => setDateFromFilter(e.target.value)}
-            className="w-40"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground text-xs">To</span>
-            {dateToFilter && (
-              <button
-                className="text-muted-foreground hover:text-foreground mr-3"
-                onClick={() => setDateToFilter("")}
-                aria-label="Clear to date"
-              >
-                <X size={10} />
-              </button>
-            )}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground text-xs">To</span>
+              {dateToFilter && (
+                <button
+                  className="text-muted-foreground hover:text-foreground mr-3"
+                  onClick={() => setDateToFilter("")}
+                  aria-label="Clear to date"
+                >
+                  <X size={10} />
+                </button>
+              )}
+            </div>
+            <Input
+              type="date"
+              aria-label="To date"
+              value={dateToFilter}
+              onChange={(e) => setDateToFilter(e.target.value)}
+              className={cn(
+                "w-40",
+                datePreset !== DatePreset.Custom && "text-muted-foreground"
+              )}
+            />
           </div>
-          <Input
-            type="date"
-            aria-label="To date"
-            value={dateToFilter}
-            onChange={(e) => setDateToFilter(e.target.value)}
-            className="w-40"
-          />
         </div>
         </div>
       </PageHeader>
@@ -341,7 +349,7 @@ export default function SessionsPage() {
                 {overdueCount} overdue
               </span>
             )}
-            <span className="ml-auto text-xs">{expectedOpen ? "▲" : "▼"}</span>
+            {expectedOpen ? <ChevronUp size={16} className="ml-auto" /> : <ChevronDown size={16} className="ml-auto" />}
           </button>
           {expectedOpen && (
             <div className="mt-3">

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import type { z } from "zod";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
@@ -36,7 +37,7 @@ function mostRecentOccurrence(dayName: string): string {
   const daysBack = (today.getDay() - target + 7) % 7;
   const result = new Date(today);
   result.setDate(today.getDate() - daysBack);
-  return result.toISOString().split("T")[0]!;
+  return format(result, "yyyy-MM-dd");
 }
 
 function minutesToHHMM(minutes: number): string {
@@ -54,8 +55,8 @@ function mapSessionToFormFields(session: SessionWithRelations): FormFields {
   return {
     client_id: session.client_id.toString(),
     therapist_id: session.therapist_id.toString(),
-    date: session.scheduled_at.toISOString().split("T")[0]!,
-    time: session.scheduled_at.toISOString().split("T")[1]?.slice(0, 5) ?? "",
+    date: format(session.scheduled_at, "yyyy-MM-dd"),
+    time: format(session.scheduled_at, "HH:mm"),
     duration: minutesToHHMM(session.duration),
     session_type: session.session_type,
     delivery_method: session.delivery_method,

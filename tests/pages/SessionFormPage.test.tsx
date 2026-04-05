@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { format } from "date-fns";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { TherapistProvider } from "@/context/TherapistContext";
@@ -441,8 +442,8 @@ describe("SessionFormPage — edit session", () => {
   it("pre-populates all fields from existing session data", async () => {
     renderEditForm();
     await waitFor(() => {
-      expect(screen.getByLabelText(/^date/i)).toHaveValue(MOCK_SESSION_DATE_RECENT.toISOString().split("T")[0]!);
-      expect(screen.getByLabelText(/^time/i)).toHaveValue(MOCK_SESSION_DATE_RECENT.toISOString().split("T")[1]!.slice(0, 5));
+      expect(screen.getByLabelText(/^date/i)).toHaveValue(format(MOCK_SESSION_DATE_RECENT, "yyyy-MM-dd"));
+      expect(screen.getByLabelText(/^time/i)).toHaveValue(format(MOCK_SESSION_DATE_RECENT, "HH:mm"));
       expect(screen.getByLabelText(/^duration/i)).toHaveValue("1");
       expect(getClientSelect()).toHaveValue("1");
       expect(getTherapistSelect()).toHaveValue("1");

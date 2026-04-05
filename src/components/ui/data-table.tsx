@@ -6,6 +6,7 @@ import { SortDir } from "@/types/enums";
 export interface Column<T> {
   key: string;
   label: string;
+  className?: string;
   sortFn?: (a: T, b: T) => number;
   render: (row: T) => React.ReactNode;
 }
@@ -56,13 +57,14 @@ export function DataTable<T>({
     <div className="min-w-0 overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-muted-foreground border-b text-left">
+          <tr className="bg-muted/100 text-muted-foreground border-b text-left">
             {columns.map((col) => (
               <th
                 key={col.key}
                 className={cn(
-                  "py-2 pr-4 font-medium last:pr-0",
+                  "px-3 py-2 font-medium",
                   col.sortFn && "hover:text-foreground cursor-pointer select-none",
+                  col.className,
                 )}
                 onClick={col.sortFn ? () => handleSort(col.key) : undefined}
               >
@@ -87,7 +89,7 @@ export function DataTable<T>({
               onClick={onRowClick ? () => onRowClick(row) : undefined}
             >
               {columns.map((col) => (
-                <td key={col.key} className="py-2 pr-4 last:pr-0">
+                <td key={col.key} className={cn("px-3 py-2", col.className)}>
                   {col.render(row)}
                 </td>
               ))}

@@ -151,8 +151,8 @@ export default function CalendarPage() {
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
-        <label className="text-muted-foreground flex flex-col gap-1 text-xs">
-          Therapists (max 5)
+        <label className="flex flex-col gap-1 text-xs">
+          <span className="text-muted-foreground">Therapists (max 5)</span>
           <div className="w-56">
             <SearchableMultiSelect
               options={therapistOptions}

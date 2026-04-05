@@ -88,8 +88,8 @@ export default function ClientsPage() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-        <label className="text-muted-foreground flex flex-col gap-1 text-xs">
-          Search
+        <label className="flex flex-col gap-1 text-xs">
+          <span className="text-muted-foreground">Search</span>
           <Input
             placeholder="Search name or hospital number…"
             value={search}
@@ -97,8 +97,8 @@ export default function ClientsPage() {
             className="max-w-sm"
           />
         </label>
-        <label className="text-muted-foreground flex flex-col gap-1 text-xs">
-          Status
+        <label className="flex flex-col gap-1 text-xs">
+          <span className="text-muted-foreground">Status</span>
           <Select
             value={statusFilter}
             onValueChange={(v) => setStatusFilter(v as ClientStatusFilter)}

@@ -32,7 +32,7 @@ export default function TherapistsPage() {
       label: "Admin",
       render: (t: Therapist) => (
         t.is_admin
-          ? <div className="flex justify-center"><Check size={14} /></div>
+          ? <div className="flex"><Check size={14} /></div>
           : null
       ),
     }] : []),
