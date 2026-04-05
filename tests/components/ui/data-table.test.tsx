@@ -129,4 +129,23 @@ describe("DataTable", () => {
     expect(staticHeader).not.toHaveAttribute("onClick");
     expect(staticHeader).not.toHaveStyle({ cursor: "pointer" });
   });
+
+  it("applies className to header and body cells", () => {
+    const customColumns: Column<Row>[] = [
+      { ...columns[0]!, className: "w-10" },
+      columns[1]!,
+      columns[2]!,
+    ];
+    render(<DataTable data={data} columns={customColumns} keyFn={keyFn} />);
+
+    const th = screen.getByText("Name").closest("th")!;
+    expect(th).toHaveClass("w-10");
+
+    const td = screen.getByText("Alice").closest("td")!;
+    expect(td).toHaveClass("w-10");
+
+    // Other columns should not have the custom class
+    const otherTh = screen.getByText("Score").closest("th")!;
+    expect(otherTh).not.toHaveClass("w-10");
+  });
 });

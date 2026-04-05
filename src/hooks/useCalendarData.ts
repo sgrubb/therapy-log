@@ -47,7 +47,7 @@ export function useCalendarData({
     [selectedTherapists],
   );
 
-  const events = useMemo((): CalendarEvent[] => {
+  const allEvents = useMemo((): CalendarEvent[] => {
     const filteredSessions = sessions.filter((s) =>
       selectedTherapistIds.has(s.therapist_id),
     );
@@ -58,11 +58,7 @@ export function useCalendarData({
       ? generatePlaceholders(clients, sessions, rangeStart, rangeEnd, selectedTherapistIds, therapistColors)
       : [];
 
-    const combined = [...sessionEvents, ...placeholders];
-
-    return showOverlappingOnly
-      ? combined.filter((e) => e.isOverlapping && !e.isPlaceholder)
-      : combined;
+    return [...sessionEvents, ...placeholders];
   }, [
     sessions,
     clients,
@@ -71,8 +67,19 @@ export function useCalendarData({
     rangeStart,
     rangeEnd,
     showPlaceholders,
-    showOverlappingOnly,
   ]);
+
+  const events = useMemo(
+    () => showOverlappingOnly
+      ? allEvents.filter((e) => e.isOverlapping && !e.isPlaceholder)
+      : allEvents,
+    [allEvents, showOverlappingOnly],
+  );
+
+  const overlappingCount = useMemo(() => {
+    const now = new Date();
+    return allEvents.filter((e) => e.isOverlapping && !e.isPlaceholder && e.start >= now).length;
+  }, [allEvents]);
 
   // Clamp the range end to now so future expected sessions aren't counted as overdue.
   const overdueRangeEnd = useMemo(() => {
@@ -85,5 +92,5 @@ export function useCalendarData({
     [clients, sessions, selectedTherapistIds, rangeStart, overdueRangeEnd],
   );
 
-  return { events, overdueCount };
+  return { events, overdueCount, overlappingCount };
 }

@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { startOfDay } from "date-fns";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useTherapist } from "@/context/TherapistContext";
 import { useSessionForm } from "@/hooks/useSessionForm";
@@ -92,6 +93,32 @@ export default function SessionFormPage() {
     }
     return aName.localeCompare(bName);
   });
+
+  const isFutureSession = useMemo(() => {
+    if (!form.date) {
+      return null;
+    }
+    return startOfDay(new Date(form.date)) > startOfDay(new Date());
+  }, [form.date]);
+
+  const availableStatuses = useMemo(() => {
+    const statuses = Object.values(SessionStatus)
+    if (isFutureSession === null) {
+      return statuses;
+    }
+    return statuses.filter(status => {
+      if (isFutureSession) {
+        return status !== SessionStatus.Attended && status !== SessionStatus.DNA;
+      }
+      return status !== SessionStatus.Scheduled;
+    });
+  }, [isFutureSession]);
+
+  useEffect(() => {
+    if (form.status && !availableStatuses.includes(form.status as SessionStatus)) {
+      set("status", "" as SessionStatus);
+    }
+  }, [availableStatuses]);
 
   const showMissedReason = !!form.status && form.status !== SessionStatus.Attended;
 
@@ -220,7 +247,7 @@ export default function SessionFormPage() {
                 <SelectValue placeholder="Select status…" />
               </SelectTrigger>
               <SelectContent>
-                {Object.values(SessionStatus).map((s) => (
+                {availableStatuses.map((s) => (
                   <SelectItem key={s} value={s}>
                     {s}
                   </SelectItem>

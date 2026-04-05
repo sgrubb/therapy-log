@@ -89,7 +89,7 @@ export default function CalendarPage() {
     [selectedTherapistIds, therapists],
   );
 
-  const { events, overdueCount } = useCalendarData({
+  const { events, overdueCount, overlappingCount } = useCalendarData({
     selectedTherapists,
     rangeStart,
     rangeEnd,
@@ -195,6 +195,12 @@ export default function CalendarPage() {
               onChange={(e) => setShowOverlappingOnly(e.target.checked)}
             />
             Show overlapping sessions only
+            {overlappingCount > 0 && (
+              <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-red-400 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                <AlertCircle size={12} />
+                {overlappingCount} overlapping
+              </span>
+            )}
           </label>
         </div>
       </div>
