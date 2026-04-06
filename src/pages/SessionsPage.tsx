@@ -17,11 +17,7 @@ import type { ExpectedSessionRow } from "@/context/SessionsContext";
 import type { SessionWithRelations } from "@/types/ipc";
 
 function formatDate(d: Date): string {
-  return d.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return format(d, "dd MMM yyyy");
 }
 
 const expectedColumns: Column<ExpectedSessionRow>[] = [

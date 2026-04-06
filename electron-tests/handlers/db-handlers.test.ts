@@ -155,9 +155,9 @@ describe("client:create", () => {
       hospital_number: "H-9001",
       first_name: "Test",
       last_name: "Client",
-      dob: new Date("2010-01-01"),
+      dob: new Date("2010-01-01T00:00:00"),
       therapist_id: ids.therapistAlice,
-      start_date: new Date("2025-03-01"),
+      start_date: new Date("2025-03-01T00:00:00"),
     });
     assert(result.success);
     expect(result.data).toMatchObject({
@@ -171,9 +171,9 @@ describe("client:create", () => {
       hospital_number: "H-1001",
       first_name: "Dupe",
       last_name: "Client",
-      dob: new Date("2010-01-01"),
+      dob: new Date("2010-01-01T00:00:00"),
       therapist_id: ids.therapistAlice,
-      start_date: new Date("2025-03-01"),
+      start_date: new Date("2025-03-01T00:00:00"),
     });
     assert(!result.success);
     expect(result.error.code).toBe("UNIQUE_CONSTRAINT");

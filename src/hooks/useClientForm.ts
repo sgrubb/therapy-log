@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import type { z } from "zod";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
@@ -75,8 +75,8 @@ function buildPayload(form: FormFields) {
     first_name: form.first_name.trim(),
     last_name: form.last_name.trim(),
     hospital_number: form.hospital_number.trim(),
-    dob: new Date(form.dob),
-    start_date: new Date(form.start_date),
+    dob: parse(form.dob, "yyyy-MM-dd", new Date()),
+    start_date: parse(form.start_date, "yyyy-MM-dd", new Date()),
     address: (form.address ?? "").trim() || undefined,
     phone: (form.phone ?? "").trim() || undefined,
     email: (form.email ?? "").trim() || undefined,

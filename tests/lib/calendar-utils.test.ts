@@ -12,8 +12,8 @@ import type { SessionWithRelations, ClientWithTherapist } from "@/types/ipc";
 
 const clientBase = {
   hospital_number: "HN001",
-  dob: new Date("2000-01-01"),
-  start_date: new Date("2025-09-01"),
+  dob: new Date("2000-01-01T00:00:00"),
+  start_date: new Date("2025-09-01T00:00:00"),
   address: null,
   phone: null,
   email: null,

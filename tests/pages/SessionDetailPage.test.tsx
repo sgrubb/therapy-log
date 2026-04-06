@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { Suspense } from "react";
@@ -92,7 +93,7 @@ describe("SessionDetailPage", () => {
 
   it("renders date and time", async () => {
     renderDetailPage();
-    const date = mockSession.scheduled_at.toLocaleDateString("en-GB");
+    const date = format(mockSession.scheduled_at, "dd/MM/yyyy");
     await waitFor(() => {
       expect(screen.getByText(date)).toBeInTheDocument();
     });

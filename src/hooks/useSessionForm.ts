@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import type { z } from "zod";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
@@ -67,11 +67,10 @@ function mapSessionToFormFields(session: SessionWithRelations): FormFields {
 }
 
 function buildPayload(form: FormFields) {
-  const dateStr = `${form.date}T${form.time}`;
   return {
     client_id: Number(form.client_id),
     therapist_id: Number(form.therapist_id),
-    scheduled_at: new Date(dateStr),
+    scheduled_at: parse(`${form.date} ${form.time}`, "yyyy-MM-dd HH:mm", new Date()),
     duration: hhmmToMinutes(form.duration),
     status: form.status as SessionStatus,
     session_type: form.session_type as SessionType,

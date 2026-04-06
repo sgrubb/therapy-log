@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import { useParams, useLocation, Link } from "react-router-dom";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
@@ -26,11 +27,8 @@ export default function SessionDetailPage() {
     queryFn: () => ipc.getSession(sessionId),
   });
 
-  const date = session.scheduled_at.toLocaleDateString("en-GB");
-  const time = session.scheduled_at.toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const date = format(session.scheduled_at, "dd/MM/yyyy");
+  const time = format(session.scheduled_at, "HH:mm");
   const showMissedReason =
     session.status !== SessionStatus.Attended && !!session.missed_reason;
 

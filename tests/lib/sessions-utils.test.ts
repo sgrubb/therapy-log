@@ -5,7 +5,7 @@ import type { SessionWithRelations } from "@/types/ipc";
 
 const clientBase = {
   hospital_number: "HN001",
-  dob: new Date("2000-01-01"),
+  dob: new Date("2000-01-01T00:00:00"),
   address: null,
   phone: null,
   email: null,
@@ -19,7 +19,7 @@ const clientBase = {
   outcome: null as null,
   notes: null,
   updated_at: MOCK_UPDATED_AT,
-  start_date: new Date("2025-01-01"),
+  start_date: new Date("2025-01-01T00:00:00"),
   therapist: mockTherapists[0]!,
 };
 

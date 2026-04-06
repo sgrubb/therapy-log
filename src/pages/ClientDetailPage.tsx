@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -45,7 +46,7 @@ export default function ClientDetailPage() {
       key: "date",
       label: "Date",
       sortFn: (a, b) => a.scheduled_at.getTime() - b.scheduled_at.getTime(),
-      render: (s) => s.scheduled_at.toLocaleDateString("en-GB"),
+      render: (s) => format(s.scheduled_at, "dd/MM/yyyy"),
     },
     {
       key: "type",
@@ -119,11 +120,11 @@ export default function ClientDetailPage() {
         <InfoRow label="Hospital Number" value={client.hospital_number} />
         <InfoRow
           label="Date of Birth"
-          value={client.dob.toLocaleDateString("en-GB")}
+          value={format(client.dob, "dd/MM/yyyy")}
         />
         <InfoRow
           label="Start Date"
-          value={client.start_date.toLocaleDateString("en-GB")}
+          value={format(client.start_date, "dd/MM/yyyy")}
         />
         <InfoRow
           label="Therapist"

@@ -65,11 +65,11 @@ export async function seedTestData(prisma: PrismaClient): Promise<SeedIds> {
       hospital_number: "H-1001",
       first_name: "Charlie",
       last_name: "Davis",
-      dob: new Date("2012-03-15"),
+      dob: new Date("2012-03-15T00:00:00"),
       session_day: "Tuesday",
       session_time: "10:00",
       therapist_id: alice.id,
-      start_date: new Date("2025-01-07"),
+      start_date: new Date("2025-01-07T00:00:00"),
     },
   });
 
@@ -78,9 +78,9 @@ export async function seedTestData(prisma: PrismaClient): Promise<SeedIds> {
       hospital_number: "H-1002",
       first_name: "Dana",
       last_name: "Evans",
-      dob: new Date("2014-07-22"),
+      dob: new Date("2014-07-22T00:00:00"),
       therapist_id: bob.id,
-      start_date: new Date("2025-02-10"),
+      start_date: new Date("2025-02-10T00:00:00"),
     },
   });
 

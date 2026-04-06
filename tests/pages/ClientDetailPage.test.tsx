@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -198,7 +199,7 @@ describe("ClientDetailPage", () => {
 
   it("formats date of birth in en-GB locale", async () => {
     renderDetailPage();
-    const expectedDob = mockClient.dob.toLocaleDateString("en-GB");
+    const expectedDob = format(mockClient.dob, "dd/MM/yyyy");
     await waitFor(() => {
       expect(screen.getByText(expectedDob)).toBeInTheDocument();
     });
@@ -206,7 +207,7 @@ describe("ClientDetailPage", () => {
 
   it("formats session date in en-GB locale", async () => {
     renderDetailPage();
-    const expectedDate = mockSession.scheduled_at.toLocaleDateString("en-GB");
+    const expectedDate = format(mockSession.scheduled_at, "dd/MM/yyyy");
     await waitFor(() => {
       expect(screen.getByText(expectedDate)).toBeInTheDocument();
     });
@@ -564,7 +565,7 @@ describe("ClientDetailPage — close client", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /confirm close/i }));
 
-    const date = new Date().toLocaleDateString("en-GB");
+    const date = format(new Date(), "dd/MM/yyyy");
     await waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith(
         "client:close",
@@ -813,7 +814,7 @@ describe("ClientDetailPage — reopen client", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /confirm reopen/i }));
 
-    const date = new Date().toLocaleDateString("en-GB");
+    const date = format(new Date(), "dd/MM/yyyy");
     await waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith(
         "client:reopen",
