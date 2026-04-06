@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { startOfDay } from "date-fns";
+import { parse } from "date-fns";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useTherapist } from "@/context/TherapistContext";
 import { useSessionForm } from "@/hooks/useSessionForm";
@@ -95,11 +95,12 @@ export default function SessionFormPage() {
   });
 
   const isFutureSession = useMemo(() => {
-    if (!form.date) {
+    if (!form.date || !form.time) {
       return null;
     }
-    return startOfDay(new Date(form.date)) > startOfDay(new Date());
-  }, [form.date]);
+    const sessionDateTime = parse(`${form.date} ${form.time}`, "yyyy-MM-dd HH:mm", new Date());
+    return sessionDateTime > new Date();
+  }, [form.date, form.time]);
 
   const availableStatuses = useMemo(() => {
     const statuses = Object.values(SessionStatus)
@@ -120,7 +121,7 @@ export default function SessionFormPage() {
     }
   }, [availableStatuses]);
 
-  const showMissedReason = !!form.status && form.status !== SessionStatus.Attended;
+  const showMissedReason = form.status === SessionStatus.DNA || form.status === SessionStatus.Cancelled;
 
   return (
     <div className="max-w-2xl space-y-6">

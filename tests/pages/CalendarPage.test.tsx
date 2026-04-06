@@ -5,7 +5,7 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { TherapistProvider } from "@/context/TherapistContext";
 import CalendarPage from "@/pages/CalendarPage";
-import { wrapped, mockTherapists, mockSessions, mockClients, mockClientBase, MOCK_SESSION_DATE_RECENT, MOCK_UPDATED_AT } from "../helpers/ipc-mocks";
+import { wrapped, mockTherapists, mockSessions, mockClients, mockClientBase } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
 
 // react-big-calendar renders a complex calendar that's not practical to test in jsdom.
@@ -106,14 +106,14 @@ describe("CalendarPage", () => {
   it("renders the Show expected sessions checkbox checked by default", async () => {
     renderCalendarPage();
     await waitForLoad();
-    const checkbox = screen.getByLabelText("Show expected sessions");
+    const checkbox = screen.getByLabelText("Show expected");
     expect(checkbox).toBeChecked();
   });
 
   it("unchecking Show expected sessions hides placeholder events", async () => {
     renderCalendarPage();
     await waitForLoad();
-    const checkbox = screen.getByLabelText("Show expected sessions");
+    const checkbox = screen.getByLabelText("Show expected");
     fireEvent.click(checkbox);
     expect(checkbox).not.toBeChecked();
     // With no therapist selected there are no events either way, but the checkbox state should update
@@ -123,31 +123,40 @@ describe("CalendarPage", () => {
   it("renders the Overlapping only checkbox unchecked by default", async () => {
     renderCalendarPage();
     await waitForLoad();
-    const checkbox = screen.getByLabelText("Show overlapping sessions only");
+    const checkbox = screen.getByLabelText(/overlapping only/i);
     expect(checkbox).not.toBeChecked();
   });
 
   it("checking Overlapping only updates the checkbox state", async () => {
     renderCalendarPage();
     await waitForLoad();
-    const checkbox = screen.getByLabelText("Show overlapping sessions only");
+    const checkbox = screen.getByLabelText(/overlapping only/i);
     fireEvent.click(checkbox);
     expect(checkbox).toBeChecked();
   });
 
-  it("does not show overlapping count badge when no sessions overlap", async () => {
+  it("shows 0 in overlapping badge when no sessions overlap", async () => {
     localStorage.setItem("selectedTherapistId", "1");
     renderCalendarPage();
     await waitForLoad();
-    const label = screen.getByText("Show overlapping sessions only").closest("label")!;
-    expect(label.querySelector("span")).not.toBeInTheDocument();
+    const label = screen.getByText(/overlapping only/i).closest("label")!;
+    expect(label).toHaveTextContent("0");
   });
 
-  it("shows overlapping count badge when sessions overlap", async () => {
-    // Create two sessions for the same therapist at the same time
+  it("shows overlapping count badge when future sessions overlap", async () => {
+    // Two sessions for the same therapist at the same future time
+    const tomorrow10am = new Date();
+    tomorrow10am.setDate(tomorrow10am.getDate() + 1);
+    tomorrow10am.setHours(10, 0, 0, 0);
+
+    const futureSession = {
+      ...mockSessions[0]!,
+      scheduled_at: tomorrow10am,
+    };
     const overlappingSession = {
       ...mockSessions[0]!,
       id: 99,
+      scheduled_at: tomorrow10am,
       client_id: 2,
       client: {
         ...mockClientBase,
@@ -165,7 +174,7 @@ describe("CalendarPage", () => {
         return Promise.resolve(wrapped(mockTherapists));
       }
       if (channel === "session:list") {
-        return Promise.resolve(wrapped([mockSessions[0]!, overlappingSession]));
+        return Promise.resolve(wrapped([futureSession, overlappingSession]));
       }
       if (channel === "client:list") {
         return Promise.resolve(wrapped(mockClients));
@@ -177,7 +186,7 @@ describe("CalendarPage", () => {
     renderCalendarPage();
     await waitForLoad();
 
-    const label = screen.getByText("Show overlapping sessions only").closest("label")!;
+    const label = screen.getByText(/overlapping only/i).closest("label")!;
     expect(label).toHaveTextContent("2");
   });
 });

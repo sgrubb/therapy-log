@@ -4,10 +4,10 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { format, parse } from "date-fns";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
-import { getExpectedSessions } from "@/lib/expected-sessions";
+import { getExpectedSessions, getOverlappingSessions, getUnconfirmedSessions } from "@/lib/sessions-utils";
 import { useSessionFilters, DatePreset } from "@/hooks/useSessionFilters";
 import { cn, sortableName } from "@/lib/utils";
-import { AlertCircle, ChevronDown, ChevronUp, X } from "lucide-react";
+import { AlertCircle, Clock, ChevronDown, ChevronUp, X } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Input } from "@/components/ui/input";
@@ -46,7 +46,11 @@ const expectedColumns: Column<ExpectedSessionRow>[] = [
     key: "overdue_icon",
     label: "",
     className: "w-6",
-    render: (s) => s.isOverdue ? <AlertCircle size={14} className="text-red-400" /> : null,
+    render: (s) => s.isOverdue ? (
+      <span title="Overdue — no session logged">
+        <Clock size={14} className="pointer-events-none text-red-400" />
+      </span>
+    ) : null,
   },
   {
     key: "expected_date",
@@ -140,6 +144,9 @@ export default function SessionsPage() {
   });
 
   const [expectedOpen, setExpectedOpen] = useState(false);
+  const [overdueOnly, setOverdueOnly] = useState(false);
+  const [unconfirmedOnly, setUnconfirmedOnly] = useState(false);
+  const [overlappingOnly, setOverlappingOnly] = useState(false);
 
   const {
     clientFilter, setClientFilter,
@@ -150,8 +157,16 @@ export default function SessionsPage() {
     dateToFilter, setDateToFilter,
     filtered, uniqueClients, sortedTherapists,
     showMine, selectedTherapistId,
-    reset,
+    reset: resetFilters,
   } = useSessionFilters(sessions);
+
+  function reset() {
+    resetFilters();
+    setOverdueOnly(false);
+    setUnconfirmedOnly(false);
+    setOverlappingOnly(false);
+    setExpectedOpen(false);
+  }
 
   const clientMap = useMemo(
     () => new Map(clients.map((c) => [c.id, c])),
@@ -193,6 +208,96 @@ export default function SessionsPage() {
     () => expectedSessionRows.filter((s) => s.isOverdue).length,
     [expectedSessionRows],
   );
+
+  const overlappingIds = useMemo(
+    () => new Set(getOverlappingSessions(filtered).map((s) => s.id)),
+    [filtered],
+  );
+
+  const unconfirmedIds = useMemo(
+    () => new Set(getUnconfirmedSessions(filtered).map((s) => s.id)),
+    [filtered],
+  );
+
+  const overlappingCount = useMemo(
+    () => filtered.filter((s) => overlappingIds.has(s.id) && s.scheduled_at >= new Date()).length,
+    [filtered, overlappingIds],
+  );
+
+  const unconfirmedCount = unconfirmedIds.size;
+
+  const displayedSessions = useMemo(() => {
+    if (unconfirmedOnly) {
+      return filtered.filter((s) => unconfirmedIds.has(s.id));
+    }
+    if (overlappingOnly) {
+      return filtered.filter((s) => overlappingIds.has(s.id) && s.scheduled_at >= new Date());
+    }
+    return filtered;
+  }, [filtered, unconfirmedOnly, overlappingOnly, unconfirmedIds, overlappingIds]);
+
+  const displayedExpectedRows = useMemo(
+    () => overdueOnly
+      ? expectedSessionRows.filter((s) => s.isOverdue)
+      : expectedSessionRows,
+    [expectedSessionRows, overdueOnly],
+  );
+
+  const showExpectedSection = hasBoundedRange
+    && displayedExpectedRows.length > 0
+    && !unconfirmedOnly
+    && !overlappingOnly;
+
+  function handleOverdueOnly(checked: boolean) {
+    setOverdueOnly(checked);
+    if (checked) {
+      setUnconfirmedOnly(false);
+      setOverlappingOnly(false);
+      setExpectedOpen(true);
+    }
+  }
+
+  function handleUnconfirmedOnly(checked: boolean) {
+    setUnconfirmedOnly(checked);
+    if (checked) {
+      setOverdueOnly(false);
+      setOverlappingOnly(false);
+    }
+  }
+
+  function handleOverlappingOnly(checked: boolean) {
+    setOverlappingOnly(checked);
+    if (checked) {
+      setOverdueOnly(false);
+      setUnconfirmedOnly(false);
+    }
+  }
+
+  const warningSessionColumns: Column<SessionWithRelations>[] = useMemo(() => [
+    {
+      key: "warning",
+      label: "",
+      className: "w-6",
+      render: (s) => {
+        if (overlappingIds.has(s.id) && s.scheduled_at >= new Date()) {
+          return (
+            <span title="Overlapping session">
+              <AlertCircle size={14} className="pointer-events-none text-red-400" />
+            </span>
+          );
+        }
+        if (unconfirmedIds.has(s.id)) {
+          return (
+            <span title="Past session still scheduled">
+              <Clock size={14} className="pointer-events-none text-amber-400" />
+            </span>
+          );
+        }
+        return null;
+      },
+    },
+    ...sessionColumns,
+  ], [overlappingIds, unconfirmedIds]);
 
   return (
     <div className="space-y-4">
@@ -333,28 +438,85 @@ export default function SessionsPage() {
             />
           </div>
         </div>
+
+        <div className="flex flex-col gap-1">
+          <label className={cn(
+            "flex items-center gap-1.5 text-xs",
+            overdueCount === 0 ? "cursor-default text-muted-foreground/50" : "cursor-pointer text-muted-foreground",
+          )}>
+            <input
+              type="checkbox"
+              checked={overdueOnly}
+              disabled={overdueCount === 0}
+              onChange={(e) => handleOverdueOnly(e.target.checked)}
+            />
+            Overdue only
+            <span className={cn(
+              "ml-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-white",
+              overdueCount > 0 ? "bg-red-400" : "bg-muted-foreground/30",
+            )}>
+              <Clock size={10} />
+              {overdueCount}
+            </span>
+          </label>
+          <label className={cn(
+            "flex items-center gap-1.5 text-xs",
+            unconfirmedCount === 0 ? "cursor-default text-muted-foreground/50" : "cursor-pointer text-muted-foreground",
+          )}>
+            <input
+              type="checkbox"
+              checked={unconfirmedOnly}
+              disabled={unconfirmedCount === 0}
+              onChange={(e) => handleUnconfirmedOnly(e.target.checked)}
+            />
+            Unconfirmed only
+            <span className={cn(
+              "ml-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-white",
+              unconfirmedCount > 0 ? "bg-amber-400" : "bg-muted-foreground/30",
+            )}>
+              <Clock size={10} />
+              {unconfirmedCount}
+            </span>
+          </label>
+          <label className={cn(
+            "flex items-center gap-1.5 text-xs",
+            overlappingCount === 0 ? "cursor-default text-muted-foreground/50" : "cursor-pointer text-muted-foreground",
+          )}>
+            <input
+              type="checkbox"
+              checked={overlappingOnly}
+              disabled={overlappingCount === 0}
+              onChange={(e) => handleOverlappingOnly(e.target.checked)}
+            />
+            Overlapping only
+            <span className={cn(
+              "ml-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-white",
+              overlappingCount > 0 ? "bg-red-400" : "bg-muted-foreground/30",
+            )}>
+              <AlertCircle size={10} />
+              {overlappingCount}
+            </span>
+          </label>
+        </div>
         </div>
       </PageHeader>
 
-      {expectedSessionRows.length > 0 && (
+      {showExpectedSection && (
         <div className="my-6 w-full rounded-md border px-4 py-3">
           <button
             className="flex w-full cursor-pointer items-center gap-2 text-sm font-semibold"
             onClick={() => setExpectedOpen((prev) => !prev)}
           >
-            Expected sessions
-            {overdueCount > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-red-400 px-2 py-0.5 text-xs text-white">
-                <AlertCircle size={12} />
-                {overdueCount} overdue
-              </span>
-            )}
-            {expectedOpen ? <ChevronUp size={16} className="ml-auto" /> : <ChevronDown size={16} className="ml-auto" />}
+            <span className="text-muted-foreground">Expected sessions</span>
+            {expectedOpen
+              ? <ChevronUp size={16} className="ml-auto" />
+              : <ChevronDown size={16} className="ml-auto" />
+            }
           </button>
           {expectedOpen && (
             <div className="mt-3">
               <DataTable
-                data={expectedSessionRows}
+                data={displayedExpectedRows}
                 columns={expectedColumns}
                 keyFn={(s) => s.id}
                 defaultSortKey="expected_date"
@@ -366,8 +528,8 @@ export default function SessionsPage() {
       )}
 
       <DataTable
-        data={filtered}
-        columns={sessionColumns}
+        data={displayedSessions}
+        columns={warningSessionColumns}
         keyFn={(s) => s.id}
         defaultSortKey="scheduled_at"
         defaultSortDir={SortDir.Desc}

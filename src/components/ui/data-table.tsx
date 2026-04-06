@@ -56,8 +56,8 @@ export function DataTable<T>({
   return (
     <div className="min-w-0 overflow-x-auto">
       <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-muted/100 text-muted-foreground border-b text-left">
+        <thead className="sticky top-0 z-10">
+          <tr className="bg-muted text-muted-foreground border-b text-left">
             {columns.map((col) => (
               <th
                 key={col.key}

@@ -74,10 +74,10 @@ export const sessionFormSchema = z
       .or(z.literal("")),
   })
   .superRefine((data, ctx) => {
-    if (data.status && data.status !== SessionStatus.Attended && !data.missed_reason) {
+    if ((data.status === SessionStatus.DNA || data.status === SessionStatus.Cancelled) && !data.missed_reason) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Reason is required when session is not attended.",
+        message: "Reason is required when session is missed or cancelled.",
         path: ["missed_reason"],
       });
     }

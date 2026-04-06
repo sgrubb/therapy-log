@@ -1,6 +1,8 @@
-import { eachWeekOfInterval, format, startOfWeek } from "date-fns";
-import { SESSION_DAY_INDEX } from "@/types/enums";
+import { eachWeekOfInterval, format, startOfWeek, addMinutes } from "date-fns";
+import { SessionStatus, SESSION_DAY_INDEX } from "@/types/enums";
 import type { SessionWithRelations, ClientWithTherapist, ExpectedSession } from "@/types/ipc";
+
+// ── Expected sessions ────────────────────────────────────────────────────────
 
 /**
  * Returns expected (placeholder) sessions for open clients with a session schedule,
@@ -67,7 +69,48 @@ export function getExpectedSessions(
   });
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Overlap detection ────────────────────────────────────────────────────────
+
+/**
+ * Returns sessions that overlap with another session for the same therapist.
+ */
+export function getOverlappingSessions(sessions: SessionWithRelations[]): SessionWithRelations[] {
+  const byTherapist = sessions.reduce(
+    (acc, s) => acc.set(s.therapist_id, [...(acc.get(s.therapist_id) ?? []), s]),
+    new Map<number, SessionWithRelations[]>(),
+  );
+
+  const overlappingIds = new Set(
+    Array.from(byTherapist.values()).flatMap((group) =>
+      group.flatMap((a, i) =>
+        group
+          .slice(i + 1)
+          .filter((b) =>
+            a.scheduled_at < addMinutes(b.scheduled_at, b.duration) &&
+            b.scheduled_at < addMinutes(a.scheduled_at, a.duration),
+          )
+          .flatMap((b) => [a.id, b.id]),
+      ),
+    ),
+  );
+
+  return sessions.filter((s) => overlappingIds.has(s.id));
+}
+
+// ── Past-scheduled detection ─────────────────────────────────────────────────
+
+/**
+ * Returns true if the session is in the past but still has Scheduled status.
+ */
+export function getUnconfirmedSessions(sessions: SessionWithRelations[]): SessionWithRelations[] {
+  const now = new Date();
+  return sessions.filter((s) =>
+    s.status === SessionStatus.Scheduled &&
+    s.scheduled_at < now,
+  );
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 export function getWeekStart(date: Date): string {
   return format(startOfWeek(date, { weekStartsOn: 1 }), "yyyy-MM-dd");

@@ -292,19 +292,19 @@ describe("SessionsPage", () => {
 
 
   describe("Show mine checkbox", () => {
-    it("does not show the checkbox when no therapist is selected", async () => {
+    it("does not show Mine checkbox when no therapist is selected", async () => {
       renderSessionsPage();
       await waitFor(() => screen.getByText("Jane Smith"));
 
-      expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Mine")).not.toBeInTheDocument();
     });
 
-    it("shows the checkbox when a therapist is selected in context", async () => {
+    it("shows Mine checkbox when a therapist is selected in context", async () => {
       localStorage.setItem("selectedTherapistId", "1");
       renderSessionsPage();
       await waitFor(() => screen.getByText("Jane Smith"));
 
-      expect(screen.getByRole("checkbox")).toBeInTheDocument();
+      expect(screen.getByLabelText("Mine")).toBeInTheDocument();
     });
 
     it("Mine checkbox is checked by default when a therapist is selected", async () => {
@@ -312,13 +312,12 @@ describe("SessionsPage", () => {
       renderSessionsPage();
       await waitFor(() => screen.getByText("Jane Smith"));
 
-      expect(screen.getByRole("checkbox")).toBeChecked();
+      expect(screen.getByLabelText("Mine")).toBeChecked();
     });
 
     it("Mine defaults to checked and filters sessions to the selected therapist", async () => {
       localStorage.setItem("selectedTherapistId", "1");
       renderSessionsPage();
-      // Tom Jones's session belongs to therapist 2 — hidden by default Mine filter
       await waitFor(() => {
         expect(screen.getByText("Jane Smith")).toBeInTheDocument();
         expect(screen.queryByText("Tom Jones")).not.toBeInTheDocument();
@@ -330,7 +329,7 @@ describe("SessionsPage", () => {
       renderSessionsPage();
       await waitFor(() => screen.getByText("Jane Smith"));
 
-      fireEvent.click(screen.getByRole("checkbox")); // uncheck Mine
+      fireEvent.click(screen.getByLabelText("Mine"));
       await waitFor(() => {
         expect(screen.getByText("Jane Smith")).toBeInTheDocument();
         expect(screen.getByText("Tom Jones")).toBeInTheDocument();
@@ -342,10 +341,10 @@ describe("SessionsPage", () => {
       renderSessionsPage();
       await waitFor(() => screen.getByText("Jane Smith"));
 
-      expect(screen.getByRole("checkbox")).toBeChecked();
+      expect(screen.getByLabelText("Mine")).toBeChecked();
 
       selectTherapistOption("All therapists");
-      await waitFor(() => expect(screen.getByRole("checkbox")).not.toBeChecked());
+      await waitFor(() => expect(screen.getByLabelText("Mine")).not.toBeChecked());
     });
   });
 
@@ -367,61 +366,40 @@ describe("SessionsPage", () => {
       return renderSessionsPage();
     }
 
-    it("does not show the overdue section when no clients have regular sessions", async () => {
-      // default mock returns client:list as [] → no overdue
+    it("does not show expected sessions section when no clients have regular sessions", async () => {
       renderSessionsPage();
       await waitFor(() => screen.getByText("Jane Smith"));
       expect(screen.queryByText(/expected sessions/i)).not.toBeInTheDocument();
     });
 
-    it("shows the overdue section header when overdue sessions exist", async () => {
+    it("shows collapsible expected sessions section when overdue sessions exist", async () => {
       renderWithOverdueClient();
       await waitFor(() => {
-        expect(screen.getByText(/expected sessions/i)).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: /expected sessions/i })).toBeInTheDocument();
       });
     });
 
-    it("is collapsed by default — overdue table is not visible", async () => {
+    it("expected sessions table is collapsed by default", async () => {
       renderWithOverdueClient();
-      await waitFor(() => screen.getByText(/expected sessions/i));
+      await waitFor(() => screen.getByRole("button", { name: /expected sessions/i }));
       expect(screen.queryByText("Expected date")).not.toBeInTheDocument();
     });
 
-    it("shows chevron-down icon when collapsed", async () => {
+    it("expands expected sessions table when header button is clicked", async () => {
       renderWithOverdueClient();
-      await waitFor(() => screen.getByText(/expected sessions/i));
-      const header = screen.getByRole("button", { name: /expected sessions/i });
-      expect(header.querySelector("svg")).toBeInTheDocument();
-    });
-
-    it("expands to show the overdue table when the header button is clicked", async () => {
-      renderWithOverdueClient();
-      await waitFor(() => screen.getByText(/expected sessions/i));
+      await waitFor(() => screen.getByRole("button", { name: /expected sessions/i }));
 
       fireEvent.click(screen.getByRole("button", { name: /expected sessions/i }));
 
       await waitFor(() => {
         expect(screen.getByText("Expected date")).toBeInTheDocument();
-        // may appear multiple times if multiple weeks are overdue
         expect(screen.getAllByText("Eve Walker").length).toBeGreaterThan(0);
       });
     });
 
-    it("shows chevron-up icon when expanded", async () => {
+    it("collapses again when header button is clicked a second time", async () => {
       renderWithOverdueClient();
-      await waitFor(() => screen.getByText(/expected sessions/i));
-
-      fireEvent.click(screen.getByRole("button", { name: /expected sessions/i }));
-
-      await waitFor(() => {
-        const header = screen.getByRole("button", { name: /expected sessions/i });
-        expect(header.querySelector("svg")).toBeInTheDocument();
-      });
-    });
-
-    it("collapses again when the header is clicked a second time", async () => {
-      renderWithOverdueClient();
-      await waitFor(() => screen.getByText(/expected sessions/i));
+      await waitFor(() => screen.getByRole("button", { name: /expected sessions/i }));
 
       const header = screen.getByRole("button", { name: /expected sessions/i });
       fireEvent.click(header);
@@ -433,14 +411,13 @@ describe("SessionsPage", () => {
       });
     });
 
-    it("shows therapist name in the expanded overdue table", async () => {
+    it("shows therapist name in the expected sessions table", async () => {
       renderWithOverdueClient();
-      await waitFor(() => screen.getByText(/expected sessions/i));
+      await waitFor(() => screen.getByRole("button", { name: /expected sessions/i }));
 
       fireEvent.click(screen.getByRole("button", { name: /expected sessions/i }));
 
       await waitFor(() => {
-        expect(screen.getByText("Expected date")).toBeInTheDocument();
         const overdueTable = screen.getByText("Expected date").closest("table")!;
         expect(within(overdueTable).getAllByText("Alice Morgan").length).toBeGreaterThan(0);
       });
@@ -448,7 +425,7 @@ describe("SessionsPage", () => {
 
     it("Log link navigates to /sessions/new with the overdue client pre-filled", async () => {
       renderWithOverdueClient();
-      await waitFor(() => screen.getByText(/expected sessions/i));
+      await waitFor(() => screen.getByRole("button", { name: /expected sessions/i }));
 
       fireEvent.click(screen.getByRole("button", { name: /expected sessions/i }));
       await waitFor(() => screen.getAllByRole("link", { name: /^log$/i }));
@@ -460,11 +437,10 @@ describe("SessionsPage", () => {
       });
     });
 
-    it("hides the overdue section when therapist filter excludes the overdue client's therapist", async () => {
+    it("hides expected sessions section when therapist filter excludes the overdue client's therapist", async () => {
       renderWithOverdueClient();
-      await waitFor(() => screen.getByText(/expected sessions/i));
+      await waitFor(() => screen.getByRole("button", { name: /expected sessions/i }));
 
-      // overdueClient belongs to therapist 1 (Alice); filter to therapist 2 (Bob)
       selectTherapistOption("Bob Chen");
 
       await waitFor(() => {
@@ -472,17 +448,16 @@ describe("SessionsPage", () => {
       });
     });
 
-    it("hides the expected sessions section when date range is unbounded", async () => {
+    it("hides expected sessions section when date range is unbounded", async () => {
       renderWithOverdueClient();
-      await waitFor(() => screen.getByText(/expected sessions/i));
+      await waitFor(() => screen.getByRole("button", { name: /expected sessions/i }));
 
-      // Switch to "All time" which clears both from and to dates
       fireEvent.change(screen.getByLabelText("Date range"), {
         target: { value: "all_time" },
       });
 
       await waitFor(() => {
-        expect(screen.queryByText(/expected sessions/i)).not.toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: /expected sessions/i })).not.toBeInTheDocument();
       });
     });
   });

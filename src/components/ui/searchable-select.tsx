@@ -71,8 +71,8 @@ export function SearchableSelect({
             {selectedLabel ?? placeholder}
           </span>
           {open
-            ? <ChevronUp size={14} className="text-muted-foreground ml-2 shrink-0" />
-            : <ChevronDown size={14} className="text-muted-foreground ml-2 shrink-0" />
+            ? <ChevronUp size={14} className="text-muted-foreground pointer-events-none ml-2 shrink-0" />
+            : <ChevronDown size={14} className="text-muted-foreground pointer-events-none ml-2 shrink-0" />
           }
         </button>
       </Popover.Trigger>

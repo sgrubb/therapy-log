@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TriangleAlert, AlertCircle } from "lucide-react";
+import { AlertCircle, Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Calendar, dateFnsLocalizer, type View } from "react-big-calendar";
 import { format, parse, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay } from "date-fns";
 import { enGB } from "date-fns/locale";
@@ -37,7 +38,13 @@ function EventComponent({ event }: { event: CalendarEvent }) {
   return (
     <div className="h-full overflow-hidden px-1 py-0.5 text-xs text-white" title={event.title}>
       {event.isOverlapping && (
-        <TriangleAlert size={10} className="mr-1 inline shrink-0" aria-label="Scheduling conflict" />
+        <AlertCircle size={10} className="mb-0.5 mr-1 inline shrink-0" aria-label="Overlapping session" />
+      )}
+      {event.isUnconfirmed && (
+        <Clock size={10} className="mb-0.5 mr-1 inline shrink-0" aria-label="Unconfirmed session" />
+      )}
+      {event.isOverdue && (
+        <Clock size={10} className="mb-0.5 mr-1 inline shrink-0" aria-label="Overdue session" />
       )}
       {event.title}
     </div>
@@ -60,6 +67,8 @@ export default function CalendarPage() {
   const [selectedTherapistIds, setSelectedTherapistIds] = useState<string[]>(defaultTherapistIds);
   const [showPlaceholders, setShowPlaceholders] = useState(true);
   const [showOverlappingOnly, setShowOverlappingOnly] = useState(false);
+  const [unconfirmedOnly, setUnconfirmedOnly] = useState(false);
+  const [overdueOnly, setOverdueOnly] = useState(false);
 
   useEffect(() => {
     if (selectedTherapistId !== null) {
@@ -74,6 +83,8 @@ export default function CalendarPage() {
     setSelectedTherapistIds(selectedTherapistId !== null ? [selectedTherapistId.toString()] : []);
     setShowPlaceholders(true);
     setShowOverlappingOnly(false);
+    setUnconfirmedOnly(false);
+    setOverdueOnly(false);
   }
 
   const therapistOptions = useMemo(
@@ -89,13 +100,40 @@ export default function CalendarPage() {
     [selectedTherapistIds, therapists],
   );
 
-  const { events, overdueCount, overlappingCount } = useCalendarData({
+  const { events, overdueCount, overlappingCount, unconfirmedCount } = useCalendarData({
     selectedTherapists,
     rangeStart,
     rangeEnd,
     showPlaceholders,
     showOverlappingOnly,
+    unconfirmedOnly,
+    overdueOnly,
   });
+
+  function handleOverdueOnly(checked: boolean) {
+    setOverdueOnly(checked);
+    if (checked) {
+      setShowPlaceholders(true);
+      setUnconfirmedOnly(false);
+      setShowOverlappingOnly(false);
+    }
+  }
+
+  function handleUnconfirmedOnly(checked: boolean) {
+    setUnconfirmedOnly(checked);
+    if (checked) {
+      setOverdueOnly(false);
+      setShowOverlappingOnly(false);
+    }
+  }
+
+  function handleOverlappingOnly(checked: boolean) {
+    setShowOverlappingOnly(checked);
+    if (checked) {
+      setOverdueOnly(false);
+      setUnconfirmedOnly(false);
+    }
+  }
 
   const eventPropGetter = useCallback((event: CalendarEvent) => ({
     className: event.isPlaceholder ? "is-placeholder" : undefined,
@@ -174,33 +212,74 @@ export default function CalendarPage() {
         </label>
 
         <div className="flex flex-col gap-2">
-          <label className="text-muted-foreground flex cursor-pointer items-center gap-1.5 text-xs">
+          <div className="flex items-center gap-3">
+            <label className="text-muted-foreground flex cursor-pointer items-center gap-1.5 text-xs">
+              <input
+                type="checkbox"
+                checked={showPlaceholders}
+                onChange={(e) => setShowPlaceholders(e.target.checked)}
+              />
+              Show expected
+            </label>
+            {showPlaceholders && (
+              <label className={cn(
+                "flex items-center gap-1.5 text-xs",
+                overdueCount === 0 ? "cursor-default text-muted-foreground/50" : "cursor-pointer text-muted-foreground",
+              )}>
+                <input
+                  type="checkbox"
+                  checked={overdueOnly}
+                  disabled={overdueCount === 0}
+                  onChange={(e) => handleOverdueOnly(e.target.checked)}
+                />
+                Overdue only
+                <span className={cn(
+                  "ml-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-white",
+                  overdueCount > 0 ? "bg-red-400" : "bg-muted-foreground/30",
+                )}>
+                  <Clock size={10} />
+                  {overdueCount}
+                </span>
+              </label>
+            )}
+          </div>
+          <label className={cn(
+            "flex items-center gap-1.5 text-xs",
+            unconfirmedCount === 0 ? "cursor-default text-muted-foreground/50" : "cursor-pointer text-muted-foreground",
+          )}>
             <input
               type="checkbox"
-              checked={showPlaceholders}
-              onChange={(e) => setShowPlaceholders(e.target.checked)}
+              checked={unconfirmedOnly}
+              disabled={unconfirmedCount === 0}
+              onChange={(e) => handleUnconfirmedOnly(e.target.checked)}
             />
-            Show expected sessions
-            {overdueCount > 0 && (
-              <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-red-400 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                <AlertCircle size={12} />
-                {overdueCount} overdue
-              </span>
-            )}
+            Unconfirmed only
+            <span className={cn(
+              "ml-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-white",
+              unconfirmedCount > 0 ? "bg-amber-400" : "bg-muted-foreground/30",
+            )}>
+              <Clock size={10} />
+              {unconfirmedCount}
+            </span>
           </label>
-          <label className="text-muted-foreground flex cursor-pointer items-center gap-1.5 text-xs">
+          <label className={cn(
+            "flex items-center gap-1.5 text-xs",
+            overlappingCount === 0 ? "cursor-default text-muted-foreground/50" : "cursor-pointer text-muted-foreground",
+          )}>
             <input
               type="checkbox"
               checked={showOverlappingOnly}
-              onChange={(e) => setShowOverlappingOnly(e.target.checked)}
+              disabled={overlappingCount === 0}
+              onChange={(e) => handleOverlappingOnly(e.target.checked)}
             />
-            Show overlapping sessions only
-            {overlappingCount > 0 && (
-              <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-red-400 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                <AlertCircle size={12} />
-                {overlappingCount} overlapping
-              </span>
-            )}
+            Overlapping only
+            <span className={cn(
+              "ml-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-white",
+              overlappingCount > 0 ? "bg-red-400" : "bg-muted-foreground/30",
+            )}>
+              <AlertCircle size={10} />
+              {overlappingCount}
+            </span>
           </label>
         </div>
       </div>
@@ -222,6 +301,7 @@ export default function CalendarPage() {
           titleAccessor="title"
           eventPropGetter={eventPropGetter as never}
           components={{ event: EventComponent as never }}
+          scrollToTime={new Date(1970, 0, 1, 9, 0, 0)}
           style={{ height: "100%" }}
           culture="en-GB"
         />

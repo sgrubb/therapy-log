@@ -9,7 +9,6 @@ import {
   buildTherapistColorMap,
 } from "@/lib/calendar-utils";
 import type { CalendarEvent } from "@/lib/calendar-utils";
-import { getExpectedSessions } from "@/lib/expected-sessions";
 import type { Therapist } from "@/types/ipc";
 
 interface UseCalendarDataOptions {
@@ -18,6 +17,8 @@ interface UseCalendarDataOptions {
   rangeEnd: Date;
   showPlaceholders: boolean;
   showOverlappingOnly: boolean;
+  unconfirmedOnly: boolean;
+  overdueOnly: boolean;
 }
 
 export function useCalendarData({
@@ -25,7 +26,9 @@ export function useCalendarData({
   rangeStart,
   rangeEnd,
   showPlaceholders,
-  showOverlappingOnly,
+  showOverlappingOnly: overlappingOnly,
+  unconfirmedOnly,
+  overdueOnly,
 }: UseCalendarDataOptions) {
   const { data: sessions } = useSuspenseQuery({
     queryKey: queryKeys.sessions.all,
@@ -69,28 +72,37 @@ export function useCalendarData({
     showPlaceholders,
   ]);
 
-  const events = useMemo(
-    () => showOverlappingOnly
-      ? allEvents.filter((e) => e.isOverlapping && !e.isPlaceholder)
-      : allEvents,
-    [allEvents, showOverlappingOnly],
+  const overdueEvents = useMemo(
+    () => allEvents.filter((e) => e.isOverdue),
+    [allEvents],
   );
 
-  const overlappingCount = useMemo(() => {
-    const now = new Date();
-    return allEvents.filter((e) => e.isOverlapping && !e.isPlaceholder && e.start >= now).length;
+  const unconfirmedEvents = useMemo(
+    () => allEvents.filter((e) => e.isUnconfirmed),
+    [allEvents],
+  );
+
+  const overlappingEvents = useMemo(() => {
+    return allEvents.filter((e) => e.isOverlapping);
   }, [allEvents]);
 
-  // Clamp the range end to now so future expected sessions aren't counted as overdue.
-  const overdueRangeEnd = useMemo(() => {
-    const now = new Date();
-    return rangeEnd < now ? rangeEnd : now;
-  }, [rangeEnd]);
+  const events = useMemo(() => {
+    if (overdueOnly) {
+      return overdueEvents;
+    }
+    if (unconfirmedOnly) {
+      return unconfirmedEvents;
+    }
+    if (overlappingOnly) {
+      return overlappingEvents;
+    }
+    return allEvents;
+  }, [allEvents, overdueEvents, unconfirmedEvents, overlappingEvents, overlappingOnly, unconfirmedOnly, overdueOnly]);
 
-  const overdueCount = useMemo(
-    () => getExpectedSessions(clients, sessions, rangeStart, overdueRangeEnd, selectedTherapistIds).length,
-    [clients, sessions, selectedTherapistIds, rangeStart, overdueRangeEnd],
-  );
-
-  return { events, overdueCount, overlappingCount };
+  return {
+    events,
+    overdueCount: overdueEvents.length,
+    unconfirmedCount: unconfirmedEvents.length,
+    overlappingCount: overlappingEvents.length,
+  };
 }

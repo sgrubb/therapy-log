@@ -1,7 +1,6 @@
-import { subWeeks } from "date-fns";
-import { SESSION_TYPE_NAMES } from "@/types/enums";
+import { SessionStatus, SESSION_TYPE_NAMES } from "@/types/enums";
 import type { SessionWithRelations, ClientWithTherapist, Therapist } from "@/types/ipc";
-import { getExpectedSessions, getWeekStart } from "@/lib/expected-sessions";
+import { getExpectedSessions, getWeekStart } from "@/lib/sessions-utils";
 
 export const THERAPIST_COLORS = [
   "#3b82f6", // blue
@@ -18,6 +17,8 @@ export interface CalendarEvent {
   end: Date;
   resourceId: number;
   isPlaceholder: boolean;
+  isOverdue: boolean;
+  isUnconfirmed: boolean;
   isOverlapping: boolean;
   clientId: number;
   sessionId?: number;
@@ -35,6 +36,8 @@ export function sessionsToEvents(
     end: new Date(s.scheduled_at.getTime() + s.duration * 60_000),
     resourceId: s.therapist_id,
     isPlaceholder: false,
+    isOverdue: false,
+    isUnconfirmed: s.status === SessionStatus.Scheduled && s.scheduled_at < new Date(),
     isOverlapping: false,
     clientId: s.client_id,
     sessionId: s.id,
@@ -65,6 +68,8 @@ export function generatePlaceholders(
         end: expected.end,
         resourceId: expected.therapistId,
         isPlaceholder: true,
+        isOverdue: expected.start < new Date(),
+        isUnconfirmed: false,
         isOverlapping: false,
         clientId: expected.clientId,
         color: therapistColors.get(expected.therapistId) ?? THERAPIST_COLORS[0]!,
@@ -73,17 +78,18 @@ export function generatePlaceholders(
 }
 
 export function detectOverlaps(events: CalendarEvent[]): CalendarEvent[] {
-  const byTherapist = events
-    .filter((e) => !e.isPlaceholder)
-    .reduce((sessions, e) => {
-      const therapistSessions = sessions.get(e.resourceId) ?? [];
+  const now = new Date();
+  const byTherapistEvents = events
+    .filter((e) => !e.isPlaceholder && e.start >= now)
+    .reduce((btes, e) => {
+      const therapistSessions = btes.get(e.resourceId) ?? [];
       therapistSessions.push(e);
-      sessions.set(e.resourceId, therapistSessions);
-      return sessions;
+      btes.set(e.resourceId, therapistSessions);
+      return btes;
     }, new Map<number, CalendarEvent[]>());
 
   const overlappingIds = new Set(
-    Array.from(byTherapist.values()).flatMap((sessions) =>
+    Array.from(byTherapistEvents.values()).flatMap((sessions) =>
       sessions.flatMap((a, i) =>
         sessions
           .slice(i + 1)
@@ -96,22 +102,6 @@ export function detectOverlaps(events: CalendarEvent[]): CalendarEvent[] {
   return events.map((e) =>
     overlappingIds.has(e.id) ? { ...e, isOverlapping: true } : e,
   );
-}
-
-export function getOverduePlaceholders(
-  clients: ClientWithTherapist[],
-  sessions: SessionWithRelations[],
-  therapistColors: Map<number, string>,
-  selectedTherapistIds?: Set<number>,
-  rangeStart?: Date,
-  rangeEnd?: Date,
-): CalendarEvent[] {
-  const now = new Date();
-  const end = rangeEnd ?? now;
-  const defaultStart = subWeeks(end, 12);
-  const start = rangeStart ?? defaultStart;
-  const ids = selectedTherapistIds ?? new Set(clients.map((c) => c.therapist_id));
-  return generatePlaceholders(clients, sessions, start, end, ids, therapistColors);
 }
 
 export function buildTherapistColorMap(
