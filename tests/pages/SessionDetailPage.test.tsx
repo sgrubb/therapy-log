@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { TherapistProvider } from "@/context/TherapistContext";
+import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import SessionDetailPage from "@/pages/SessionDetailPage";
 import { wrapped, mockTherapists, mockSession, errorResponse } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
@@ -48,7 +48,7 @@ function renderDetailPage(sessionOverride?: Partial<typeof mockSession> | null) 
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <Suspense fallback={<div>Loading...</div>}>
-          <TherapistProvider>
+          <SelectedTherapistProvider>
             <MemoryRouter initialEntries={["/sessions/1"]}>
               <Routes>
                 <Route path="/sessions">
@@ -59,7 +59,7 @@ function renderDetailPage(sessionOverride?: Partial<typeof mockSession> | null) 
                 <Route path="/clients/:id" element={<div data-testid="client-detail" />} />
               </Routes>
             </MemoryRouter>
-          </TherapistProvider>
+          </SelectedTherapistProvider>
         </Suspense>
       </ErrorBoundary>
     </QueryClientProvider>,
@@ -220,13 +220,13 @@ describe("SessionDetailPage", () => {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/sessions/1"]}>
                 <Routes>
                   <Route path="/sessions/:id" element={<SessionDetailPage />} />
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,

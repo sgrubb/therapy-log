@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { useTherapist } from "@/context/TherapistContext";
-import type { ClientWithTherapist } from "@/types/ipc";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { sortableName } from "@/lib/utils";
+import type { ClientWithTherapist } from "@/types/ipc";
 
 export const ClientStatusFilter = {
   Open: "open",
@@ -10,8 +10,29 @@ export const ClientStatusFilter = {
 } as const;
 export type ClientStatusFilter = (typeof ClientStatusFilter)[keyof typeof ClientStatusFilter];
 
-export function useClientFilters(clients: ClientWithTherapist[]) {
-  const { therapists, selectedTherapistId } = useTherapist();
+interface ClientContextValue {
+  search: string;
+  setSearch: (value: string) => void;
+  statusFilter: ClientStatusFilter;
+  setStatusFilter: (value: ClientStatusFilter) => void;
+  therapistFilter: string;
+  setTherapistFilter: (value: string) => void;
+  filtered: ClientWithTherapist[];
+  sortedTherapists: { id: number; first_name: string; last_name: string }[];
+  showMine: boolean;
+  selectedTherapistId: number | null;
+  reset: () => void;
+}
+
+const ClientCtx = createContext<ClientContextValue | null>(null);
+
+interface ClientProviderProps {
+  clients: ClientWithTherapist[];
+  children: ReactNode;
+}
+
+export function ClientProvider({ clients, children }: ClientProviderProps) {
+  const { therapists, selectedTherapistId } = useSelectedTherapist();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ClientStatusFilter>(ClientStatusFilter.Open);
@@ -52,12 +73,26 @@ export function useClientFilters(clients: ClientWithTherapist[]) {
     setTherapistFilter(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
   }
 
-  return {
-    search, setSearch,
-    statusFilter, setStatusFilter,
-    therapistFilter, setTherapistFilter,
-    filtered, sortedTherapists,
-    showMine, selectedTherapistId,
-    reset,
-  };
+  return (
+    <ClientCtx.Provider
+      value={{
+        search, setSearch,
+        statusFilter, setStatusFilter,
+        therapistFilter, setTherapistFilter,
+        filtered, sortedTherapists,
+        showMine, selectedTherapistId,
+        reset,
+      }}
+    >
+      {children}
+    </ClientCtx.Provider>
+  );
+}
+
+export function useClients(): ClientContextValue {
+  const ctx = useContext(ClientCtx);
+  if (!ctx) {
+    throw new Error("useClients must be used within a ClientProvider");
+  }
+  return ctx;
 }

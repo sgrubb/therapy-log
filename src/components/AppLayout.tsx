@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { TherapistProvider } from "@/context/TherapistContext";
+import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import { Settings } from "lucide-react";
 import TherapistSelector from "@/components/TherapistSelector";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -120,9 +120,9 @@ function AppLayout() {
 export default function AppLayoutWithProviders() {
   return (
     <Suspense fallback={<div className="flex h-screen items-center justify-center"><Spinner /></div>}>
-      <TherapistProvider>
+      <SelectedTherapistProvider>
         <AppLayout />
-      </TherapistProvider>
+      </SelectedTherapistProvider>
     </Suspense>
   );
 }

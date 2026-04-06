@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { TherapistProvider } from "@/context/TherapistContext";
+import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import TherapistsPage from "@/pages/TherapistsPage";
 import { wrapped, mockTherapists } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
@@ -28,7 +28,7 @@ function renderPage() {
   return render(
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<div>Loading...</div>}>
-        <TherapistProvider>
+        <SelectedTherapistProvider>
           <MemoryRouter initialEntries={["/therapists"]}>
             <Routes>
               <Route path="/therapists">
@@ -38,7 +38,7 @@ function renderPage() {
               </Route>
             </Routes>
           </MemoryRouter>
-        </TherapistProvider>
+        </SelectedTherapistProvider>
       </Suspense>
     </QueryClientProvider>,
   );
@@ -68,13 +68,13 @@ describe("TherapistsPage", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <Suspense fallback={<div>Loading...</div>}>
-          <TherapistProvider>
+          <SelectedTherapistProvider>
             <MemoryRouter initialEntries={["/therapists"]}>
               <Routes>
                 <Route path="/therapists" element={<TherapistsPage />} />
               </Routes>
             </MemoryRouter>
-          </TherapistProvider>
+          </SelectedTherapistProvider>
         </Suspense>
       </QueryClientProvider>,
     );
@@ -171,7 +171,7 @@ describe("TherapistsPage", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <Suspense fallback={<div>Loading...</div>}>
-          <TherapistProvider>
+          <SelectedTherapistProvider>
             <MemoryRouter
               initialEntries={[{ pathname: "/therapists", state: { error: "Access denied." } }]}
             >
@@ -179,7 +179,7 @@ describe("TherapistsPage", () => {
                 <Route path="/therapists" element={<TherapistsPage />} />
               </Routes>
             </MemoryRouter>
-          </TherapistProvider>
+          </SelectedTherapistProvider>
         </Suspense>
       </QueryClientProvider>,
     );
@@ -201,13 +201,13 @@ describe("TherapistsPage", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <Suspense fallback={<div>Loading...</div>}>
-          <TherapistProvider>
+          <SelectedTherapistProvider>
             <MemoryRouter initialEntries={["/therapists"]}>
               <Routes>
                 <Route path="/therapists" element={<TherapistsPage />} />
               </Routes>
             </MemoryRouter>
-          </TherapistProvider>
+          </SelectedTherapistProvider>
         </Suspense>
       </QueryClientProvider>,
     );

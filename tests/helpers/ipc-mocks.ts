@@ -27,12 +27,15 @@ export const errorResponse = {
 
 export const MOCK_UPDATED_AT = new Date("2026-01-01T00:00:00.000Z");
 
-// Session dates anchored relative to today so they fall within the default
-// "this week" filter regardless of when the tests run.
-const now = new Date();
-const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-export const MOCK_SESSION_DATE_RECENT = new Date(todayMidnight.getTime() + 10 * 60 * 60 * 1000); // today 10:00
-export const MOCK_SESSION_DATE_OLDER = new Date(todayMidnight.getTime() - 24 * 60 * 60 * 1000 + 14 * 60 * 60 * 1000); // yesterday 14:00
+// Session dates anchored within the current week (Mon–Sun, weekStartsOn: 1)
+// so they always fall within the default "this week" filter.
+// On Monday the two dates are Mon 10:00 and Tue 10:00; otherwise today and yesterday.
+import { startOfDay, subDays, addDays, setHours, isMonday } from "date-fns";
+const today = startOfDay(new Date());
+const recentDay = isMonday(today) ? addDays(today, 1) : today;
+const olderDay = isMonday(today) ? today : subDays(today, 1);
+export const MOCK_SESSION_DATE_RECENT = setHours(recentDay, 10); // 10:00
+export const MOCK_SESSION_DATE_OLDER = setHours(olderDay, 14);   // 14:00
 
 // ── Therapists ───────────────────────────────────────────────────────────────
 

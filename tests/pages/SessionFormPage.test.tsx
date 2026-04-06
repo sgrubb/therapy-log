@@ -2,10 +2,10 @@ import { Suspense } from "react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { format } from "date-fns";
+import { format, subDays, addDays, addSeconds } from "date-fns";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { TherapistProvider } from "@/context/TherapistContext";
+import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import SessionFormPage from "@/pages/SessionFormPage";
 import {
@@ -46,7 +46,7 @@ function renderNewForm() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <Suspense fallback={<div>Loading...</div>}>
-          <TherapistProvider>
+          <SelectedTherapistProvider>
             <MemoryRouter initialEntries={["/sessions/new"]}>
               <Routes>
                 <Route path="/sessions">
@@ -56,7 +56,7 @@ function renderNewForm() {
                 </Route>
               </Routes>
             </MemoryRouter>
-          </TherapistProvider>
+          </SelectedTherapistProvider>
         </Suspense>
       </ErrorBoundary>
     </QueryClientProvider>,
@@ -83,7 +83,7 @@ function renderEditForm() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <Suspense fallback={<div>Loading...</div>}>
-          <TherapistProvider>
+          <SelectedTherapistProvider>
             <MemoryRouter initialEntries={["/sessions/1/edit"]}>
               <Routes>
                 <Route path="/sessions">
@@ -93,7 +93,7 @@ function renderEditForm() {
                 </Route>
               </Routes>
             </MemoryRouter>
-          </TherapistProvider>
+          </SelectedTherapistProvider>
         </Suspense>
       </ErrorBoundary>
     </QueryClientProvider>,
@@ -169,8 +169,7 @@ describe("SessionFormPage — new session", () => {
     renderNewForm();
     await waitFor(() => screen.getByRole("heading", { name: /log session/i }));
 
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterday = subDays(new Date(), 1);
     fireEvent.change(screen.getByLabelText(/^time/i), { target: { value: "10:00" } });
     fireEvent.change(screen.getByLabelText(/^date/i), {
       target: { value: format(yesterday, "yyyy-MM-dd") },
@@ -189,8 +188,7 @@ describe("SessionFormPage — new session", () => {
     renderNewForm();
     await waitFor(() => screen.getByRole("heading", { name: /log session/i }));
 
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrow = addDays(new Date(), 1);
     fireEvent.change(screen.getByLabelText(/^time/i), { target: { value: "10:00" } });
     fireEvent.change(screen.getByLabelText(/^date/i), {
       target: { value: format(tomorrow, "yyyy-MM-dd") },
@@ -221,8 +219,7 @@ describe("SessionFormPage — new session", () => {
     renderNewForm();
     await waitFor(() => screen.getByRole("heading", { name: /log session/i }));
 
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterday = subDays(new Date(), 1);
     fireEvent.change(screen.getByLabelText(/^time/i), { target: { value: "10:00" } });
     fireEvent.change(screen.getByLabelText(/^date/i), {
       target: { value: format(yesterday, "yyyy-MM-dd") },
@@ -230,8 +227,7 @@ describe("SessionFormPage — new session", () => {
     fireEvent.change(getStatusSelect(), { target: { value: "Attended" } });
     expect(getStatusSelect()).toHaveValue("Attended");
 
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrow = addDays(new Date(), 1);
     fireEvent.change(screen.getByLabelText(/^date/i), {
       target: { value: format(tomorrow, "yyyy-MM-dd") },
     });
@@ -536,9 +532,9 @@ describe("SessionFormPage — edit session", () => {
   });
 
   it("calls session:update and navigates to /sessions on valid submit", async () => {
-    renderEditForm();
-    await waitFor(() => screen.getByLabelText(/^date/i));
-
+    // Use a past date so "Attended" status remains valid (future sessions clear it)
+    const pastDate = subDays(new Date(), 2);
+    const editSession = { ...mockSession, scheduled_at: pastDate, notes: "Some notes" };
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") {
         return Promise.resolve(wrapped(mockTherapists));
@@ -547,13 +543,36 @@ describe("SessionFormPage — edit session", () => {
         return Promise.resolve(wrapped(mockClients));
       }
       if (channel === "session:get") {
-        return Promise.resolve(wrapped(mockSession));
+        return Promise.resolve(wrapped(editSession));
       }
       if (channel === "session:update") {
-        return Promise.resolve(wrapped(mockSession));
+        return Promise.resolve(wrapped(editSession));
       }
       return Promise.resolve(wrapped(null));
     });
+
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <SelectedTherapistProvider>
+              <MemoryRouter initialEntries={["/sessions/1/edit"]}>
+                <Routes>
+                  <Route path="/sessions">
+                    <Route path=":id/edit" element={<SessionFormPage />} />
+                    <Route path=":id" element={<div data-testid="session-detail" />} />
+                    <Route index element={<div data-testid="sessions-list" />} />
+                  </Route>
+                </Routes>
+              </MemoryRouter>
+            </SelectedTherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => screen.getByLabelText(/^date/i));
 
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
 
@@ -600,7 +619,7 @@ describe("SessionFormPage — edit session", () => {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/sessions/1/edit"]}>
                 <Routes>
                   <Route path="/sessions">
@@ -608,7 +627,7 @@ describe("SessionFormPage — edit session", () => {
                   </Route>
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -685,7 +704,7 @@ describe("SessionFormPage — edit session", () => {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/sessions/1/edit"]}>
                 <Routes>
                   <Route path="/sessions">
@@ -694,7 +713,7 @@ describe("SessionFormPage — edit session", () => {
                   </Route>
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -708,7 +727,7 @@ describe("SessionFormPage — edit session", () => {
   });
 
   it("shows retry message when conflict has no field differences", async () => {
-    const freshSession = { ...mockSession, updated_at: new Date(MOCK_UPDATED_AT.getTime() + 1000) };
+    const freshSession = { ...mockSession, updated_at: addSeconds(MOCK_UPDATED_AT, 1) };
 
     let sessionGetCount = 0;
     mockInvoke.mockImplementation((channel: string) => {
@@ -733,7 +752,7 @@ describe("SessionFormPage — edit session", () => {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/sessions/1/edit"]}>
                 <Routes>
                   <Route path="/sessions">
@@ -742,7 +761,7 @@ describe("SessionFormPage — edit session", () => {
                   </Route>
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -781,7 +800,7 @@ describe("SessionFormPage — edit session", () => {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/sessions/999/edit"]}>
                 <Routes>
                   <Route path="/sessions">
@@ -790,7 +809,7 @@ describe("SessionFormPage — edit session", () => {
                   </Route>
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -820,7 +839,7 @@ describe("SessionFormPage — edit session", () => {
     const freshSession = {
       ...mockSession,
       notes: "Server note",
-      updated_at: new Date(MOCK_UPDATED_AT.getTime() + 1000),
+      updated_at: addSeconds(MOCK_UPDATED_AT, 1),
     };
 
     let sessionGetCount = 0;
@@ -846,7 +865,7 @@ describe("SessionFormPage — edit session", () => {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/sessions/1/edit"]}>
                 <Routes>
                   <Route path="/sessions">
@@ -856,7 +875,7 @@ describe("SessionFormPage — edit session", () => {
                   </Route>
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -906,7 +925,7 @@ describe("SessionFormPage — edit session", () => {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/sessions/1/edit"]}>
                 <Routes>
                   <Route path="/sessions">
@@ -914,7 +933,7 @@ describe("SessionFormPage — edit session", () => {
                   </Route>
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,

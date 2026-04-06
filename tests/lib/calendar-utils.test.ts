@@ -1,3 +1,4 @@
+import { differenceInMinutes, addDays, set } from "date-fns";
 import { describe, it, expect } from "vitest";
 import {
   sessionsToEvents,
@@ -12,6 +13,7 @@ import type { SessionWithRelations, ClientWithTherapist } from "@/types/ipc";
 const clientBase = {
   hospital_number: "HN001",
   dob: new Date("2000-01-01"),
+  start_date: new Date("2025-09-01"),
   address: null,
   phone: null,
   email: null,
@@ -65,13 +67,15 @@ describe("sessionsToEvents", () => {
     expect(evt!.id).toBe("session-1");
     expect(evt!.isPlaceholder).toBe(false);
     expect(evt!.resourceId).toBe(1);
-    expect(evt!.end.getTime() - evt!.start.getTime()).toBe(60 * 60_000);
+    expect(differenceInMinutes(evt!.end, evt!.start)).toBe(60);
     expect(evt!.color).toBe("#3b82f6");
   });
 });
 
 describe("detectOverlaps", () => {
   it("marks overlapping events for the same therapist", () => {
+    const tomorrow10am = set(addDays(new Date(), 1), { hours: 10, minutes: 0, seconds: 0, milliseconds: 0 });
+    const tomorrow1030 = set(addDays(new Date(), 1), { hours: 10, minutes: 30, seconds: 0, milliseconds: 0 });
     const colorMap = new Map([[1, "#3b82f6"]]);
     const sessions: SessionWithRelations[] = [
       {
@@ -79,9 +83,9 @@ describe("detectOverlaps", () => {
         id: 1,
         client_id: 1,
         therapist_id: 1,
-        scheduled_at: new Date(2026, 2, 16, 10, 0, 0),
+        scheduled_at: tomorrow10am,
         duration: 60,
-        status: "Attended",
+        status: "Scheduled",
         session_type: "Child",
       },
       {
@@ -89,9 +93,9 @@ describe("detectOverlaps", () => {
         id: 2,
         client_id: 1,
         therapist_id: 1,
-        scheduled_at: new Date(2026, 2, 16, 10, 30, 0),
+        scheduled_at: tomorrow1030,
         duration: 60,
-        status: "Attended",
+        status: "Scheduled",
         session_type: "Child",
       },
     ];

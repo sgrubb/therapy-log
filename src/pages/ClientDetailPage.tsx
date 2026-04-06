@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
-import { useTherapist } from "@/context/TherapistContext";
+import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { Badge, BadgeVariant } from "@/components/ui/badge";
 import { InfoRow } from "@/components/ui/info-row";
 import { PageHeader } from "@/components/ui/page-header";
@@ -19,7 +19,7 @@ import type { Column } from "@/components/ui/data-table";
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { therapists: contextTherapists, selectedTherapistId } = useTherapist();
+  const { therapists: contextTherapists, selectedTherapistId } = useSelectedTherapist();
 
   const clientId = Number(id);
 

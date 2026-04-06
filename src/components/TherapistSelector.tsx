@@ -1,9 +1,9 @@
 import { useMemo } from "react";
-import { useTherapist } from "@/context/TherapistContext";
+import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 
 export default function TherapistSelector() {
-  const { therapists, selectedTherapistId, setSelectedTherapistId } = useTherapist();
+  const { therapists, selectedTherapistId, setSelectedTherapistId } = useSelectedTherapist();
 
   const options = useMemo(
     () => therapists.map((t) => ({ value: t.id.toString(), label: `${t.first_name} ${t.last_name}` })),

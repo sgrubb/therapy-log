@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { parse } from "date-fns";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useTherapist } from "@/context/TherapistContext";
+import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { useSessionForm } from "@/hooks/useSessionForm";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
@@ -37,7 +37,7 @@ export default function SessionFormPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { therapists } = useTherapist();
+  const { therapists } = useSelectedTherapist();
 
   const cancelTarget = (location.state as { from?: string } | null)?.from ?? "/sessions";
 

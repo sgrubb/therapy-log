@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useTherapist } from "@/context/TherapistContext";
+import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { useTherapistForm } from "@/hooks/useTherapistForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { FormState } from "@/types/enums";
 export default function TherapistFormPage() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
-  const { therapists, selectedTherapistId } = useTherapist();
+  const { therapists, selectedTherapistId } = useSelectedTherapist();
 
   const selectedTherapist = therapists.find((t) => t.id === selectedTherapistId);
   const isAdmin = selectedTherapist?.is_admin ?? false;

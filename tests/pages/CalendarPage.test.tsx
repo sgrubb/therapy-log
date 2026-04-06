@@ -1,9 +1,10 @@
+import { addDays, set } from "date-fns";
 import { Suspense } from "react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { TherapistProvider } from "@/context/TherapistContext";
+import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import CalendarPage from "@/pages/CalendarPage";
 import { wrapped, mockTherapists, mockSessions, mockClients, mockClientBase } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
@@ -48,7 +49,7 @@ function renderCalendarPage() {
   return render(
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<div>Loading...</div>}>
-        <TherapistProvider>
+        <SelectedTherapistProvider>
           <MemoryRouter initialEntries={["/calendar"]}>
             <Routes>
               <Route path="/calendar" element={<CalendarPage />} />
@@ -56,7 +57,7 @@ function renderCalendarPage() {
               <Route path="/sessions/:id" element={<div data-testid="session-detail" />} />
             </Routes>
           </MemoryRouter>
-        </TherapistProvider>
+        </SelectedTherapistProvider>
       </Suspense>
     </QueryClientProvider>,
   );
@@ -145,9 +146,7 @@ describe("CalendarPage", () => {
 
   it("shows overlapping count badge when future sessions overlap", async () => {
     // Two sessions for the same therapist at the same future time
-    const tomorrow10am = new Date();
-    tomorrow10am.setDate(tomorrow10am.getDate() + 1);
-    tomorrow10am.setHours(10, 0, 0, 0);
+    const tomorrow10am = set(addDays(new Date(), 1), { hours: 10, minutes: 0, seconds: 0, milliseconds: 0 });
 
     const futureSession = {
       ...mockSessions[0]!,

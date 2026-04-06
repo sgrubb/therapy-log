@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Check } from "lucide-react";
-import { useTherapist } from "@/context/TherapistContext";
+import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { PageHeader } from "@/components/ui/page-header";
 import { Link } from "react-router-dom";
 import { DataTable } from "@/components/ui/data-table";
@@ -11,7 +11,7 @@ import type { Column } from "@/components/ui/data-table";
 export default function TherapistsPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { therapists, selectedTherapistId } = useTherapist();
+  const { therapists, selectedTherapistId } = useSelectedTherapist();
 
   const pageError = (location.state as { error?: string } | null)?.error ?? null;
 

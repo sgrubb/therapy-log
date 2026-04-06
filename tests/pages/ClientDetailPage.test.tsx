@@ -15,7 +15,7 @@ function EditFormSpy() {
     />
   );
 }
-import { TherapistProvider } from "@/context/TherapistContext";
+import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import ClientDetailPage from "@/pages/ClientDetailPage";
 import { wrapped, mockTherapists, mockClient, mockSession, mockSessions, errorResponse } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
@@ -54,7 +54,7 @@ function renderDetailPage(clientOverride?: Partial<typeof mockClient> | null) {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <Suspense fallback={<div>Loading...</div>}>
-          <TherapistProvider>
+          <SelectedTherapistProvider>
             <MemoryRouter initialEntries={["/clients/1"]}>
               <Routes>
                 <Route path="/clients">
@@ -64,7 +64,7 @@ function renderDetailPage(clientOverride?: Partial<typeof mockClient> | null) {
                 </Route>
               </Routes>
             </MemoryRouter>
-          </TherapistProvider>
+          </SelectedTherapistProvider>
         </Suspense>
       </ErrorBoundary>
     </QueryClientProvider>,
@@ -129,13 +129,13 @@ describe("ClientDetailPage", () => {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/clients/1"]}>
                 <Routes>
                   <Route path="/clients/:id" element={<ClientDetailPage />} />
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -260,13 +260,13 @@ describe("ClientDetailPage", () => {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/clients/1"]}>
                 <Routes>
                   <Route path="/clients/:id" element={<ClientDetailPage />} />
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -299,7 +299,7 @@ describe("ClientDetailPage", () => {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/clients/1"]}>
                 <Routes>
                   <Route path="/clients">
@@ -308,7 +308,7 @@ describe("ClientDetailPage", () => {
                   </Route>
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -346,13 +346,13 @@ describe("ClientDetailPage", () => {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/clients/1"]}>
                 <Routes>
                   <Route path="/clients/:id" element={<ClientDetailPage />} />
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -463,13 +463,13 @@ describe("ClientDetailPage — close client", () => {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/clients/1"]}>
                 <Routes>
                   <Route path="/clients/:id" element={<ClientDetailPage />} />
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -543,13 +543,13 @@ describe("ClientDetailPage — close client", () => {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/clients/1"]}>
                 <Routes>
                   <Route path="/clients/:id" element={<ClientDetailPage />} />
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -601,13 +601,13 @@ describe("ClientDetailPage — close client", () => {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/clients/1"]}>
                 <Routes>
                   <Route path="/clients/:id" element={<ClientDetailPage />} />
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -719,13 +719,13 @@ describe("ClientDetailPage — reopen client", () => {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/clients/1"]}>
                 <Routes>
                   <Route path="/clients/:id" element={<ClientDetailPage />} />
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -793,13 +793,13 @@ describe("ClientDetailPage — reopen client", () => {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/clients/1"]}>
                 <Routes>
                   <Route path="/clients/:id" element={<ClientDetailPage />} />
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -851,13 +851,13 @@ describe("ClientDetailPage — reopen client", () => {
       <QueryClientProvider client={queryClient2}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/clients/1"]}>
                 <Routes>
                   <Route path="/clients/:id" element={<ClientDetailPage />} />
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,

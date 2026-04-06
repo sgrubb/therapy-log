@@ -5,8 +5,9 @@ import { Suspense } from "react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { TherapistProvider } from "@/context/TherapistContext";
+import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import TherapistFormPage from "@/pages/TherapistFormPage";
+import { addSeconds } from "date-fns";
 import { wrapped, mockTherapists, errorResponse, MOCK_UPDATED_AT } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
 
@@ -35,7 +36,7 @@ function renderNewForm() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <Suspense fallback={<div>Loading...</div>}>
-          <TherapistProvider>
+          <SelectedTherapistProvider>
             <MemoryRouter initialEntries={["/therapists/new"]}>
               <Routes>
                 <Route path="/therapists">
@@ -44,7 +45,7 @@ function renderNewForm() {
                 </Route>
               </Routes>
             </MemoryRouter>
-          </TherapistProvider>
+          </SelectedTherapistProvider>
         </Suspense>
       </ErrorBoundary>
     </QueryClientProvider>,
@@ -69,7 +70,7 @@ function renderEditForm() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <Suspense fallback={<div>Loading...</div>}>
-          <TherapistProvider>
+          <SelectedTherapistProvider>
             <MemoryRouter initialEntries={["/therapists/1/edit"]}>
               <Routes>
                 <Route path="/therapists">
@@ -78,7 +79,7 @@ function renderEditForm() {
                 </Route>
               </Routes>
             </MemoryRouter>
-          </TherapistProvider>
+          </SelectedTherapistProvider>
         </Suspense>
       </ErrorBoundary>
     </QueryClientProvider>,
@@ -332,7 +333,7 @@ describe("TherapistFormPage — edit therapist", () => {
     const freshTherapist = {
       ...mockTherapist,
       last_name: "Jones",
-      updated_at: new Date(MOCK_UPDATED_AT.getTime() + 1000),
+      updated_at: addSeconds(MOCK_UPDATED_AT, 1),
     };
 
     let therapistGetCount = 0;
@@ -355,7 +356,7 @@ describe("TherapistFormPage — edit therapist", () => {
       <QueryClientProvider client={queryClient1}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/therapists/1/edit"]}>
                 <Routes>
                   <Route path="/therapists">
@@ -364,7 +365,7 @@ describe("TherapistFormPage — edit therapist", () => {
                   </Route>
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -465,7 +466,7 @@ describe("TherapistFormPage — edit therapist", () => {
       <QueryClientProvider client={queryClient2}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/therapists/1/edit"]}>
                 <Routes>
                   <Route path="/therapists">
@@ -473,7 +474,7 @@ describe("TherapistFormPage — edit therapist", () => {
                   </Route>
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -504,7 +505,7 @@ describe("TherapistFormPage — edit therapist", () => {
       <QueryClientProvider client={queryClient3}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/therapists/1/edit"]}>
                 <Routes>
                   <Route path="/therapists">
@@ -513,7 +514,7 @@ describe("TherapistFormPage — edit therapist", () => {
                   </Route>
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -527,7 +528,7 @@ describe("TherapistFormPage — edit therapist", () => {
 
   it("shows retry message when conflict has no field differences", async () => {
     localStorage.setItem("selectedTherapistId", "1");
-    const freshTherapist = { ...mockTherapist, updated_at: new Date(MOCK_UPDATED_AT.getTime() + 1000) };
+    const freshTherapist = { ...mockTherapist, updated_at: addSeconds(MOCK_UPDATED_AT, 1) };
 
     let therapistGetCount = 0;
     mockInvoke.mockImplementation((channel: string) => {
@@ -549,7 +550,7 @@ describe("TherapistFormPage — edit therapist", () => {
       <QueryClientProvider client={queryClient4}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/therapists/1/edit"]}>
                 <Routes>
                   <Route path="/therapists">
@@ -558,7 +559,7 @@ describe("TherapistFormPage — edit therapist", () => {
                   </Route>
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -592,7 +593,7 @@ describe("TherapistFormPage — edit therapist", () => {
       <QueryClientProvider client={queryClient5}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/therapists/99/edit"]}>
                 <Routes>
                   <Route path="/therapists">
@@ -601,7 +602,7 @@ describe("TherapistFormPage — edit therapist", () => {
                   </Route>
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,
@@ -632,7 +633,7 @@ describe("TherapistFormPage — non-admin", () => {
       <QueryClientProvider client={queryClient6}>
         <ErrorBoundary>
           <Suspense fallback={<div>Loading...</div>}>
-            <TherapistProvider>
+            <SelectedTherapistProvider>
               <MemoryRouter initialEntries={["/therapists/new"]}>
                 <Routes>
                   <Route path="/therapists">
@@ -641,7 +642,7 @@ describe("TherapistFormPage — non-admin", () => {
                   </Route>
                 </Routes>
               </MemoryRouter>
-            </TherapistProvider>
+            </SelectedTherapistProvider>
           </Suspense>
         </ErrorBoundary>
       </QueryClientProvider>,

@@ -1,6 +1,6 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { useTherapist } from "@/context/TherapistContext";
+import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { useClientForm } from "@/hooks/useClientForm";
 import { SessionDay, Outcome, DeliveryMethod, DELIVERY_METHOD_NAMES, FormState } from "@/types/enums";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ export default function ClientFormPage() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { therapists } = useTherapist();
+  const { therapists } = useSelectedTherapist();
 
   const cancelTarget = (location.state as { from?: string } | null)?.from ?? "/clients";
 

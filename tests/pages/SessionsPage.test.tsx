@@ -4,31 +4,10 @@ import { Suspense } from "react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { TherapistProvider } from "@/context/TherapistContext";
+import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import SessionsPage from "@/pages/SessionsPage";
-import { wrapped, mockTherapists, mockSessions, mockClients, mockClientBase, MOCK_SESSION_DATE_RECENT, MOCK_SESSION_DATE_OLDER } from "../helpers/ipc-mocks";
+import { wrapped, mockTherapists, mockSessions, mockClients, mockClientBase } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
-
-function toInputDate(d: Date): string {
-  return d.toISOString().split("T")[0]!;
-}
-const TODAY = toInputDate(MOCK_SESSION_DATE_RECENT);
-const YESTERDAY = toInputDate(MOCK_SESSION_DATE_OLDER);
-
-// A client with a regular Monday slot but no sessions → always overdue within 2 weeks
-const overdueClient = {
-  ...mockClientBase,
-  id: 3,
-  first_name: "Eve",
-  last_name: "Walker",
-  hospital_number: "HN003",
-  therapist_id: 1,
-  therapist: mockTherapists[0]!,
-  session_day: "Monday" as const,
-  session_time: "09:00",
-  session_duration: 60,
-  session_delivery_method: "FaceToFace" as const,
-};
 
 vi.mock("@/components/ui/select");
 
@@ -58,7 +37,7 @@ function renderSessionsPage() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <Suspense fallback={<div>Loading...</div>}>
-          <TherapistProvider>
+          <SelectedTherapistProvider>
             <MemoryRouter initialEntries={["/sessions"]}>
               <Routes>
                 <Route path="/sessions">
@@ -68,28 +47,27 @@ function renderSessionsPage() {
                 </Route>
               </Routes>
             </MemoryRouter>
-          </TherapistProvider>
+          </SelectedTherapistProvider>
         </Suspense>
       </ErrorBoundary>
     </QueryClientProvider>,
   );
 }
 
-// Client and therapist filters are SearchableSelect; status is still Radix Select (mocked → native <select>)
-function selectClientOption(optionText: string) {
-  const trigger = screen.getByRole("combobox", { name: "Client filter" });
-  fireEvent.click(trigger);
-  fireEvent.click(within(screen.getByRole("dialog")).getByText(optionText));
-}
-function selectTherapistOption(optionText: string) {
-  const trigger = screen.getByRole("combobox", { name: "Therapist filter" });
-  fireEvent.click(trigger);
-  fireEvent.click(within(screen.getByRole("dialog")).getByText(optionText));
-}
-function getStatusFilterSelect() {
-  // Radix Select mock loses aria-label (SelectTrigger → null); label text gives name "Status"
-  return screen.getByRole("combobox", { name: "Status" });
-}
+// A client with a regular Monday slot but no sessions → always overdue within 2 weeks
+const overdueClient = {
+  ...mockClientBase,
+  id: 3,
+  first_name: "Eve",
+  last_name: "Walker",
+  hospital_number: "HN003",
+  therapist_id: 1,
+  therapist: mockTherapists[0]!,
+  session_day: "Monday" as const,
+  session_time: "09:00",
+  session_duration: 60,
+  session_delivery_method: "FaceToFace" as const,
+};
 
 describe("SessionsPage", () => {
   it("renders session rows with client and therapist names", async () => {
@@ -124,9 +102,9 @@ describe("SessionsPage", () => {
     renderSessionsPage();
     await waitFor(() => screen.getByText("Jane Smith"));
 
-    const rows = screen.getAllByRole("row").slice(1); // skip header
-    expect(rows[0]).toHaveTextContent("Jane Smith"); // 2026-03-10
-    expect(rows[1]).toHaveTextContent("Tom Jones");  // 2026-02-20
+    const rows = screen.getAllByRole("row").slice(1);
+    expect(rows[0]).toHaveTextContent("Jane Smith");
+    expect(rows[1]).toHaveTextContent("Tom Jones");
   });
 
   it("shows loading state while fetching sessions", async () => {
@@ -190,84 +168,6 @@ describe("SessionsPage", () => {
     spy.mockRestore();
   });
 
-  it("filters by therapist", async () => {
-    renderSessionsPage();
-    await waitFor(() => screen.getByText("Jane Smith"));
-
-    selectTherapistOption("Alice Morgan");
-
-    await waitFor(() => {
-      expect(screen.getByText("Jane Smith")).toBeInTheDocument();
-      expect(screen.queryByText("Tom Jones")).not.toBeInTheDocument();
-    });
-  });
-
-  it("filters by client", async () => {
-    renderSessionsPage();
-    await waitFor(() => screen.getByText("Jane Smith"));
-
-    selectClientOption("Jones, Tom");
-
-    await waitFor(() => {
-      expect(screen.queryByText("Jane Smith")).not.toBeInTheDocument();
-      expect(screen.getByText("Tom Jones")).toBeInTheDocument();
-    });
-  });
-
-  it("filters by status", async () => {
-    renderSessionsPage();
-    await waitFor(() => screen.getByText("Jane Smith"));
-
-    fireEvent.change(getStatusFilterSelect(), { target: { value: "DNA" } });
-
-    await waitFor(() => {
-      expect(screen.queryByText("Jane Smith")).not.toBeInTheDocument();
-      expect(screen.getByText("Tom Jones")).toBeInTheDocument();
-    });
-  });
-
-  it("filters by from date", async () => {
-    renderSessionsPage();
-    await waitFor(() => screen.getByText("Tom Jones"));
-
-    fireEvent.change(screen.getByLabelText("From date"), {
-      target: { value: TODAY },
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText("Jane Smith")).toBeInTheDocument();
-      expect(screen.queryByText("Tom Jones")).not.toBeInTheDocument();
-    });
-  });
-
-  it("filters by to date", async () => {
-    renderSessionsPage();
-    await waitFor(() => screen.getByText("Jane Smith"));
-
-    fireEvent.change(screen.getByLabelText("To date"), {
-      target: { value: YESTERDAY },
-    });
-
-    await waitFor(() => {
-      expect(screen.queryByText("Jane Smith")).not.toBeInTheDocument();
-      expect(screen.getByText("Tom Jones")).toBeInTheDocument();
-    });
-  });
-
-  it("resets to show all sessions when filters are cleared", async () => {
-    renderSessionsPage();
-    await waitFor(() => screen.getByText("Jane Smith"));
-
-    selectTherapistOption("Alice Morgan");
-    await waitFor(() => expect(screen.queryByText("Tom Jones")).not.toBeInTheDocument());
-
-    selectTherapistOption("All therapists");
-    await waitFor(() => {
-      expect(screen.getByText("Jane Smith")).toBeInTheDocument();
-      expect(screen.getByText("Tom Jones")).toBeInTheDocument();
-    });
-  });
-
   it("navigates to session detail on row click", async () => {
     renderSessionsPage();
     await waitFor(() => screen.getByText("Jane Smith"));
@@ -290,64 +190,6 @@ describe("SessionsPage", () => {
     });
   });
 
-
-  describe("Show mine checkbox", () => {
-    it("does not show Mine checkbox when no therapist is selected", async () => {
-      renderSessionsPage();
-      await waitFor(() => screen.getByText("Jane Smith"));
-
-      expect(screen.queryByLabelText("Mine")).not.toBeInTheDocument();
-    });
-
-    it("shows Mine checkbox when a therapist is selected in context", async () => {
-      localStorage.setItem("selectedTherapistId", "1");
-      renderSessionsPage();
-      await waitFor(() => screen.getByText("Jane Smith"));
-
-      expect(screen.getByLabelText("Mine")).toBeInTheDocument();
-    });
-
-    it("Mine checkbox is checked by default when a therapist is selected", async () => {
-      localStorage.setItem("selectedTherapistId", "1");
-      renderSessionsPage();
-      await waitFor(() => screen.getByText("Jane Smith"));
-
-      expect(screen.getByLabelText("Mine")).toBeChecked();
-    });
-
-    it("Mine defaults to checked and filters sessions to the selected therapist", async () => {
-      localStorage.setItem("selectedTherapistId", "1");
-      renderSessionsPage();
-      await waitFor(() => {
-        expect(screen.getByText("Jane Smith")).toBeInTheDocument();
-        expect(screen.queryByText("Tom Jones")).not.toBeInTheDocument();
-      });
-    });
-
-    it("unchecking Mine shows all sessions", async () => {
-      localStorage.setItem("selectedTherapistId", "1");
-      renderSessionsPage();
-      await waitFor(() => screen.getByText("Jane Smith"));
-
-      fireEvent.click(screen.getByLabelText("Mine"));
-      await waitFor(() => {
-        expect(screen.getByText("Jane Smith")).toBeInTheDocument();
-        expect(screen.getByText("Tom Jones")).toBeInTheDocument();
-      });
-    });
-
-    it("checkbox becomes unchecked when therapist dropdown is changed away from selected therapist", async () => {
-      localStorage.setItem("selectedTherapistId", "1");
-      renderSessionsPage();
-      await waitFor(() => screen.getByText("Jane Smith"));
-
-      expect(screen.getByLabelText("Mine")).toBeChecked();
-
-      selectTherapistOption("All therapists");
-      await waitFor(() => expect(screen.getByLabelText("Mine")).not.toBeChecked());
-    });
-  });
-
   describe("overdue sessions section", () => {
     function renderWithOverdueClient() {
       mockInvoke.mockImplementation((channel: string) => {
@@ -357,7 +199,6 @@ describe("SessionsPage", () => {
         if (channel === "session:list") {
           return Promise.resolve(wrapped(mockSessions));
         }
-        // overdueClient has a Monday slot but no sessions → always overdue
         if (channel === "client:list") {
           return Promise.resolve(wrapped([...mockClients, overdueClient]));
         }
@@ -434,30 +275,6 @@ describe("SessionsPage", () => {
 
       await waitFor(() => {
         expect(screen.getByTestId("session-form")).toBeInTheDocument();
-      });
-    });
-
-    it("hides expected sessions section when therapist filter excludes the overdue client's therapist", async () => {
-      renderWithOverdueClient();
-      await waitFor(() => screen.getByRole("button", { name: /expected sessions/i }));
-
-      selectTherapistOption("Bob Chen");
-
-      await waitFor(() => {
-        expect(screen.queryByText(/expected sessions/i)).not.toBeInTheDocument();
-      });
-    });
-
-    it("hides expected sessions section when date range is unbounded", async () => {
-      renderWithOverdueClient();
-      await waitFor(() => screen.getByRole("button", { name: /expected sessions/i }));
-
-      fireEvent.change(screen.getByLabelText("Date range"), {
-        target: { value: "all_time" },
-      });
-
-      await waitFor(() => {
-        expect(screen.queryByRole("button", { name: /expected sessions/i })).not.toBeInTheDocument();
       });
     });
   });

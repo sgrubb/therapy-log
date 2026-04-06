@@ -9,17 +9,17 @@ import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
 import type { Therapist } from "@/types/ipc";
 
-interface TherapistContextValue {
+interface SelectedTherapistContextValue {
   therapists: Therapist[];
   selectedTherapistId: number | null;
   setSelectedTherapistId: (id: number | null) => void;
 }
 
-const TherapistContext = createContext<TherapistContextValue | null>(null);
+const SelectedTherapistCtx = createContext<SelectedTherapistContextValue | null>(null);
 
 const STORAGE_KEY = "selectedTherapistId";
 
-export function TherapistProvider({ children }: { children: ReactNode }) {
+export function SelectedTherapistProvider({ children }: { children: ReactNode }) {
   const { data: therapists } = useSuspenseQuery({
     queryKey: queryKeys.therapists.all,
     queryFn: () => ipc.listTherapists(),
@@ -40,18 +40,18 @@ export function TherapistProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <TherapistContext.Provider
+    <SelectedTherapistCtx.Provider
       value={{ therapists, selectedTherapistId, setSelectedTherapistId }}
     >
       {children}
-    </TherapistContext.Provider>
+    </SelectedTherapistCtx.Provider>
   );
 }
 
-export function useTherapist(): TherapistContextValue {
-  const ctx = useContext(TherapistContext);
+export function useSelectedTherapist(): SelectedTherapistContextValue {
+  const ctx = useContext(SelectedTherapistCtx);
   if (!ctx) {
-    throw new Error("useTherapist must be used within a TherapistProvider");
+    throw new Error("useSelectedTherapist must be used within a SelectedTherapistProvider");
   }
   return ctx;
 }
