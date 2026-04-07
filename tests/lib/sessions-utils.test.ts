@@ -13,7 +13,7 @@ const clientBase = {
   session_time: null,
   session_duration: null,
   session_delivery_method: null as null,
-  is_closed: false,
+  closed_date: null as Date | null,
   pre_score: null,
   post_score: null,
   outcome: null as null,

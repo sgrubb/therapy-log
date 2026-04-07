@@ -30,6 +30,7 @@ function emptyForm(): FormFields {
     session_duration: "",
     session_delivery_method: "",
     therapist_id: "",
+    closed_date: "",
     pre_score: "",
     post_score: "",
     outcome: "",
@@ -63,6 +64,7 @@ function mapClientToFormFields(client: ClientWithTherapist): FormFields {
     session_duration: client.session_duration != null ? minutesToHHMM(client.session_duration) : "",
     session_delivery_method: client.session_delivery_method ?? "",
     therapist_id: client.therapist_id.toString(),
+    closed_date: client.closed_date ? format(client.closed_date, "yyyy-MM-dd") : "",
     pre_score: client.pre_score?.toString() ?? "",
     post_score: client.post_score?.toString() ?? "",
     outcome: client.outcome ?? "",
@@ -77,18 +79,19 @@ function buildPayload(form: FormFields) {
     hospital_number: form.hospital_number.trim(),
     dob: parse(form.dob, "yyyy-MM-dd", new Date()),
     start_date: parse(form.start_date, "yyyy-MM-dd", new Date()),
-    address: (form.address ?? "").trim() || undefined,
-    phone: (form.phone ?? "").trim() || undefined,
-    email: (form.email ?? "").trim() || undefined,
-    session_day: (form.session_day || undefined) as SessionDay | undefined,
-    session_time: form.session_time || undefined,
-    session_duration: form.session_duration ? hhmmToMinutes(form.session_duration) : undefined,
-    session_delivery_method: (form.session_delivery_method || undefined) as DeliveryMethod | undefined,
+    address: (form.address ?? "").trim() || null,
+    phone: (form.phone ?? "").trim() || null,
+    email: (form.email ?? "").trim() || null,
+    session_day: (form.session_day || null) as SessionDay | null,
+    session_time: form.session_time || null,
+    session_duration: form.session_duration ? hhmmToMinutes(form.session_duration) : null,
+    session_delivery_method: (form.session_delivery_method || null) as DeliveryMethod | null,
     therapist_id: Number(form.therapist_id),
-    pre_score: form.pre_score !== "" ? Number(form.pre_score) : undefined,
-    post_score: form.post_score !== "" ? Number(form.post_score) : undefined,
-    outcome: (form.outcome || undefined) as Outcome | undefined,
-    notes: (form.notes ?? "").trim() || undefined,
+    closed_date: form.closed_date ? parse(form.closed_date, "yyyy-MM-dd", new Date()) : null,
+    pre_score: form.pre_score !== "" ? Number(form.pre_score) : null,
+    post_score: form.post_score !== "" ? Number(form.post_score) : null,
+    outcome: (form.outcome || null) as Outcome | null,
+    notes: (form.notes ?? "").trim() || null,
   };
 }
 
@@ -105,7 +108,7 @@ export function useClientForm(clientId?: number) {
     staleTime: isEdit ? 0 : Infinity,
   });
 
-  const [isClosed, setIsClosed] = useState(clientData?.is_closed ?? false);
+  const [isClosed, setIsClosed] = useState(clientData?.closed_date != null);
 
   const initialForm = clientData ? mapClientToFormFields(clientData) : emptyForm();
 
@@ -128,7 +131,7 @@ export function useClientForm(clientId?: number) {
     if (clientData) {
       setOriginalForm(mapClientToFormFields(clientData));
       setUpdatedAt(clientData.updated_at);
-      setIsClosed(clientData.is_closed);
+      setIsClosed(clientData.closed_date != null);
     }
   }, []); // runs once on mount; data is stable after Suspense resolves
 

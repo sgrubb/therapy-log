@@ -60,7 +60,7 @@ export interface CreateClient {
   session_duration?: number | null;
   session_delivery_method?: DeliveryMethod | null;
   therapist_id: number;
-  is_closed?: boolean;
+  closed_date?: Date | null;
   pre_score?: number | null;
   post_score?: number | null;
   outcome?: Outcome | null;
@@ -82,7 +82,7 @@ export interface UpdateClient {
   session_duration?: number | null;
   session_delivery_method?: DeliveryMethod | null;
   therapist_id?: number;
-  is_closed?: boolean;
+  closed_date?: Date | null;
   pre_score?: number | null;
   post_score?: number | null;
   outcome?: Outcome | null;
@@ -92,6 +92,7 @@ export interface UpdateClient {
 export interface CloseClient {
   post_score?: number | null;
   outcome: Outcome;
+  closed_date: Date;
   notes?: string | null;
 }
 

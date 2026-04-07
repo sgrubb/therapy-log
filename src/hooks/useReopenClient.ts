@@ -59,8 +59,18 @@ export function useReopenClient(clientId: number, client: ClientWithTherapist) {
     try {
       const reopenNotes = (form.reopen_notes ?? "").trim();
       const existingNotes = client?.notes ?? "";
-      const date = format(new Date(), "dd/MM/yyyy");
-      const appendedEntry = `Client reopened - ${date}\n${reopenNotes}`;
+      const reopenDate = new Date();
+      const closedLine = client?.closed_date
+        ? `Client closed on ${format(client.closed_date, "dd/MM/yyyy")}`
+        : null;
+      const reopenLine = `Client reopened on ${format(reopenDate, "dd/MM/yyyy")}`;
+      const appendedEntry = [
+        closedLine,
+        reopenLine,
+        reopenNotes || null,
+      ]
+        .filter(Boolean)
+        .join("\n");
       const notesUpdate = existingNotes ? `${existingNotes}\n\n${appendedEntry}` : appendedEntry;
 
       await ipc.reopenClient(clientId, { notes: notesUpdate });

@@ -19,7 +19,7 @@ export function getExpectedSessions(
 
   const eligibleClients = clients.filter(
     (c) =>
-      !c.is_closed &&
+      c.closed_date === null &&
       c.session_day !== null &&
       c.session_time !== null &&
       ids.has(c.therapist_id),

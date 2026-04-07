@@ -85,13 +85,13 @@ export default function ClientDetailPage() {
               <h1 className="text-2xl font-semibold">
                 {client.first_name} {client.last_name}
               </h1>
-              <Badge variant={client.is_closed ? BadgeVariant.Closed : BadgeVariant.Open}>
-                {client.is_closed ? "Closed" : "Open"}
+              <Badge variant={client.closed_date !== null ? BadgeVariant.Closed : BadgeVariant.Open}>
+                {client.closed_date !== null ? "Closed" : "Open"}
               </Badge>
             </div>
             <div className="flex gap-2">
               {canCloseOrReopen && (
-                client.is_closed ? (
+                client.closed_date !== null ? (
                   <ReopenClientDialog
                     clientId={clientId}
                     client={client}
@@ -139,8 +139,12 @@ export default function ClientDetailPage() {
           label="Pre Score"
           value={client.pre_score?.toString() ?? "—"}
         />
-        {client.is_closed && (
+        {client.closed_date !== null && (
           <>
+            <InfoRow
+              label="Closed Date"
+              value={format(client.closed_date, "dd/MM/yyyy")}
+            />
             <InfoRow
               label="Post Score"
               value={client.post_score?.toString() ?? "—"}

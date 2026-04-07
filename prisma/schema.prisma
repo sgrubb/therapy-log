@@ -86,7 +86,7 @@ model Client {
   session_delivery_method   DeliveryMethod?
   therapist_id              Int
   therapist       Therapist   @relation(fields: [therapist_id], references: [id])
-  is_closed       Boolean     @default(false)
+  closed_date     DateTime?
   pre_score       Float?
   post_score      Float?
   outcome         Outcome?

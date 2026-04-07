@@ -55,8 +55,8 @@ export function ClientProvider({ clients, children }: ClientProviderProps) {
     const searchQuery = search.trim().toLowerCase();
     return clients
       .filter((c) =>
-        statusFilter === ClientStatusFilter.Open ? !c.is_closed
-        : statusFilter === ClientStatusFilter.Closed ? c.is_closed
+        statusFilter === ClientStatusFilter.Open ? c.closed_date === null
+        : statusFilter === ClientStatusFilter.Closed ? c.closed_date !== null
         : true
       )
       .filter((c) => therapistFilter === "all" || c.therapist_id === Number(therapistFilter))

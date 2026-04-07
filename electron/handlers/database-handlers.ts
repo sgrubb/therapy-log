@@ -104,7 +104,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
         const data = clientCloseSchema.parse(rawData);
         return prisma.client.update({
           where: { id },
-          data: { ...data, is_closed: true },
+          data: { ...data },
           include: { therapist: true },
         });
       }),
@@ -118,7 +118,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
         const data = clientReopenSchema.parse(rawData);
         return prisma.client.update({
           where: { id },
-          data: { ...data, is_closed: false, post_score: null, outcome: null },
+          data: { ...data, closed_date: null, post_score: null, outcome: null },
           include: { therapist: true },
         });
       }),

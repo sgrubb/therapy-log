@@ -42,7 +42,7 @@ export const clientCreateSchema = z.object({
   session_duration: z.number().int().positive().nullable().optional(),
   session_delivery_method: z.enum(DeliveryMethod).nullable().optional(),
   therapist_id: z.number().int().positive(),
-  is_closed: z.boolean().optional(),
+  closed_date: z.coerce.date().nullable().optional(),
   pre_score: z.number().nullable().optional(),
   post_score: z.number().nullable().optional(),
   outcome: z.enum(Outcome).nullable().optional(),
@@ -64,7 +64,7 @@ export const clientUpdateSchema = z.object({
   session_duration: z.number().int().positive().nullable().optional(),
   session_delivery_method: z.enum(DeliveryMethod).nullable().optional(),
   therapist_id: z.number().int().positive().optional(),
-  is_closed: z.boolean().optional(),
+  closed_date: z.coerce.date().nullable().optional(),
   pre_score: z.number().nullable().optional(),
   post_score: z.number().nullable().optional(),
   outcome: z.enum(Outcome).nullable().optional(),
@@ -74,6 +74,7 @@ export const clientUpdateSchema = z.object({
 export const clientCloseSchema = z.object({
   post_score: z.number().nullable().optional(),
   outcome: z.enum(Outcome),
+  closed_date: z.coerce.date(),
   notes: z.string().nullable().optional(),
 });
 

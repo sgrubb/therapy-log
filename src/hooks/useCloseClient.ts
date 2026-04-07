@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import type { z } from "zod";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
@@ -13,6 +13,7 @@ import { queryKeys } from "@/lib/queryKeys";
 export type FormFields = z.input<typeof closeClientSchema>;
 
 const EMPTY: FormFields = {
+  close_date: format(new Date(), "yyyy-MM-dd"),
   post_score: "",
   outcome: "" as Outcome,
   closing_notes: "",
@@ -61,13 +62,14 @@ export function useCloseClient(clientId: number, client: ClientWithTherapist) {
     try {
       const closingNotes = (form.closing_notes ?? "").trim();
       const existingNotes = client?.notes ?? "";
-      const date = format(new Date(), "dd/MM/yyyy");
-      const appendedEntry = `Client closed - ${date}\n${closingNotes}`;
-      const notesUpdate = existingNotes ? `${existingNotes}\n\n${appendedEntry}` : appendedEntry;
+      const notesUpdate = closingNotes
+        ? existingNotes ? `${existingNotes}\n\n${closingNotes}` : closingNotes
+        : existingNotes || null;
 
       await ipc.closeClient(clientId, {
         post_score: form.post_score ? Number(form.post_score) : null,
         outcome: form.outcome as Outcome,
+        closed_date: parse(form.close_date, "yyyy-MM-dd", new Date()),
         notes: notesUpdate,
       });
       await queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(clientId) });

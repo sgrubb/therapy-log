@@ -52,6 +52,17 @@ export function CloseClientDialog({ clientId, client }: Props) {
 
           <SaveErrorAlert message={saveError} />
 
+          <Field label="Close Date *" error={getError("close_date")}>
+            <Input
+              type="date"
+              aria-label="Close date"
+              value={form.close_date}
+              onChange={(e) => set("close_date", e.target.value)}
+              onBlur={() => markTouched("close_date")}
+              aria-invalid={!!getError("close_date")}
+            />
+          </Field>
+
           <Field label="Post-intervention score" error={getError("post_score")}>
             <Input
               type="number"

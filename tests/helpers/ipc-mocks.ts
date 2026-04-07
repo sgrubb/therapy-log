@@ -59,7 +59,7 @@ export const mockClientBase = {
   session_time: null,
   session_duration: null,
   session_delivery_method: null,
-  is_closed: false,
+  closed_date: null as Date | null,
   pre_score: null,
   post_score: null,
   outcome: null as string | null,
@@ -93,7 +93,7 @@ export const mockClients = [
     dob: new Date("1995-05-10T00:00:00.000Z"),
     therapist_id: 2,
     therapist: mockTherapists[1]!,
-    is_closed: true,
+    closed_date: new Date("2025-12-01T00:00:00.000Z"),
     email: "tom@example.com",
   },
 ];

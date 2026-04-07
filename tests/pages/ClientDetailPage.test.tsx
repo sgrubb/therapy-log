@@ -96,7 +96,7 @@ describe("ClientDetailPage", () => {
   });
 
   it("renders closed badge for a closed client", async () => {
-    renderDetailPage({ is_closed: true });
+    renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z") });
     await waitFor(() => {
       expect(screen.getByText("Closed")).toBeInTheDocument();
     });
@@ -399,7 +399,7 @@ describe("ClientDetailPage — close client", () => {
 
   it("hides Close Client button when client is already closed", async () => {
     localStorage.setItem("selectedTherapistId", "1");
-    renderDetailPage({ is_closed: true });
+    renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z") });
     await waitFor(() => screen.getByText("Jane Smith"));
     expect(screen.queryByRole("button", { name: /close client/i })).not.toBeInTheDocument();
   });
@@ -441,7 +441,7 @@ describe("ClientDetailPage — close client", () => {
 
   it("submits close client and refreshes client data", async () => {
     localStorage.setItem("selectedTherapistId", "1");
-    const closedClient = { ...mockClient, is_closed: true, outcome: "Improved" as const };
+    const closedClient = { ...mockClient, closed_date: new Date("2025-12-01T00:00:00.000Z"), outcome: "Improved" as const };
 
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") {
@@ -505,7 +505,10 @@ describe("ClientDetailPage — close client", () => {
       expect(mockInvoke).toHaveBeenCalledWith(
         "client:close",
         expect.objectContaining({
-          data: expect.objectContaining({ outcome: "Improved" }),
+          data: expect.objectContaining({
+            outcome: "Improved",
+            closed_date: expect.any(Date),
+          }),
         }),
       );
     });
@@ -521,7 +524,7 @@ describe("ClientDetailPage — close client", () => {
     const user = userEvent.setup();
     localStorage.setItem("selectedTherapistId", "1");
     const clientWithNotes = { ...mockClient, notes: "Existing notes." };
-    const closedClient = { ...clientWithNotes, is_closed: true, outcome: "Improved" as const };
+    const closedClient = { ...clientWithNotes, closed_date: new Date("2025-12-01T00:00:00.000Z"), outcome: "Improved" as const };
 
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") {
@@ -565,13 +568,12 @@ describe("ClientDetailPage — close client", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /confirm close/i }));
 
-    const date = format(new Date(), "dd/MM/yyyy");
     await waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith(
         "client:close",
         expect.objectContaining({
           data: expect.objectContaining({
-            notes: `Existing notes.\n\nClient closed - ${date}\nDischarge summary.`,
+            notes: `Existing notes.\n\nDischarge summary.`,
           }),
         }),
       );
@@ -641,6 +643,75 @@ describe("ClientDetailPage — close client", () => {
     });
     expect(mockInvoke).not.toHaveBeenCalledWith("client:update", expect.anything());
   });
+
+  it("defaults close date to today", async () => {
+    localStorage.setItem("selectedTherapistId", "1");
+    renderDetailPage();
+
+    await waitFor(() => screen.getByRole("button", { name: /close client/i }));
+    fireEvent.click(screen.getByRole("button", { name: /close client/i }));
+    await waitFor(() => screen.getByRole("heading", { name: /close client/i }));
+
+    const today = format(new Date(), "yyyy-MM-dd");
+    expect((screen.getByLabelText(/close date/i) as HTMLInputElement).value).toBe(today);
+  });
+
+  it("does not modify existing notes when no closing notes are entered", async () => {
+    localStorage.setItem("selectedTherapistId", "1");
+    const clientWithNotes = { ...mockClient, notes: "Existing notes." };
+    const closedClient = { ...clientWithNotes, closed_date: new Date("2025-12-01T00:00:00.000Z"), outcome: "Improved" as const };
+
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") { return Promise.resolve(wrapped(mockTherapists)); }
+      if (channel === "client:get") { return Promise.resolve(wrapped(clientWithNotes)); }
+      if (channel === "session:list") { return Promise.resolve(wrapped(mockSessions)); }
+      if (channel === "client:close") { return Promise.resolve(wrapped(closedClient)); }
+      return Promise.resolve(wrapped(null));
+    });
+
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <SelectedTherapistProvider>
+              <MemoryRouter initialEntries={["/clients/1"]}>
+                <Routes>
+                  <Route path="/clients/:id" element={<ClientDetailPage />} />
+                </Routes>
+              </MemoryRouter>
+            </SelectedTherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => screen.getByRole("button", { name: /close client/i }));
+    fireEvent.click(screen.getByRole("button", { name: /close client/i }));
+    await waitFor(() => screen.getByRole("heading", { name: /close client/i }));
+
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "Improved" } });
+    fireEvent.click(screen.getByRole("button", { name: /confirm close/i }));
+
+    await waitFor(() => {
+      expect(mockInvoke).toHaveBeenCalledWith(
+        "client:close",
+        expect.objectContaining({
+          data: expect.objectContaining({ notes: "Existing notes." }),
+        }),
+      );
+    });
+  });
+
+  it("shows closed date in client info when client is closed", async () => {
+    localStorage.setItem("selectedTherapistId", "1");
+    renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z") });
+
+    await waitFor(() => {
+      expect(screen.getByText("Closed Date")).toBeInTheDocument();
+      expect(screen.getByText("01/12/2025")).toBeInTheDocument();
+    });
+  });
 });
 
 // ── Reopen client ─────────────────────────────────────────────────────────────
@@ -648,7 +719,7 @@ describe("ClientDetailPage — close client", () => {
 describe("ClientDetailPage — reopen client", () => {
   it("shows Reopen Client button to the client's assigned therapist when client is closed", async () => {
     localStorage.setItem("selectedTherapistId", "1");
-    renderDetailPage({ is_closed: true });
+    renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z") });
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /reopen client/i })).toBeInTheDocument();
     });
@@ -656,7 +727,7 @@ describe("ClientDetailPage — reopen client", () => {
 
   it("shows Reopen Client button to an admin when client is closed", async () => {
     localStorage.setItem("selectedTherapistId", "1"); // Alice, is_admin: true
-    renderDetailPage({ is_closed: true, therapist_id: 2 });
+    renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z"), therapist_id: 2 });
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /reopen client/i })).toBeInTheDocument();
     });
@@ -664,27 +735,27 @@ describe("ClientDetailPage — reopen client", () => {
 
   it("hides Reopen Client button from a non-admin who is not the client's therapist", async () => {
     localStorage.setItem("selectedTherapistId", "2"); // Bob, is_admin: false
-    renderDetailPage({ is_closed: true, therapist_id: 1 }); // client belongs to Alice
+    renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z"), therapist_id: 1 }); // client belongs to Alice
     await waitFor(() => screen.getByText("Jane Smith"));
     expect(screen.queryByRole("button", { name: /reopen client/i })).not.toBeInTheDocument();
   });
 
   it("hides Reopen Client button when client is open", async () => {
     localStorage.setItem("selectedTherapistId", "1");
-    renderDetailPage({ is_closed: false });
+    renderDetailPage({ closed_date: null });
     await waitFor(() => screen.getByText("Jane Smith"));
     expect(screen.queryByRole("button", { name: /reopen client/i })).not.toBeInTheDocument();
   });
 
   it("hides Reopen Client button when no therapist is selected", async () => {
-    renderDetailPage({ is_closed: true });
+    renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z") });
     await waitFor(() => screen.getByText("Jane Smith"));
     expect(screen.queryByRole("button", { name: /reopen client/i })).not.toBeInTheDocument();
   });
 
   it("opens the reopen client dialog when button is clicked", async () => {
     localStorage.setItem("selectedTherapistId", "1");
-    renderDetailPage({ is_closed: true });
+    renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z") });
     await waitFor(() => screen.getByRole("button", { name: /reopen client/i }));
 
     fireEvent.click(screen.getByRole("button", { name: /reopen client/i }));
@@ -696,8 +767,8 @@ describe("ClientDetailPage — reopen client", () => {
 
   it("submits reopen client and refreshes client data", async () => {
     localStorage.setItem("selectedTherapistId", "1");
-    const closedClient = { ...mockClient, is_closed: true, post_score: 5, outcome: "Improved" as const };
-    const reopenedClient = { ...mockClient, is_closed: false, post_score: null, outcome: null };
+    const closedClient = { ...mockClient, closed_date: new Date("2025-12-01T00:00:00.000Z"), post_score: 5, outcome: "Improved" as const };
+    const reopenedClient = { ...mockClient, closed_date: null, post_score: null, outcome: null };
 
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") {
@@ -770,8 +841,8 @@ describe("ClientDetailPage — reopen client", () => {
   it("appends reopening notes to existing client notes", async () => {
     const user = userEvent.setup();
     localStorage.setItem("selectedTherapistId", "1");
-    const closedClient = { ...mockClient, is_closed: true, notes: "Existing notes.", outcome: "Improved" as const };
-    const reopenedClient = { ...mockClient, is_closed: false, post_score: null, outcome: null };
+    const closedClient = { ...mockClient, closed_date: new Date("2025-12-01T00:00:00.000Z"), notes: "Existing notes.", outcome: "Improved" as const };
+    const reopenedClient = { ...mockClient, closed_date: null, post_score: null, outcome: null };
 
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") {
@@ -814,13 +885,13 @@ describe("ClientDetailPage — reopen client", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /confirm reopen/i }));
 
-    const date = format(new Date(), "dd/MM/yyyy");
+    const today = format(new Date(), "dd/MM/yyyy");
     await waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith(
         "client:reopen",
         expect.objectContaining({
           data: expect.objectContaining({
-            notes: `Existing notes.\n\nClient reopened - ${date}\nReturning for further support.`,
+            notes: `Existing notes.\n\nClient closed on 01/12/2025\nClient reopened on ${today}\nReturning for further support.`,
           }),
         }),
       );
@@ -829,7 +900,7 @@ describe("ClientDetailPage — reopen client", () => {
 
   it("shows error alert when reopen client fails", async () => {
     localStorage.setItem("selectedTherapistId", "1");
-    const closedClient = { ...mockClient, is_closed: true };
+    const closedClient = { ...mockClient, closed_date: new Date("2025-12-01T00:00:00.000Z") };
 
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list") {
@@ -877,7 +948,7 @@ describe("ClientDetailPage — reopen client", () => {
 
   it("dismisses dialog without submitting when Cancel is clicked", async () => {
     localStorage.setItem("selectedTherapistId", "1");
-    renderDetailPage({ is_closed: true });
+    renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z") });
 
     await waitFor(() => screen.getByRole("button", { name: /reopen client/i }));
     fireEvent.click(screen.getByRole("button", { name: /reopen client/i }));

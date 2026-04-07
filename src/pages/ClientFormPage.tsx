@@ -228,6 +228,16 @@ export default function ClientFormPage() {
           </Field>
           {isEdit && isClosed && (
             <>
+              <Field label="Close Date" error={getError("closed_date")} conflictError={getConflictError("closed_date")}>
+                <Input
+                  type="date"
+                  aria-label="Close date"
+                  value={form.closed_date ?? ""}
+                  onChange={(e) => set("closed_date", e.target.value)}
+                  onBlur={() => markTouched("closed_date")}
+                  aria-invalid={!!getError("closed_date")}
+                />
+              </Field>
               <Field label="Post Score" error={getError("post_score")} conflictError={getConflictError("post_score")}>
                 <Input
                   type="number"

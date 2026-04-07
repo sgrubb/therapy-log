@@ -18,7 +18,7 @@ const clientBase = {
   phone: null,
   email: null,
   session_delivery_method: null as null,
-  is_closed: false,
+  closed_date: null as Date | null,
   pre_score: null,
   post_score: null,
   outcome: null as null,
@@ -214,7 +214,7 @@ describe("generatePlaceholders", () => {
   });
 
   it("skips closed clients", () => {
-    const closed: ClientWithTherapist = { ...client, is_closed: true };
+    const closed: ClientWithTherapist = { ...client, closed_date: new Date("2025-12-01T00:00:00.000Z") };
     const placeholders = generatePlaceholders(
       [closed],
       [],

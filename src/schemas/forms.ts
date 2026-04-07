@@ -31,6 +31,7 @@ export const clientFormSchema = z
     session_duration: z.string().optional().or(z.literal("")),
     session_delivery_method: z.enum(deliveryMethodValues).optional().or(z.literal("")),
     therapist_id: z.string().min(1, "Therapist is required."),
+    closed_date: z.string().optional().or(z.literal("")),
     pre_score: z.string().optional().or(z.literal("")),
     post_score: z.string().optional().or(z.literal("")),
     outcome: z.enum(outcomeValues).optional().or(z.literal("")),
@@ -100,6 +101,7 @@ export const therapistFormSchema = z.object({
 });
 
 export const closeClientSchema = z.object({
+  close_date: z.string().min(1, "Close date is required."),
   post_score: z.string().optional().or(z.literal("")),
   outcome: z.enum(outcomeValues, "Outcome is required."),
   closing_notes: z

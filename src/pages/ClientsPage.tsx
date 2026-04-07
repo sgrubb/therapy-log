@@ -40,10 +40,10 @@ const columns: Column<ClientWithTherapist>[] = [
   {
     key: "status",
     label: "Status",
-    sortFn: (a, b) => Number(a.is_closed) - Number(b.is_closed),
+    sortFn: (a, b) => Number(a.closed_date !== null) - Number(b.closed_date !== null),
     render: (c) => (
-      <Badge variant={c.is_closed ? BadgeVariant.Closed : BadgeVariant.Open}>
-        {c.is_closed ? "Closed" : "Open"}
+      <Badge variant={c.closed_date !== null ? BadgeVariant.Closed : BadgeVariant.Open}>
+        {c.closed_date !== null ? "Closed" : "Open"}
       </Badge>
     ),
   },

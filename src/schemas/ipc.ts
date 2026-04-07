@@ -37,7 +37,7 @@ const clientBaseSchema = z.object({
     .enum(["FaceToFace", "Online", "Telephone", "Email"])
     .nullable(),
   therapist_id: z.number(),
-  is_closed: z.boolean(),
+  closed_date: z.date().nullable(),
   pre_score: z.number().nullable(),
   post_score: z.number().nullable(),
   outcome: z
