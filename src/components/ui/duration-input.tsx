@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
+import type { Duration } from "@/types/ui";
 
-export type Duration = { hours: number; minutes: number };
+export type { Duration };
 
 const selectClass =
   "border-input bg-transparent focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive h-9 rounded-md border px-2 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50";

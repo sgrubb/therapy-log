@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 
 export function Field({
@@ -5,14 +6,16 @@ export function Field({
   error,
   conflictError,
   children,
+  className,
 }: {
   label: string;
   error?: string;
   conflictError?: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="space-y-1">
+    <div className={cn("space-y-1", className)}>
       <Label>{label}</Label>
       {children}
       {error && <p className="text-destructive text-sm">{error}</p>}

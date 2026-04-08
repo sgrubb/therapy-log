@@ -46,6 +46,13 @@ export const Outcome = {
 } as const;
 export type Outcome = (typeof Outcome)[keyof typeof Outcome];
 
+export const OUTCOME_NAMES: Record<Outcome, string> = {
+  Improved: "Improved",
+  NoChange: "No Change",
+  Declined: "Declined",
+  DataUnavailable: "Data Unavailable",
+};
+
 export const SessionStatus = {
   Scheduled: "Scheduled",
   Attended: "Attended",

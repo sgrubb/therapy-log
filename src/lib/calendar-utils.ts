@@ -1,6 +1,7 @@
 import { SessionStatus, SESSION_TYPE_NAMES } from "@/types/enums";
 import type { SessionWithRelations, ClientWithTherapist, Therapist } from "@/types/ipc";
-import { getExpectedSessions, getWeekStart } from "@/lib/sessions-utils";
+import { getExpectedSessions } from "@/lib/sessions-utils";
+import { getWeekStart } from "@/lib/datetime-utils";
 
 export const THERAPIST_COLORS = [
   "#3b82f6", // blue

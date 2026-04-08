@@ -13,7 +13,7 @@ import { ReopenClientDialog } from "@/components/ReopenClientDialog";
 import { Link } from "react-router-dom";
 import { DataTable } from "@/components/ui/data-table";
 import { SortDir } from "@/types/enums";
-import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/types/enums";
+import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES, OUTCOME_NAMES } from "@/types/enums";
 import { buttonVariants } from "@/components/ui/button";
 import type { Column } from "@/components/ui/data-table";
 
@@ -46,7 +46,7 @@ export default function ClientDetailPage() {
       key: "date",
       label: "Date",
       sortFn: (a, b) => a.scheduled_at.getTime() - b.scheduled_at.getTime(),
-      render: (s) => format(s.scheduled_at, "dd/MM/yyyy"),
+      render: (s) => format(s.scheduled_at, "dd MMM yyyy"),
     },
     {
       key: "type",
@@ -71,6 +71,11 @@ export default function ClientDetailPage() {
   const selectedTherapist = contextTherapists.find((t) => t.id === selectedTherapistId);
   const isAdmin = selectedTherapist?.is_admin ?? false;
   const canCloseOrReopen = isAdmin || selectedTherapistId === client.therapist_id;
+  const isClosed = client.closed_date !== null;
+
+  const durationLabel = client.session_duration != null
+    ? `${Math.floor(client.session_duration / 60)}h ${String(client.session_duration % 60).padStart(2, "0")}m`
+    : "—";
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -85,22 +90,16 @@ export default function ClientDetailPage() {
               <h1 className="text-2xl font-semibold">
                 {client.first_name} {client.last_name}
               </h1>
-              <Badge variant={client.closed_date !== null ? BadgeVariant.Closed : BadgeVariant.Open}>
-                {client.closed_date !== null ? "Closed" : "Open"}
+              <Badge variant={isClosed ? BadgeVariant.Closed : BadgeVariant.Open}>
+                {isClosed ? "Closed" : "Open"}
               </Badge>
             </div>
             <div className="flex gap-2">
               {canCloseOrReopen && (
-                client.closed_date !== null ? (
-                  <ReopenClientDialog
-                    clientId={clientId}
-                    client={client}
-                  />
+                isClosed ? (
+                  <ReopenClientDialog clientId={clientId} client={client} />
                 ) : (
-                  <CloseClientDialog
-                    clientId={clientId}
-                    client={client}
-                  />
+                  <CloseClientDialog clientId={clientId} client={client} />
                 )
               )}
               <Link
@@ -115,55 +114,54 @@ export default function ClientDetailPage() {
         </div>
       </PageHeader>
 
-      {/* Info grid */}
-      <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">
-        <InfoRow label="Hospital Number" value={client.hospital_number} />
-        <InfoRow
-          label="Date of Birth"
-          value={format(client.dob, "dd/MM/yyyy")}
-        />
-        <InfoRow
-          label="Start Date"
-          value={format(client.start_date, "dd/MM/yyyy")}
-        />
-        <InfoRow
-          label="Therapist"
-          value={`${client.therapist.first_name} ${client.therapist.last_name}`}
-        />
-        <InfoRow label="Session Day" value={client.session_day ?? "—"} />
-        <InfoRow label="Session Time" value={client.session_time ?? "—"} />
-        <InfoRow
-          label="Session Duration"
-          value={client.session_duration != null
-            ? `${Math.floor(client.session_duration / 60)}h ${String(client.session_duration % 60).padStart(2, "0")}m`
-            : "—"}
-        />
-        <InfoRow
-          label="Session Delivery"
-          value={client.session_delivery_method != null
-            ? DELIVERY_METHOD_NAMES[client.session_delivery_method]
-            : "—"}
-        />
-        <InfoRow label="Phone" value={client.phone ?? "—"} />
-        <InfoRow label="Email" value={client.email ?? "—"} />
-        <InfoRow label="Address" value={client.address ?? "—"} />
-        <InfoRow
-          label="Pre Score"
-          value={client.pre_score?.toString() ?? "—"}
-        />
-        {client.closed_date !== null && (
-          <>
-            <InfoRow
-              label="Closed Date"
-              value={format(client.closed_date, "dd/MM/yyyy")}
-            />
-            <InfoRow
-              label="Post Score"
-              value={client.post_score?.toString() ?? "—"}
-            />
-            <InfoRow label="Outcome" value={client.outcome ?? "—"} />
-          </>
+      {/* Personal information */}
+      <div className="space-y-3 rounded-lg border p-4">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+          Personal Information
+        </h2>
+        <div className="grid grid-cols-2 gap-4">
+          <InfoRow label="Hospital Number" value={client.hospital_number} />
+          <InfoRow label="Date of Birth" value={format(client.dob, "dd MMM yyyy")} />
+          <InfoRow label="Phone" value={client.phone ?? "—"} />
+          <InfoRow label="Email" value={client.email ?? "—"} />
+        </div>
+        {client.address && (
+          <InfoRow label="Address" value={client.address} />
         )}
+      </div>
+
+      {/* Clinical details */}
+      <div className="space-y-3 rounded-lg border p-4">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+          Clinical Details
+        </h2>
+        <div className="grid grid-cols-2 gap-4">
+          <InfoRow
+            label="Therapist"
+            value={`${client.therapist.first_name} ${client.therapist.last_name}`}
+            className="col-span-2"
+          />
+          <InfoRow label="Start Date" value={format(client.start_date, "dd MMM yyyy")} />
+          {isClosed && (
+            <InfoRow label="Closed Date" value={format(client.closed_date, "dd MMM yyyy")} />
+          )}
+          <InfoRow label="Pre Score" value={client.pre_score?.toString() ?? "—"} />
+          {isClosed && (
+            <>
+              <InfoRow label="Post Score" value={client.post_score?.toString() ?? "—"} />
+              <InfoRow label="Outcome" value={client.outcome ? (OUTCOME_NAMES[client.outcome] ?? client.outcome) : "—"} />
+            </>
+          )}
+          <InfoRow label="Session Day" value={client.session_day ?? "—"} />
+          <InfoRow label="Session Time" value={client.session_time ?? "—"} />
+          <InfoRow label="Session Duration" value={durationLabel} />
+          <InfoRow
+            label="Session Delivery"
+            value={client.session_delivery_method != null
+              ? DELIVERY_METHOD_NAMES[client.session_delivery_method]
+              : "—"}
+          />
+        </div>
       </div>
 
       {client.notes && (

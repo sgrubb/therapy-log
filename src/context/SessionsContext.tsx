@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { format, parse, startOfWeek, endOfWeek, startOfMonth, endOfMonth, endOfDay } from "date-fns";
+import { format, parse, startOfMonth, endOfMonth, endOfDay } from "date-fns";
+import { startOfWeekMon, endOfWeekMon } from "@/lib/datetime-utils";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { getExpectedSessions, getOverlappingSessions, getUnconfirmedSessions } from "@/lib/sessions-utils";
 import type { ClientWithTherapist, SessionWithRelations } from "@/types/ipc";
@@ -16,8 +17,8 @@ function getPresetRange(preset: DatePreset): { from: string; to: string } {
   const now = new Date();
   if (preset === DatePreset.ThisWeek) {
     return {
-      from: format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd"),
-      to: format(endOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd"),
+      from: format(startOfWeekMon(now), "yyyy-MM-dd"),
+      to: format(endOfWeekMon(now), "yyyy-MM-dd"),
     };
   }
   if (preset === DatePreset.ThisMonth) {

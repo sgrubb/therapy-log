@@ -93,7 +93,7 @@ describe("SessionDetailPage", () => {
 
   it("renders date and time", async () => {
     renderDetailPage();
-    const date = format(mockSession.scheduled_at, "dd/MM/yyyy");
+    const date = format(mockSession.scheduled_at, "dd MMM yyyy");
     await waitFor(() => {
       expect(screen.getByText(date)).toBeInTheDocument();
     });

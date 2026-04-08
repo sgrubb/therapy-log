@@ -107,7 +107,7 @@ describe("ClientDetailPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Child")).toBeInTheDocument();
       expect(screen.getByText("Attended")).toBeInTheDocument();
-      expect(screen.getByText("Face to Face")).toBeInTheDocument();
+      expect(screen.getAllByText("Face to Face").length).toBeGreaterThan(0);
     });
   });
 
@@ -199,7 +199,7 @@ describe("ClientDetailPage", () => {
 
   it("formats date of birth in en-GB locale", async () => {
     renderDetailPage();
-    const expectedDob = format(mockClient.dob, "dd/MM/yyyy");
+    const expectedDob = format(mockClient.dob, "dd MMM yyyy");
     await waitFor(() => {
       expect(screen.getByText(expectedDob)).toBeInTheDocument();
     });
@@ -207,7 +207,7 @@ describe("ClientDetailPage", () => {
 
   it("formats session date in en-GB locale", async () => {
     renderDetailPage();
-    const expectedDate = format(mockSession.scheduled_at, "dd/MM/yyyy");
+    const expectedDate = format(mockSession.scheduled_at, "dd MMM yyyy");
     await waitFor(() => {
       expect(screen.getByText(expectedDate)).toBeInTheDocument();
     });
@@ -709,7 +709,7 @@ describe("ClientDetailPage — close client", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Closed Date")).toBeInTheDocument();
-      expect(screen.getByText("01/12/2025")).toBeInTheDocument();
+      expect(screen.getByText("01 Dec 2025")).toBeInTheDocument();
     });
   });
 });
@@ -885,13 +885,13 @@ describe("ClientDetailPage — reopen client", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /confirm reopen/i }));
 
-    const today = format(new Date(), "dd/MM/yyyy");
+    const today = format(new Date(), "dd MMM yyyy");
     await waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith(
         "client:reopen",
         expect.objectContaining({
           data: expect.objectContaining({
-            notes: `Existing notes.\n\nClient closed on 01/12/2025\nClient reopened on ${today}\nReturning for further support.`,
+            notes: `Existing notes.\n\nClient closed on 01 Dec 2025\nClient reopened on ${today}\nReturning for further support.`,
           }),
         }),
       );

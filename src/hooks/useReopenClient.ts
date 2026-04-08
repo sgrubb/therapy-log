@@ -61,9 +61,9 @@ export function useReopenClient(clientId: number, client: ClientWithTherapist) {
       const existingNotes = client?.notes ?? "";
       const reopenDate = new Date();
       const closedLine = client?.closed_date
-        ? `Client closed on ${format(client.closed_date, "dd/MM/yyyy")}`
+        ? `Client closed on ${format(client.closed_date, "dd MMM yyyy")}`
         : null;
-      const reopenLine = `Client reopened on ${format(reopenDate, "dd/MM/yyyy")}`;
+      const reopenLine = `Client reopened on ${format(reopenDate, "dd MMM yyyy")}`;
       const appendedEntry = [
         closedLine,
         reopenLine,

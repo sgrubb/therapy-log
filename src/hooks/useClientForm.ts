@@ -10,11 +10,7 @@ import { SessionDay, Outcome, FormState } from "@/types/enums";
 import type { DeliveryMethod } from "@/types/enums";
 import { useFormState } from "@/hooks/useFormState";
 import type { ClientWithTherapist } from "@/types/ipc";
-import type { Duration } from "@/components/ui/duration-input";
-
-function toDuration(totalMinutes: number): Duration {
-  return { hours: Math.floor(totalMinutes / 60), minutes: totalMinutes % 60 };
-}
+import { toDuration, fromDuration } from "@/lib/sessions-utils";
 
 // Field names mirror the database schema (snake_case) so they map directly
 // onto IPC payloads without a translation step.
@@ -78,7 +74,7 @@ function buildPayload(form: FormFields) {
     email: (form.email ?? "").trim() || null,
     session_day: (form.session_day || null) as SessionDay | null,
     session_time: form.session_time || null,
-    session_duration: form.session_duration.hours * 60 + form.session_duration.minutes || null,
+    session_duration: fromDuration(form.session_duration) || null,
     session_delivery_method: (form.session_delivery_method || null) as DeliveryMethod | null,
     therapist_id: Number(form.therapist_id),
     closed_date: form.closed_date ? parse(form.closed_date, "yyyy-MM-dd", new Date()) : null,

@@ -86,12 +86,12 @@ function renderEditForm() {
 }
 
 // The mocked Select renders native <select> elements in this order:
-// 0 = session_day, 1 = duration-hours, 2 = duration-minutes, 3 = session_delivery_method, 4 = therapist_id, 5 = outcome (only when closed)
+// 0 = therapist_id, 1 = session_day, 2 = duration-hours, 3 = duration-minutes, 4 = session_delivery_method, 5 = outcome (only when closed)
 function getTherapistSelect() {
-  return screen.getAllByRole("combobox")[4]!;
+  return screen.getAllByRole("combobox")[0]!;
 }
 function getSessionDeliveryMethodSelect() {
-  return screen.getAllByRole("combobox")[3]!;
+  return screen.getAllByRole("combobox")[4]!;
 }
 
 // ── New client ────────────────────────────────────────────────────────

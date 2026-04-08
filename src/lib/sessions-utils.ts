@@ -1,4 +1,6 @@
-import { eachWeekOfInterval, format, startOfWeek, addMinutes, subDays } from "date-fns";
+import { eachWeekOfInterval, format, addMinutes, subDays, minutesToHours, hoursToMinutes } from "date-fns";
+import { WEEK_STARTS_ON, getWeekStart } from "@/lib/datetime-utils";
+import type { Duration } from "@/types/ui";
 import { SessionStatus, SESSION_DAY_INDEX } from "@/types/enums";
 import type { SessionWithRelations, ClientWithTherapist, ExpectedSession } from "@/types/ipc";
 
@@ -16,6 +18,14 @@ export function mostRecentOccurrence(dayName: string): string {
   const today = new Date();
   const daysBack = (today.getDay() - target + 7) % 7;
   return format(subDays(today, daysBack), "yyyy-MM-dd");
+}
+
+export function toDuration(totalMinutes: number): Duration {
+  return { hours: minutesToHours(totalMinutes), minutes: totalMinutes % 60 };
+}
+
+export function fromDuration(d: Duration): number {
+  return hoursToMinutes(d.hours) + d.minutes;
 }
 
 // ── Expected sessions ────────────────────────────────────────────────────────
@@ -47,7 +57,7 @@ export function getExpectedSessions(
 
   const weekStarts = eachWeekOfInterval(
     { start: rangeStart, end: rangeEnd },
-    { weekStartsOn: 1 },
+    { weekStartsOn: WEEK_STARTS_ON },
   );
 
   return weekStarts.flatMap((weekDate) => {
@@ -126,8 +136,3 @@ export function getUnconfirmedSessions(sessions: SessionWithRelations[]): Sessio
   );
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-export function getWeekStart(date: Date): string {
-  return format(startOfWeek(date, { weekStartsOn: 1 }), "yyyy-MM-dd");
-}

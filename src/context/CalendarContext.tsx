@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { startOfMonth, endOfMonth } from "date-fns";
+import { startOfWeekMon, endOfWeekMon } from "@/lib/datetime-utils";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
@@ -17,8 +18,8 @@ import type { Therapist } from "@/types/ipc";
 function getRangeForDate(date: Date, view: View): { start: Date; end: Date } {
   if (view === "week") {
     return {
-      start: startOfWeek(date, { weekStartsOn: 1 }),
-      end: endOfWeek(date, { weekStartsOn: 1 }),
+      start: startOfWeekMon(date),
+      end: endOfWeekMon(date),
     };
   }
   return {

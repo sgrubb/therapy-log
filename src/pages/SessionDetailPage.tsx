@@ -27,11 +27,9 @@ export default function SessionDetailPage() {
     queryFn: () => ipc.getSession(sessionId),
   });
 
-  const date = format(session.scheduled_at, "dd/MM/yyyy");
+  const date = format(session.scheduled_at, "dd MMM yyyy");
   const time = format(session.scheduled_at, "HH:mm");
-  const durationHours = Math.floor(session.duration / 60);
-  const durationMins = session.duration % 60;
-  const durationLabel = `${durationHours}h ${String(durationMins).padStart(2, "0")}m`;
+  const durationLabel = `${Math.floor(session.duration / 60)}h ${String(session.duration % 60).padStart(2, "0")}m`;
   const showMissedReason =
     session.status !== SessionStatus.Attended && !!session.missed_reason;
 

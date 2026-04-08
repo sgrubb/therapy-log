@@ -10,16 +10,12 @@ import { SessionStatus, FormState } from "@/types/enums";
 import type { SessionType, DeliveryMethod, MissedReason } from "@/types/enums";
 import type { ClientWithTherapist, SessionWithRelations } from "@/types/ipc";
 import { useFormState } from "@/hooks/useFormState";
-import { mostRecentOccurrence } from "@/lib/sessions-utils";
-import type { Duration } from "@/components/ui/duration-input";
+import { mostRecentOccurrence, toDuration, fromDuration } from "@/lib/sessions-utils";
 
 // Field names mirror the database schema (snake_case) so they map directly
 // onto IPC payloads without a translation step.
 export type FormFields = z.input<typeof sessionFormSchema>;
 
-function toDuration(totalMinutes: number): Duration {
-  return { hours: Math.floor(totalMinutes / 60), minutes: totalMinutes % 60 };
-}
 
 const EMPTY: FormFields = {
   client_id: "",
@@ -54,7 +50,7 @@ function buildPayload(form: FormFields) {
     client_id: Number(form.client_id),
     therapist_id: Number(form.therapist_id),
     scheduled_at: parse(`${form.date} ${form.time}`, "yyyy-MM-dd HH:mm", new Date()),
-    duration: form.duration.hours * 60 + form.duration.minutes,
+    duration: fromDuration(form.duration),
     status: form.status as SessionStatus,
     session_type: form.session_type as SessionType,
     delivery_method: form.delivery_method as DeliveryMethod,

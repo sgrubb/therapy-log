@@ -2,7 +2,8 @@ import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertCircle, Clock } from "lucide-react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay } from "date-fns";
+import { format, parse, getDay } from "date-fns";
+import { startOfWeekMon } from "@/lib/datetime-utils";
 import { enGB } from "date-fns/locale";
 import { CalendarProvider, useCalendar } from "@/context/CalendarContext";
 import { CalendarFilters } from "@/components/filters/CalendarFilters";
@@ -12,7 +13,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 const localizer = dateFnsLocalizer({
   format,
   parse,
-  startOfWeek: (date: Date) => startOfWeek(date, { weekStartsOn: 1 }),
+  startOfWeek: startOfWeekMon,
   getDay,
   locales: { "en-GB": enGB },
 });
