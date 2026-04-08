@@ -1,6 +1,22 @@
-import { eachWeekOfInterval, format, startOfWeek, addMinutes } from "date-fns";
+import { eachWeekOfInterval, format, startOfWeek, addMinutes, subDays } from "date-fns";
 import { SessionStatus, SESSION_DAY_INDEX } from "@/types/enums";
 import type { SessionWithRelations, ClientWithTherapist, ExpectedSession } from "@/types/ipc";
+
+// ── Date helpers ─────────────────────────────────────────────────────────────
+
+/**
+ * Returns the most recent occurrence (including today) of the given day name
+ * as a "yyyy-MM-dd" string.
+ */
+export function mostRecentOccurrence(dayName: string): string {
+  const target = SESSION_DAY_INDEX[dayName as keyof typeof SESSION_DAY_INDEX];
+  if (target === undefined) {
+    return "";
+  }
+  const today = new Date();
+  const daysBack = (today.getDay() - target + 7) % 7;
+  return format(subDays(today, daysBack), "yyyy-MM-dd");
+}
 
 // ── Expected sessions ────────────────────────────────────────────────────────
 

@@ -71,7 +71,7 @@ describe("SessionDetailPage", () => {
   it("renders client and therapist names", async () => {
     renderDetailPage();
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Jane Smith" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /Jane Smith/ })).toBeInTheDocument();
       expect(screen.getByText("Alice Morgan")).toBeInTheDocument();
     });
   });
@@ -119,7 +119,7 @@ describe("SessionDetailPage", () => {
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
 
     resolveSession(mockSession);
-    await waitFor(() => screen.getByRole("heading", { name: "Jane Smith" }));
+    await waitFor(() => screen.getByRole("heading", { name: /Jane Smith/ }));
   });
 
   it("shows not-found state when session does not exist", async () => {
@@ -171,7 +171,7 @@ describe("SessionDetailPage", () => {
 
   it("client name links to client detail page", async () => {
     renderDetailPage();
-    await waitFor(() => screen.getByRole("heading", { name: "Jane Smith" }));
+    await waitFor(() => screen.getByRole("heading", { name: /Jane Smith/ }));
 
     const clientLinks = screen.getAllByRole("link", { name: "Jane Smith" });
     expect(clientLinks[0]).toHaveAttribute("href", "/clients/1");
@@ -199,7 +199,7 @@ describe("SessionDetailPage", () => {
 
   it("does not render notes section when notes are null", async () => {
     renderDetailPage({ notes: null });
-    await waitFor(() => screen.getByRole("heading", { name: "Jane Smith" }));
+    await waitFor(() => screen.getByRole("heading", { name: /Jane Smith/ }));
     expect(screen.queryByText("Notes")).not.toBeInTheDocument();
   });
 

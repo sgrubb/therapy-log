@@ -10,6 +10,11 @@ import { SessionDay, Outcome, FormState } from "@/types/enums";
 import type { DeliveryMethod } from "@/types/enums";
 import { useFormState } from "@/hooks/useFormState";
 import type { ClientWithTherapist } from "@/types/ipc";
+import type { Duration } from "@/components/ui/duration-input";
+
+function toDuration(totalMinutes: number): Duration {
+  return { hours: Math.floor(totalMinutes / 60), minutes: totalMinutes % 60 };
+}
 
 // Field names mirror the database schema (snake_case) so they map directly
 // onto IPC payloads without a translation step.
@@ -27,7 +32,7 @@ function emptyForm(): FormFields {
     email: "",
     session_day: "",
     session_time: "",
-    session_duration: "",
+    session_duration: { hours: 0, minutes: 0 },
     session_delivery_method: "",
     therapist_id: "",
     closed_date: "",
@@ -36,17 +41,6 @@ function emptyForm(): FormFields {
     outcome: "",
     notes: "",
   };
-}
-
-function minutesToHHMM(minutes: number): string {
-  const h = Math.floor(minutes / 60).toString().padStart(2, "0");
-  const m = (minutes % 60).toString().padStart(2, "0");
-  return `${h}:${m}`;
-}
-
-function hhmmToMinutes(hhmm: string): number {
-  const [h, m] = hhmm.split(":").map(Number);
-  return (h ?? 0) * 60 + (m ?? 0);
 }
 
 function mapClientToFormFields(client: ClientWithTherapist): FormFields {
@@ -61,7 +55,7 @@ function mapClientToFormFields(client: ClientWithTherapist): FormFields {
     email: client.email ?? "",
     session_day: client.session_day ?? "",
     session_time: client.session_time ?? "",
-    session_duration: client.session_duration != null ? minutesToHHMM(client.session_duration) : "",
+    session_duration: client.session_duration != null ? toDuration(client.session_duration) : { hours: 0, minutes: 0 },
     session_delivery_method: client.session_delivery_method ?? "",
     therapist_id: client.therapist_id.toString(),
     closed_date: client.closed_date ? format(client.closed_date, "yyyy-MM-dd") : "",
@@ -84,7 +78,7 @@ function buildPayload(form: FormFields) {
     email: (form.email ?? "").trim() || null,
     session_day: (form.session_day || null) as SessionDay | null,
     session_time: form.session_time || null,
-    session_duration: form.session_duration ? hhmmToMinutes(form.session_duration) : null,
+    session_duration: form.session_duration.hours * 60 + form.session_duration.minutes || null,
     session_delivery_method: (form.session_delivery_method || null) as DeliveryMethod | null,
     therapist_id: Number(form.therapist_id),
     closed_date: form.closed_date ? parse(form.closed_date, "yyyy-MM-dd", new Date()) : null,

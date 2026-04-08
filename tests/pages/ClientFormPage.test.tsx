@@ -796,6 +796,78 @@ describe("ClientFormPage — edit client", () => {
     expect(screen.queryByTestId("client-detail")).not.toBeInTheDocument();
   });
 
+  it("sends null for notes when notes field is cleared", async () => {
+    const clientWithNotes = { ...mockClient, notes: "Existing notes." };
+
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") { return Promise.resolve(wrapped(mockTherapists)); }
+      if (channel === "client:get") { return Promise.resolve(wrapped(clientWithNotes)); }
+      if (channel === "client:update") { return Promise.resolve(wrapped(clientWithNotes)); }
+      return Promise.resolve(wrapped(null));
+    });
+
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <SelectedTherapistProvider>
+              <MemoryRouter initialEntries={["/clients/1/edit"]}>
+                <Routes>
+                  <Route path="/clients">
+                    <Route path=":id/edit" element={<ClientFormPage />} />
+                    <Route path=":id" element={<div data-testid="client-detail" />} />
+                  </Route>
+                </Routes>
+              </MemoryRouter>
+            </SelectedTherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
+    );
+
+    const user = userEvent.setup();
+    await waitFor(() => expect(screen.getByLabelText(/notes/i)).toHaveValue("Existing notes."));
+    await user.clear(screen.getByLabelText(/notes/i));
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(mockInvoke).toHaveBeenCalledWith(
+        "client:update",
+        expect.objectContaining({
+          data: expect.objectContaining({ notes: null }),
+        }),
+      );
+    });
+  });
+
+  it("sends null for address when address field is cleared", async () => {
+    const user = userEvent.setup();
+    renderEditForm();
+
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list") { return Promise.resolve(wrapped(mockTherapists)); }
+      if (channel === "client:get") { return Promise.resolve(wrapped(mockClient)); }
+      if (channel === "client:update") { return Promise.resolve(wrapped(mockClient)); }
+      return Promise.resolve(wrapped(null));
+    });
+
+    await waitFor(() => expect(screen.getByLabelText(/address/i)).toHaveValue("123 Main St"));
+    await user.clear(screen.getByLabelText(/address/i));
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(mockInvoke).toHaveBeenCalledWith(
+        "client:update",
+        expect.objectContaining({
+          data: expect.objectContaining({ address: null }),
+        }),
+      );
+    });
+  });
+
   it("shows retry message when conflict has no field differences", async () => {
     const freshClient = { ...mockClient, updated_at: addSeconds(MOCK_UPDATED_AT, 1) };
 

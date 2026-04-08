@@ -132,6 +132,18 @@ export default function ClientDetailPage() {
         />
         <InfoRow label="Session Day" value={client.session_day ?? "—"} />
         <InfoRow label="Session Time" value={client.session_time ?? "—"} />
+        <InfoRow
+          label="Session Duration"
+          value={client.session_duration != null
+            ? `${Math.floor(client.session_duration / 60)}h ${String(client.session_duration % 60).padStart(2, "0")}m`
+            : "—"}
+        />
+        <InfoRow
+          label="Session Delivery"
+          value={client.session_delivery_method != null
+            ? DELIVERY_METHOD_NAMES[client.session_delivery_method]
+            : "—"}
+        />
         <InfoRow label="Phone" value={client.phone ?? "—"} />
         <InfoRow label="Email" value={client.email ?? "—"} />
         <InfoRow label="Address" value={client.address ?? "—"} />

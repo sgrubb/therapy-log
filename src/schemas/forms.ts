@@ -2,6 +2,11 @@ import { z } from "zod";
 import { addYears } from "date-fns";
 import { SessionDay, Outcome, SessionType, DeliveryMethod, SessionStatus, MissedReason } from "@/types/enums";
 
+const durationSchema = z.object({
+  hours: z.number().int().min(0),
+  minutes: z.number().int().min(0),
+});
+
 const sessionDayValues = Object.values(SessionDay) as [
   SessionDay,
   ...SessionDay[],
@@ -28,7 +33,7 @@ export const clientFormSchema = z
       .or(z.literal("")),
     session_day: z.enum(sessionDayValues).optional().or(z.literal("")),
     session_time: z.string().optional().or(z.literal("")),
-    session_duration: z.string().optional().or(z.literal("")),
+    session_duration: durationSchema,
     session_delivery_method: z.enum(deliveryMethodValues).optional().or(z.literal("")),
     therapist_id: z.string().min(1, "Therapist is required."),
     closed_date: z.string().optional().or(z.literal("")),
@@ -63,7 +68,10 @@ export const sessionFormSchema = z
     therapist_id: z.string().min(1, "Therapist is required."),
     date: z.string().min(1, "Date is required."),
     time: z.string().min(1, "Time is required."),
-    duration: z.string().min(1, "Duration is required."),
+    duration: durationSchema.refine(
+      (d) => d.hours * 60 + d.minutes > 0,
+      "Duration is required.",
+    ),
     session_type: z.enum(sessionTypeValues, "Session type is required."),
     delivery_method: z.enum(deliveryMethodValues, "Delivery method is required."),
     status: z.enum(sessionStatusValues, "Status is required."),

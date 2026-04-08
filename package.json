@@ -23,7 +23,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
-    "db:seed": "npm run rebuild:node && (tsx prisma/seed.ts; npm run rebuild:electron)"
+    "db:seed": "npm run rebuild:node && (tsx prisma/seed-dev.ts; npm run rebuild:electron)"
   },
   "build": {
     "appId": "com.therapylog.app",

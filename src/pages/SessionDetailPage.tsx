@@ -29,6 +29,9 @@ export default function SessionDetailPage() {
 
   const date = format(session.scheduled_at, "dd/MM/yyyy");
   const time = format(session.scheduled_at, "HH:mm");
+  const durationHours = Math.floor(session.duration / 60);
+  const durationMins = session.duration % 60;
+  const durationLabel = `${durationHours}h ${String(durationMins).padStart(2, "0")}m`;
   const showMissedReason =
     session.status !== SessionStatus.Attended && !!session.missed_reason;
 
@@ -47,6 +50,7 @@ export default function SessionDetailPage() {
               >
                 {session.client.first_name} {session.client.last_name}
               </Link>
+              {" "}— {date}
             </h1>
             <Link
               to={`/sessions/${id}/edit`}
@@ -77,6 +81,7 @@ export default function SessionDetailPage() {
         />
         <InfoRow label="Date" value={date} />
         <InfoRow label="Time" value={time} />
+        <InfoRow label="Duration" value={durationLabel} />
         <InfoRow
           label="Session Type"
           value={SESSION_TYPE_NAMES[session.session_type]}

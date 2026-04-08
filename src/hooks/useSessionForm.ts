@@ -6,21 +6,27 @@ import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
 import { sessionFormSchema } from "@/schemas/forms";
-import { SessionStatus, SESSION_DAY_INDEX, FormState } from "@/types/enums";
+import { SessionStatus, FormState } from "@/types/enums";
 import type { SessionType, DeliveryMethod, MissedReason } from "@/types/enums";
 import type { ClientWithTherapist, SessionWithRelations } from "@/types/ipc";
 import { useFormState } from "@/hooks/useFormState";
+import { mostRecentOccurrence } from "@/lib/sessions-utils";
+import type { Duration } from "@/components/ui/duration-input";
 
 // Field names mirror the database schema (snake_case) so they map directly
 // onto IPC payloads without a translation step.
 export type FormFields = z.input<typeof sessionFormSchema>;
+
+function toDuration(totalMinutes: number): Duration {
+  return { hours: Math.floor(totalMinutes / 60), minutes: totalMinutes % 60 };
+}
 
 const EMPTY: FormFields = {
   client_id: "",
   therapist_id: "",
   date: "",
   time: "",
-  duration: "",
+  duration: { hours: 0, minutes: 0 },
   session_type: "" as SessionType,
   delivery_method: "" as DeliveryMethod,
   status: "" as SessionStatus,
@@ -28,36 +34,13 @@ const EMPTY: FormFields = {
   notes: "",
 };
 
-function mostRecentOccurrence(dayName: string): string {
-  const target = SESSION_DAY_INDEX[dayName as keyof typeof SESSION_DAY_INDEX];
-  if (target === undefined) {
-    return "";
-  }
-  const today = new Date();
-  const daysBack = (today.getDay() - target + 7) % 7;
-  const result = new Date(today);
-  result.setDate(today.getDate() - daysBack);
-  return format(result, "yyyy-MM-dd");
-}
-
-function minutesToHHMM(minutes: number): string {
-  const h = Math.floor(minutes / 60).toString().padStart(2, "0");
-  const m = (minutes % 60).toString().padStart(2, "0");
-  return `${h}:${m}`;
-}
-
-function hhmmToMinutes(hhmm: string): number {
-  const [h, m] = hhmm.split(":").map(Number);
-  return (h ?? 0) * 60 + (m ?? 0);
-}
-
 function mapSessionToFormFields(session: SessionWithRelations): FormFields {
   return {
     client_id: session.client_id.toString(),
     therapist_id: session.therapist_id.toString(),
     date: format(session.scheduled_at, "yyyy-MM-dd"),
     time: format(session.scheduled_at, "HH:mm"),
-    duration: minutesToHHMM(session.duration),
+    duration: toDuration(session.duration),
     session_type: session.session_type,
     delivery_method: session.delivery_method,
     status: session.status,
@@ -71,7 +54,7 @@ function buildPayload(form: FormFields) {
     client_id: Number(form.client_id),
     therapist_id: Number(form.therapist_id),
     scheduled_at: parse(`${form.date} ${form.time}`, "yyyy-MM-dd HH:mm", new Date()),
-    duration: hhmmToMinutes(form.duration),
+    duration: form.duration.hours * 60 + form.duration.minutes,
     status: form.status as SessionStatus,
     session_type: form.session_type as SessionType,
     delivery_method: form.delivery_method as DeliveryMethod,
@@ -86,6 +69,7 @@ export interface SessionFormDefaults {
   time?: string;
   therapistId?: string;
   durationMins?: string;
+  deliveryMethod?: string;
 }
 
 export function useSessionForm(sessionId?: number, defaults?: SessionFormDefaults) {
@@ -112,7 +96,8 @@ export function useSessionForm(sessionId?: number, defaults?: SessionFormDefault
         therapist_id: defaults.therapistId ?? "",
         date: defaults.date ?? "",
         time: defaults.time ?? "",
-        duration: defaults.durationMins ? minutesToHHMM(Number(defaults.durationMins)) : "",
+        duration: defaults.durationMins ? toDuration(Number(defaults.durationMins)) : { hours: 0, minutes: 0 },
+        delivery_method: (defaults.deliveryMethod ?? "") as DeliveryMethod,
       };
     }
     return EMPTY;
@@ -166,7 +151,7 @@ export function useSessionForm(sessionId?: number, defaults?: SessionFormDefault
       date: lockDate ? prev.date : (client?.session_day ? mostRecentOccurrence(client.session_day) : ""),
       duration: lockDuration
         ? prev.duration
-        : (client?.session_duration != null ? minutesToHHMM(client.session_duration) : prev.duration),
+        : (client?.session_duration != null ? toDuration(client.session_duration) : prev.duration),
       delivery_method: (client?.session_delivery_method ?? prev.delivery_method) as DeliveryMethod,
     }));
     clearError("client_id");

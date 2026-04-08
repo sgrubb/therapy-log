@@ -4,6 +4,7 @@ import { parse } from "date-fns";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { useSessionForm } from "@/hooks/useSessionForm";
+import { mostRecentOccurrence } from "@/lib/sessions-utils";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
 import {
@@ -47,15 +48,21 @@ export default function SessionFormPage() {
   });
 
   const sessionId = id !== undefined ? Number(id) : undefined;
-  const defaults = sessionId === undefined
-    ? {
-        clientId: searchParams.get("clientId") ?? undefined,
-        date: searchParams.get("date") ?? undefined,
-        time: searchParams.get("time") ?? undefined,
-        therapistId: searchParams.get("therapistId") ?? undefined,
-        durationMins: searchParams.get("duration") ?? undefined,
-      }
-    : undefined;
+  const defaults = useMemo(() => {
+    if (sessionId !== undefined) {
+      return undefined;
+    }
+    const clientId = searchParams.get("clientId") ?? undefined;
+    const client = clientId ? clients.find((c) => c.id.toString() === clientId) : undefined;
+    return {
+      clientId,
+      therapistId: searchParams.get("therapistId") ?? (client ? String(client.therapist_id) : undefined),
+      date: searchParams.get("date") ?? (client?.session_day ? mostRecentOccurrence(client.session_day) : undefined),
+      time: searchParams.get("time") ?? client?.session_time ?? undefined,
+      durationMins: searchParams.get("duration") ?? (client?.session_duration != null ? String(client.session_duration) : undefined),
+      deliveryMethod: client?.session_delivery_method ?? undefined,
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- computed once on mount from stable Suspense data
 
   const {
     form,
@@ -69,12 +76,6 @@ export default function SessionFormPage() {
     markTouched,
     getError,
   } = useSessionForm(sessionId, defaults);
-
-  useEffect(() => {
-    if (defaults?.clientId) {
-      setClient(defaults.clientId, clients);
-    }
-  }, []); // runs once on mount; clients is stable after Suspense resolves
 
   // Sort: current therapist's clients first, then alphabetically
   const sortedClients = [...clients].sort((a, b) => {

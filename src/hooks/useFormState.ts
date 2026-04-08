@@ -83,11 +83,21 @@ export function useFormState<F extends Record<string, unknown>>(
     });
   }
 
+  function fieldChanged(a: unknown, b: unknown): boolean {
+    if (a === b) {
+      return false;
+    }
+    if (typeof a === "object" && a !== null && typeof b === "object" && b !== null) {
+      return JSON.stringify(a) !== JSON.stringify(b);
+    }
+    return true;
+  }
+
   async function handleConflict(getFreshData: () => Promise<{ form: F; updated_at: Date }>) {
     try {
       const fresh = await getFreshData();
       const serverChangedFields = (Object.keys(originalForm ?? {}) as (keyof F)[])
-        .filter((field) => fresh.form[field] !== originalForm![field]);
+        .filter((field) => fieldChanged(fresh.form[field], originalForm![field]));
       const userKeptFields = Object.fromEntries(
         (Object.keys(form) as (keyof F)[])
           .filter((field) => !serverChangedFields.includes(field))

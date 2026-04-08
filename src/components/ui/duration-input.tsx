@@ -1,11 +1,13 @@
 import { cn } from "@/lib/utils";
 
+export type Duration = { hours: number; minutes: number };
+
 const selectClass =
   "border-input bg-transparent focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive h-9 rounded-md border px-2 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50";
 
 interface DurationInputProps {
-  value: string; // "HH:MM"
-  onChange: (value: string) => void;
+  value: Duration;
+  onChange: (value: Duration) => void;
   onBlur?: () => void;
   "aria-label"?: string;
   "aria-invalid"?: boolean;
@@ -19,19 +21,11 @@ export function DurationInput({
   className,
   ...props
 }: DurationInputProps) {
-  const [hStr, mStr] = value ? value.split(":") : ["00", "00"];
-  const hours = Math.min(Number(hStr ?? 0), 6);
-  const minutes = Number(mStr ?? 0);
-
-  function emit(h: number, m: number) {
-    onChange(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-  }
-
   return (
     <div className={cn("flex items-center gap-2", className)} onBlur={onBlur}>
       <select
-        value={hours}
-        onChange={(e) => emit(Number(e.target.value), minutes)}
+        value={value.hours}
+        onChange={(e) => onChange({ hours: Number(e.target.value), minutes: value.minutes })}
         className={selectClass}
         aria-label="Hours"
         {...props}
@@ -43,8 +37,8 @@ export function DurationInput({
         ))}
       </select>
       <select
-        value={minutes}
-        onChange={(e) => emit(hours, Number(e.target.value))}
+        value={value.minutes}
+        onChange={(e) => onChange({ hours: value.hours, minutes: Number(e.target.value) })}
         className={selectClass}
         aria-label="Minutes"
       >
