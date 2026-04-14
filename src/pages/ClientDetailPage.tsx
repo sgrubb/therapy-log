@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { useMemo } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
@@ -12,7 +12,7 @@ import { CloseClientDialog } from "@/components/CloseClientDialog";
 import { ReopenClientDialog } from "@/components/ReopenClientDialog";
 import { Link } from "react-router-dom";
 import { DataTable } from "@/components/ui/data-table";
-import { SortDir } from "@/types/enums";
+import { SortDir } from "@shared/types/enums";
 import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES, OUTCOME_NAMES } from "@/types/enums";
 import { buttonVariants } from "@/components/ui/button";
 import type { Column } from "@/components/ui/data-table";
@@ -29,41 +29,54 @@ export default function ClientDetailPage() {
     queryFn: () => ipc.getClient(clientId),
   });
 
-  const { data: allSessions } = useSuspenseQuery({
-    queryKey: queryKeys.sessions.all,
-    queryFn: () => ipc.listSessions(),
-  });
+  const [sessionSortKey, setSessionSortKey] = useState("scheduled_at");
+  const [sessionSortDir, setSessionSortDir] = useState<SortDir>(SortDir.Desc);
 
-  const sessions = useMemo(
-    () => allSessions.filter((s) => s.client_id === clientId),
-    [allSessions, clientId],
-  );
+  function handleSessionSort(key: string) {
+    if (key === sessionSortKey) {
+      setSessionSortDir((d) => (d === SortDir.Asc ? SortDir.Desc : SortDir.Asc));
+    } else {
+      setSessionSortKey(key);
+      setSessionSortDir(SortDir.Asc);
+    }
+  }
+
+  const rangeParams = {
+    clientId,
+    sortKey: sessionSortKey,
+    sortDir: sessionSortDir,
+  };
+
+  const { data: sessions } = useSuspenseQuery({
+    queryKey: queryKeys.sessions.range(rangeParams),
+    queryFn: () => ipc.listSessionsRange(rangeParams),
+  });
 
   type Session = (typeof sessions)[number];
 
   const sessionColumns: Column<Session>[] = [
     {
-      key: "date",
+      key: "scheduled_at",
       label: "Date",
-      sortFn: (a, b) => a.scheduled_at.getTime() - b.scheduled_at.getTime(),
+      sortable: true,
       render: (s) => format(s.scheduled_at, "dd MMM yyyy"),
     },
     {
-      key: "type",
+      key: "session_type",
       label: "Type",
-      sortFn: (a, b) => a.session_type.localeCompare(b.session_type),
+      sortable: true,
       render: (s) => SESSION_TYPE_NAMES[s.session_type] ?? s.session_type,
     },
     {
       key: "status",
       label: "Status",
-      sortFn: (a, b) => a.status.localeCompare(b.status),
+      sortable: true,
       render: (s) => s.status,
     },
     {
-      key: "delivery",
+      key: "delivery_method",
       label: "Delivery",
-      sortFn: (a, b) => a.delivery_method.localeCompare(b.delivery_method),
+      sortable: true,
       render: (s) => DELIVERY_METHOD_NAMES[s.delivery_method] ?? s.delivery_method,
     },
   ];
@@ -143,7 +156,7 @@ export default function ClientDetailPage() {
           />
           <InfoRow label="Start Date" value={format(client.start_date, "dd MMM yyyy")} />
           {isClosed && (
-            <InfoRow label="Closed Date" value={format(client.closed_date, "dd MMM yyyy")} />
+            <InfoRow label="Closed Date" value={format(client.closed_date!, "dd MMM yyyy")} />
           )}
           <InfoRow label="Pre Score" value={client.pre_score?.toString() ?? "—"} />
           {isClosed && (
@@ -187,8 +200,9 @@ export default function ClientDetailPage() {
           data={sessions}
           columns={sessionColumns}
           keyFn={(s) => s.id}
-          defaultSortKey="date"
-          defaultSortDir={SortDir.Desc}
+          sortKey={sessionSortKey}
+          sortDir={sessionSortDir}
+          onSort={handleSessionSort}
           onRowClick={(s) => navigate(`/sessions/${s.id}`, {
             state: { from: `/clients/${clientId}`, fromLabel: "Back to Client" },
           })}

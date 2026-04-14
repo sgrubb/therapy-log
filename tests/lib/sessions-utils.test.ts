@@ -1,11 +1,19 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { getOverlappingSessions, getUnconfirmedSessions } from "@/lib/sessions-utils";
-import { MOCK_UPDATED_AT, mockTherapists } from "../helpers/ipc-mocks";
-import type { SessionWithRelations } from "@/types/ipc";
+import { describe, it, expect } from "vitest";
+import {
+  computeOverlappingIds,
+  computeUnconfirmedIds,
+  toDuration,
+  fromDuration,
+} from "@/lib/sessions-utils";
+import { MOCK_UPDATED_AT, mockTherapists, mockClients } from "../helpers/ipc-mocks";
+import type { SessionWithRelations } from "@/types/sessions";
+
+// ── Shared fixtures ───────────────────────────────────────────────────────────
 
 const clientBase = {
   hospital_number: "HN001",
-  dob: new Date("2000-01-01T00:00:00"),
+  dob: new Date("2000-01-01"),
+  start_date: new Date("2025-09-01"),
   address: null,
   phone: null,
   email: null,
@@ -19,139 +27,169 @@ const clientBase = {
   outcome: null as null,
   notes: null,
   updated_at: MOCK_UPDATED_AT,
-  start_date: new Date("2025-01-01T00:00:00"),
   therapist: mockTherapists[0]!,
 };
 
-const sessionBase = {
-  occurred_at: null,
-  delivery_method: "FaceToFace" as const,
-  missed_reason: null,
-  notes: null,
-  updated_at: MOCK_UPDATED_AT,
-  client: { ...clientBase, id: 1, first_name: "Jane", last_name: "Smith", therapist_id: 1 },
-  therapist: mockTherapists[0]!,
-};
-
-function makeSession(overrides: Partial<SessionWithRelations> & { id: number; scheduled_at: Date }): SessionWithRelations {
+function makeSession(overrides: Partial<SessionWithRelations> & Pick<SessionWithRelations, "id" | "therapist_id" | "scheduled_at" | "duration">): SessionWithRelations {
   return {
-    ...sessionBase,
     client_id: 1,
-    therapist_id: 1,
-    duration: 60,
+    occurred_at: null,
     status: "Attended",
-    session_type: "Child" as const,
+    session_type: "Child",
+    delivery_method: "FaceToFace",
+    missed_reason: null,
+    notes: null,
+    updated_at: MOCK_UPDATED_AT,
+    client: { ...clientBase, id: 1, first_name: "Jane", last_name: "Smith", therapist_id: 1 },
+    therapist: mockTherapists[0]!,
     ...overrides,
-  } as SessionWithRelations;
+  };
 }
 
-describe("getOverlappingSessions", () => {
-  it("returns empty array when no sessions overlap", () => {
-    const sessions = [
-      makeSession({ id: 1, scheduled_at: new Date(2026, 2, 16, 10, 0), therapist_id: 1 }),
-      makeSession({ id: 2, scheduled_at: new Date(2026, 2, 16, 11, 0), therapist_id: 1 }),
-    ];
-    expect(getOverlappingSessions(sessions)).toHaveLength(0);
-  });
+// ── toDuration / fromDuration ─────────────────────────────────────────────────
 
-  it("detects overlapping sessions for the same therapist", () => {
-    const sessions = [
-      makeSession({ id: 1, scheduled_at: new Date(2026, 2, 16, 10, 0), therapist_id: 1 }),
-      makeSession({ id: 2, scheduled_at: new Date(2026, 2, 16, 10, 30), therapist_id: 1 }),
-    ];
-    const ids = getOverlappingSessions(sessions).map((s) => s.id).sort();
-    expect(ids).toEqual([1, 2]);
-  });
-
-  it("does not flag sessions for different therapists as overlapping", () => {
-    const sessions = [
-      makeSession({ id: 1, scheduled_at: new Date(2026, 2, 16, 10, 0), therapist_id: 1 }),
-      makeSession({ id: 2, scheduled_at: new Date(2026, 2, 16, 10, 0), therapist_id: 2 }),
-    ];
-    expect(getOverlappingSessions(sessions)).toHaveLength(0);
-  });
-
-  it("handles multiple overlapping sessions in a group", () => {
-    const sessions = [
-      makeSession({ id: 1, scheduled_at: new Date(2026, 2, 16, 10, 0), therapist_id: 1 }),
-      makeSession({ id: 2, scheduled_at: new Date(2026, 2, 16, 10, 15), therapist_id: 1 }),
-      makeSession({ id: 3, scheduled_at: new Date(2026, 2, 16, 10, 45), therapist_id: 1 }),
-    ];
-    const ids = getOverlappingSessions(sessions).map((s) => s.id).sort();
-    expect(ids).toEqual([1, 2, 3]);
-  });
-
-  it("does not flag adjacent (non-overlapping) sessions", () => {
-    const sessions = [
-      makeSession({ id: 1, scheduled_at: new Date(2026, 2, 16, 10, 0), duration: 60, therapist_id: 1 }),
-      makeSession({ id: 2, scheduled_at: new Date(2026, 2, 16, 11, 0), duration: 60, therapist_id: 1 }),
-    ];
-    expect(getOverlappingSessions(sessions)).toHaveLength(0);
+describe("toDuration", () => {
+  it("splits minutes into hours and remaining minutes", () => {
+    expect(toDuration(90)).toEqual({ hours: 1, minutes: 30 });
+    expect(toDuration(60)).toEqual({ hours: 1, minutes: 0 });
+    expect(toDuration(45)).toEqual({ hours: 0, minutes: 45 });
   });
 });
 
-describe("getUnconfirmedSessions", () => {
-  afterEach(() => {
-    vi.useRealTimers();
+describe("fromDuration", () => {
+  it("converts hours + minutes back to total minutes", () => {
+    expect(fromDuration({ hours: 1, minutes: 30 })).toBe(90);
+    expect(fromDuration({ hours: 0, minutes: 45 })).toBe(45);
   });
 
-  it("returns past sessions with Scheduled status", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2026, 2, 17, 12, 0));
+  it("roundtrips with toDuration", () => {
+    expect(fromDuration(toDuration(75))).toBe(75);
+  });
+});
 
-    const session = makeSession({
+// ── computeOverlappingIds ─────────────────────────────────────────────────────
+
+describe("computeOverlappingIds", () => {
+  it("returns an empty set when there are no sessions", () => {
+    expect(computeOverlappingIds([])).toEqual(new Set());
+  });
+
+  it("returns an empty set when a single session exists", () => {
+    const s = makeSession({ id: 1, therapist_id: 1, scheduled_at: new Date("2026-06-01T10:00:00"), duration: 60 });
+    expect(computeOverlappingIds([s])).toEqual(new Set());
+  });
+
+  it("returns an empty set when sessions for the same therapist do not overlap", () => {
+    const a = makeSession({ id: 1, therapist_id: 1, scheduled_at: new Date("2026-06-01T10:00:00"), duration: 60 });
+    const b = makeSession({ id: 2, therapist_id: 1, scheduled_at: new Date("2026-06-01T11:00:00"), duration: 60 });
+    expect(computeOverlappingIds([a, b])).toEqual(new Set());
+  });
+
+  it("detects overlap when sessions share the same therapist and time windows intersect", () => {
+    const a = makeSession({ id: 1, therapist_id: 1, scheduled_at: new Date("2026-06-01T10:00:00"), duration: 60 });
+    const b = makeSession({ id: 2, therapist_id: 1, scheduled_at: new Date("2026-06-01T10:30:00"), duration: 60 });
+    expect(computeOverlappingIds([a, b])).toEqual(new Set([1, 2]));
+  });
+
+  it("does not flag sessions for different therapists as overlapping even if times match", () => {
+    const a = makeSession({ id: 1, therapist_id: 1, scheduled_at: new Date("2026-06-01T10:00:00"), duration: 60 });
+    const b = makeSession({ id: 2, therapist_id: 2, scheduled_at: new Date("2026-06-01T10:00:00"), duration: 60 });
+    expect(computeOverlappingIds([a, b])).toEqual(new Set());
+  });
+
+  it("detects overlap when session B starts exactly at session A's start (same instant)", () => {
+    const a = makeSession({ id: 1, therapist_id: 1, scheduled_at: new Date("2026-06-01T10:00:00"), duration: 60 });
+    const b = makeSession({ id: 2, therapist_id: 1, scheduled_at: new Date("2026-06-01T10:00:00"), duration: 60 });
+    expect(computeOverlappingIds([a, b])).toEqual(new Set([1, 2]));
+  });
+
+  it("does not flag back-to-back sessions (A ends exactly when B starts)", () => {
+    const a = makeSession({ id: 1, therapist_id: 1, scheduled_at: new Date("2026-06-01T10:00:00"), duration: 60 });
+    const b = makeSession({ id: 2, therapist_id: 1, scheduled_at: new Date("2026-06-01T11:00:00"), duration: 60 });
+    expect(computeOverlappingIds([a, b])).toEqual(new Set());
+  });
+
+  it("handles three overlapping sessions for the same therapist", () => {
+    const a = makeSession({ id: 1, therapist_id: 1, scheduled_at: new Date("2026-06-01T10:00:00"), duration: 60 });
+    const b = makeSession({ id: 2, therapist_id: 1, scheduled_at: new Date("2026-06-01T10:20:00"), duration: 60 });
+    const c = makeSession({ id: 3, therapist_id: 1, scheduled_at: new Date("2026-06-01T10:40:00"), duration: 60 });
+    const ids = computeOverlappingIds([a, b, c]);
+    expect(ids).toEqual(new Set([1, 2, 3]));
+  });
+});
+
+// ── computeUnconfirmedIds ─────────────────────────────────────────────────────
+
+describe("computeUnconfirmedIds", () => {
+  const now = new Date("2026-06-15T12:00:00");
+
+  it("returns an empty set when there are no sessions", () => {
+    expect(computeUnconfirmedIds([], now)).toEqual(new Set());
+  });
+
+  it("includes Scheduled sessions whose scheduled_at is in the past", () => {
+    const past = makeSession({
       id: 1,
-      scheduled_at: new Date(2026, 2, 16, 10, 0),
+      therapist_id: 1,
+      scheduled_at: new Date("2026-06-01T10:00:00"),
+      duration: 60,
       status: "Scheduled",
     });
-    expect(getUnconfirmedSessions([session])).toHaveLength(1);
+    expect(computeUnconfirmedIds([past], now)).toEqual(new Set([1]));
   });
 
-  it("excludes future sessions with Scheduled status", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2026, 2, 15, 12, 0));
-
-    const session = makeSession({
-      id: 1,
-      scheduled_at: new Date(2026, 2, 16, 10, 0),
+  it("excludes Scheduled sessions in the future", () => {
+    const future = makeSession({
+      id: 2,
+      therapist_id: 1,
+      scheduled_at: new Date("2026-12-01T10:00:00"),
+      duration: 60,
       status: "Scheduled",
     });
-    expect(getUnconfirmedSessions([session])).toHaveLength(0);
+    expect(computeUnconfirmedIds([future], now)).toEqual(new Set());
   });
 
-  it("excludes past sessions with Attended status", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2026, 2, 17, 12, 0));
-
-    const session = makeSession({
-      id: 1,
-      scheduled_at: new Date(2026, 2, 16, 10, 0),
+  it("excludes sessions with non-Scheduled status even if in the past", () => {
+    const attended = makeSession({
+      id: 3,
+      therapist_id: 1,
+      scheduled_at: new Date("2026-06-01T10:00:00"),
+      duration: 60,
       status: "Attended",
     });
-    expect(getUnconfirmedSessions([session])).toHaveLength(0);
+    const dna = makeSession({
+      id: 4,
+      therapist_id: 1,
+      scheduled_at: new Date("2026-06-01T10:00:00"),
+      duration: 60,
+      status: "DNA",
+    });
+    expect(computeUnconfirmedIds([attended, dna], now)).toEqual(new Set());
   });
 
-  it("includes today's session if its time has passed", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2026, 2, 16, 15, 0));
-
-    const session = makeSession({
+  it("handles a mix of past-Scheduled, future-Scheduled, and Attended", () => {
+    const pastScheduled = makeSession({
       id: 1,
-      scheduled_at: new Date(2026, 2, 16, 10, 0),
+      therapist_id: 1,
+      scheduled_at: new Date("2026-06-01T10:00:00"),
+      duration: 60,
       status: "Scheduled",
     });
-    expect(getUnconfirmedSessions([session])).toHaveLength(1);
-  });
-
-  it("excludes today's session if its time has not passed", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2026, 2, 16, 9, 0));
-
-    const session = makeSession({
-      id: 1,
-      scheduled_at: new Date(2026, 2, 16, 10, 0),
+    const futureScheduled = makeSession({
+      id: 2,
+      therapist_id: 1,
+      scheduled_at: new Date("2026-12-01T10:00:00"),
+      duration: 60,
       status: "Scheduled",
     });
-    expect(getUnconfirmedSessions([session])).toHaveLength(0);
+    const attended = makeSession({
+      id: 3,
+      therapist_id: 1,
+      scheduled_at: new Date("2026-06-01T10:00:00"),
+      duration: 60,
+      status: "Attended",
+    });
+    expect(computeUnconfirmedIds([pastScheduled, futureScheduled, attended], now)).toEqual(new Set([1]));
   });
 });
+

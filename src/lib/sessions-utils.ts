@@ -1,8 +1,7 @@
-import { eachWeekOfInterval, format, addMinutes, subDays, minutesToHours, hoursToMinutes } from "date-fns";
-import { WEEK_STARTS_ON, getWeekStart } from "@/lib/datetime-utils";
+import { format, subDays, minutesToHours, hoursToMinutes, minutesToMilliseconds } from "date-fns";
+import { SESSION_DAY_INDEX } from "@/types/enums";
 import type { Duration } from "@/types/ui";
-import { SessionStatus, SESSION_DAY_INDEX } from "@/types/enums";
-import type { SessionWithRelations, ClientWithTherapist, ExpectedSession } from "@/types/ipc";
+import type { SessionWithRelations } from "@/types/sessions";
 
 // ── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -28,111 +27,43 @@ export function fromDuration(d: Duration): number {
   return hoursToMinutes(d.hours) + d.minutes;
 }
 
-// ── Expected sessions ────────────────────────────────────────────────────────
+// ── Overlap / unconfirmed computation ────────────────────────────────────────
 
-/**
- * Returns expected (placeholder) sessions for open clients with a session schedule,
- * within the given date range. Respects each client's start_date.
- */
-export function getExpectedSessions(
-  clients: ClientWithTherapist[],
-  sessions: SessionWithRelations[],
-  rangeStart: Date,
-  rangeEnd: Date,
-  therapistIds?: Set<number>,
-): ExpectedSession[] {
-  const ids = therapistIds ?? new Set(clients.map((c) => c.therapist_id));
-
-  const eligibleClients = clients.filter(
-    (c) =>
-      c.closed_date === null &&
-      c.session_day !== null &&
-      c.session_time !== null &&
-      ids.has(c.therapist_id),
-  );
-
-  const coveredWeeks = new Set(
-    sessions.map((s) => `${s.client_id}-${getWeekStart(s.scheduled_at)}`),
-  );
-
-  const weekStarts = eachWeekOfInterval(
-    { start: rangeStart, end: rangeEnd },
-    { weekStartsOn: WEEK_STARTS_ON },
-  );
-
-  return weekStarts.flatMap((weekDate) => {
-    const weekKey = format(weekDate, "yyyy-MM-dd");
-    return eligibleClients
-      .filter((client) => !coveredWeeks.has(`${client.id}-${weekKey}`))
-      .flatMap((client): ExpectedSession[] => {
-        const dayIdx = SESSION_DAY_INDEX[client.session_day!];
-        if (dayIdx === undefined) {
-          return [];
-        }
-
-        const daysFromMonday = dayIdx === 0 ? 6 : dayIdx - 1;
-        const sessionDate = new Date(weekDate);
-        sessionDate.setDate(weekDate.getDate() + daysFromMonday);
-
-        // Respect client start_date — don't generate sessions before therapy began
-        const effectiveStart = client.start_date > rangeStart ? client.start_date : rangeStart;
-        if (sessionDate < effectiveStart || sessionDate > rangeEnd) {
-          return [];
-        }
-
-        const [hStr, mStr] = client.session_time!.split(":");
-        sessionDate.setHours(Number(hStr ?? 0), Number(mStr ?? 0), 0, 0);
-        const durationMs = (client.session_duration ?? 60) * 60_000;
-
-        return [{
-          id: `expected-${client.id}-${weekKey}`,
-          clientId: client.id,
-          therapistId: client.therapist_id,
-          start: new Date(sessionDate),
-          end: new Date(sessionDate.getTime() + durationMs),
-        }];
-      });
-  });
+function sessionOverlaps(
+  aStart: Date,
+  aDurationMins: number,
+  bStart: Date,
+  bDurationMins: number,
+): boolean {
+  const aEnd = new Date(aStart.getTime() + minutesToMilliseconds(aDurationMins));
+  const bEnd = new Date(bStart.getTime() + minutesToMilliseconds(bDurationMins));
+  return aStart < bEnd && bStart < aEnd;
 }
 
-// ── Overlap detection ────────────────────────────────────────────────────────
+export function computeOverlappingIds(sessions: SessionWithRelations[]): Set<number> {
+  const byTherapist = sessions.reduce((acc, s) => {
+    const list = acc.get(s.therapist_id) ?? [];
+    list.push(s);
+    acc.set(s.therapist_id, list);
+    return acc;
+  }, new Map<number, SessionWithRelations[]>());
 
-/**
- * Returns sessions that overlap with another session for the same therapist.
- */
-export function getOverlappingSessions(sessions: SessionWithRelations[]): SessionWithRelations[] {
-  const byTherapist = sessions.reduce(
-    (acc, s) => acc.set(s.therapist_id, [...(acc.get(s.therapist_id) ?? []), s]),
-    new Map<number, SessionWithRelations[]>(),
-  );
-
-  const overlappingIds = new Set(
+  return new Set(
     Array.from(byTherapist.values()).flatMap((group) =>
       group.flatMap((a, i) =>
         group
           .slice(i + 1)
-          .filter((b) =>
-            a.scheduled_at < addMinutes(b.scheduled_at, b.duration) &&
-            b.scheduled_at < addMinutes(a.scheduled_at, a.duration),
-          )
+          .filter((b) => sessionOverlaps(a.scheduled_at, a.duration, b.scheduled_at, b.duration))
           .flatMap((b) => [a.id, b.id]),
       ),
     ),
   );
-
-  return sessions.filter((s) => overlappingIds.has(s.id));
 }
 
-// ── Past-scheduled detection ─────────────────────────────────────────────────
-
-/**
- * Returns true if the session is in the past but still has Scheduled status.
- */
-export function getUnconfirmedSessions(sessions: SessionWithRelations[]): SessionWithRelations[] {
-  const now = new Date();
-  return sessions.filter((s) =>
-    s.status === SessionStatus.Scheduled &&
-    s.scheduled_at < now,
+export function computeUnconfirmedIds(sessions: SessionWithRelations[], now: Date): Set<number> {
+  return new Set(
+    sessions
+      .filter((s) => s.status === "Scheduled" && s.scheduled_at < now)
+      .map((s) => s.id),
   );
 }
-

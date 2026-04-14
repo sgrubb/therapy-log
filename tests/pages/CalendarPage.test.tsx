@@ -1,4 +1,3 @@
-import { addDays, set } from "date-fns";
 import { Suspense } from "react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
@@ -6,7 +5,7 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import CalendarPage from "@/pages/CalendarPage";
-import { wrapped, mockTherapists, mockSessions, mockClients, mockClientBase } from "../helpers/ipc-mocks";
+import { wrapped, wrappedPaginated, mockTherapists, mockSessions, mockClients } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
 
 // react-big-calendar renders a complex calendar that's not practical to test in jsdom.
@@ -31,13 +30,16 @@ beforeEach(() => {
   mockInvoke.mockReset();
   window.electronAPI = { invoke: mockInvoke } as never;
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") {
+    if (channel === "therapist:list-all") {
       return Promise.resolve(wrapped(mockTherapists));
     }
-    if (channel === "session:list") {
+    if (channel === "session:list-range") {
       return Promise.resolve(wrapped(mockSessions));
     }
-    if (channel === "client:list") {
+    if (channel === "session:list-expected") {
+      return Promise.resolve(wrapped([]));
+    }
+    if (channel === "client:list-all") {
       return Promise.resolve(wrapped(mockClients));
     }
     return Promise.resolve(wrapped([]));
@@ -144,40 +146,16 @@ describe("CalendarPage", () => {
     expect(label).toHaveTextContent("0");
   });
 
-  it("shows overlapping count badge when future sessions overlap", async () => {
-    // Two sessions for the same therapist at the same future time
-    const tomorrow10am = set(addDays(new Date(), 1), { hours: 10, minutes: 0, seconds: 0, milliseconds: 0 });
-
-    const futureSession = {
-      ...mockSessions[0]!,
-      scheduled_at: tomorrow10am,
-    };
-    const overlappingSession = {
-      ...mockSessions[0]!,
-      id: 99,
-      scheduled_at: tomorrow10am,
-      client_id: 2,
-      client: {
-        ...mockClientBase,
-        id: 2,
-        first_name: "Tom",
-        last_name: "Jones",
-        therapist_id: 1,
-        hospital_number: "HN002",
-      },
-      therapist: mockTherapists[0]!,
-    };
+  it("shows overlapping count badge computed from range sessions", async () => {
+    // Two sessions for the same therapist at overlapping times
+    const sessionA = { ...mockSessions[0]!, id: 1, therapist_id: 1, scheduled_at: new Date("2026-06-01T10:00:00"), duration: 60 };
+    const sessionB = { ...mockSessions[0]!, id: 99, therapist_id: 1, scheduled_at: new Date("2026-06-01T10:30:00"), duration: 60 };
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "session:list") {
-        return Promise.resolve(wrapped([futureSession, overlappingSession]));
-      }
-      if (channel === "client:list") {
-        return Promise.resolve(wrapped(mockClients));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "session:list-range") return Promise.resolve(wrapped([sessionA, sessionB]));
+      if (channel === "session:list-expected") return Promise.resolve(wrapped([]));
+      if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
       return Promise.resolve(wrapped([]));
     });
 

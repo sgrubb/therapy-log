@@ -1,5 +1,15 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { startOfMonth, endOfMonth } from "date-fns";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  startTransition,
+  type ReactNode,
+} from "react";
+import { startOfMonth, endOfMonth, minutesToMilliseconds } from "date-fns";
+import { SortDir } from "@shared/types/enums";
 import { startOfWeekMon, endOfWeekMon } from "@/lib/datetime-utils";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
@@ -7,13 +17,21 @@ import { queryKeys } from "@/lib/queryKeys";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import {
   sessionsToEvents,
-  generatePlaceholders,
-  detectOverlaps,
+  expectedToEvents,
   buildTherapistColorMap,
+  isOverdue,
+  isUnconfirmed,
+  isOverlapping,
 } from "@/lib/calendar-utils";
+import {
+  computeOverlappingIds,
+  computeUnconfirmedIds,
+} from "@/lib/sessions-utils";
 import type { View } from "react-big-calendar";
 import type { CalendarEvent } from "@/lib/calendar-utils";
-import type { Therapist } from "@/types/ipc";
+import type { Therapist } from "@/types/therapists";
+
+
 
 function getRangeForDate(date: Date, view: View): { start: Date; end: Date } {
   if (view === "week") {
@@ -37,8 +55,8 @@ interface CalendarContextValue {
   rangeEnd: Date;
   selectedTherapistIds: string[];
   setTherapistIds: (ids: string[]) => void;
-  showPlaceholders: boolean;
-  setShowPlaceholders: (value: boolean) => void;
+  showExpectedSessions: boolean;
+  setShowExpectedSessions: (value: boolean) => void;
   showOverlappingOnly: boolean;
   handleOverlappingOnly: (checked: boolean) => void;
   unconfirmedOnly: boolean;
@@ -47,6 +65,8 @@ interface CalendarContextValue {
   handleOverdueOnly: (checked: boolean) => void;
   therapistOptions: { value: string; label: string }[];
   events: CalendarEvent[];
+  overlappingIds: Set<number>;
+  unconfirmedIds: Set<number>;
   overdueCount: number;
   unconfirmedCount: number;
   overlappingCount: number;
@@ -59,8 +79,16 @@ const CalendarCtx = createContext<CalendarContextValue | null>(null);
 export function CalendarProvider({ children }: { children: ReactNode }) {
   const { therapists, selectedTherapistId } = useSelectedTherapist();
 
-  const [view, setView] = useState<View>("week");
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [view, setViewState] = useState<View>("week");
+  const [currentDate, setCurrentDateState] = useState(new Date());
+
+  function setView(v: View) {
+    startTransition(() => setViewState(v));
+  }
+
+  function setCurrentDate(date: Date) {
+    startTransition(() => setCurrentDateState(date));
+  }
 
   const { start: rangeStart, end: rangeEnd } = useMemo(
     () => getRangeForDate(currentDate, view),
@@ -72,7 +100,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     : [];
 
   const [selectedTherapistIds, setSelectedTherapistIds] = useState<string[]>(defaultTherapistIds);
-  const [showPlaceholders, setShowPlaceholders] = useState(true);
+  const [showExpectedSessions, setShowExpectedSessions] = useState(true);
   const [showOverlappingOnly, setShowOverlappingOnly] = useState(false);
   const [unconfirmedOnly, setUnconfirmedOnly] = useState(false);
   const [overdueOnly, setOverdueOnly] = useState(false);
@@ -100,18 +128,20 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   );
 
   function setTherapistIds(ids: string[]) {
-    if (selectedTherapistId !== null) {
-      const currentId = selectedTherapistId.toString();
-      setSelectedTherapistIds(ids.includes(currentId) ? ids : [currentId, ...ids]);
-    } else {
-      setSelectedTherapistIds(ids);
-    }
+    startTransition(() => {
+      if (selectedTherapistId !== null) {
+        const currentId = selectedTherapistId.toString();
+        setSelectedTherapistIds(ids.includes(currentId) ? ids : [currentId, ...ids]);
+      } else {
+        setSelectedTherapistIds(ids);
+      }
+    });
   }
 
   function handleOverdueOnly(checked: boolean) {
     setOverdueOnly(checked);
     if (checked) {
-      setShowPlaceholders(true);
+      setShowExpectedSessions(true);
       setUnconfirmedOnly(false);
       setShowOverlappingOnly(false);
     }
@@ -135,22 +165,11 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 
   function reset() {
     setSelectedTherapistIds(selectedTherapistId !== null ? [selectedTherapistId.toString()] : []);
-    setShowPlaceholders(true);
+    setShowExpectedSessions(true);
     setShowOverlappingOnly(false);
     setUnconfirmedOnly(false);
     setOverdueOnly(false);
   }
-
-  // Calendar data
-  const { data: sessions } = useSuspenseQuery({
-    queryKey: queryKeys.sessions.all,
-    queryFn: () => ipc.listSessions(),
-  });
-
-  const { data: clients } = useSuspenseQuery({
-    queryKey: queryKeys.clients.all,
-    queryFn: () => ipc.listClients(),
-  });
 
   const selectedTherapistIdSet = useMemo(
     () => new Set(selectedTherapists.map((t) => t.id)),
@@ -162,33 +181,75 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     [selectedTherapists],
   );
 
-  const allEvents = useMemo((): CalendarEvent[] => {
-    const filteredSessions = sessions.filter((s) =>
-      selectedTherapistIdSet.has(s.therapist_id),
-    );
+  const rangeFilters = useMemo(() => ({
+    from: rangeStart,
+    to: rangeEnd,
+    ...(selectedTherapistIds.length > 0
+      ? { therapistIds: selectedTherapistIds.map(Number) }
+      : {}),
+  }), [rangeStart, rangeEnd, selectedTherapistIds]);
 
-    const sessionEvents = detectOverlaps(sessionsToEvents(filteredSessions, therapistColors));
+  const { data: rangeSessions } = useSuspenseQuery({
+    queryKey: queryKeys.sessions.range(rangeFilters),
+    queryFn: () =>
+      selectedTherapistIds.length > 0
+        ? ipc.listSessionsRange(rangeFilters)
+        : Promise.resolve([]),
+    refetchInterval: minutesToMilliseconds(1),
+  });
 
-    const placeholders = showPlaceholders
-      ? generatePlaceholders(clients, sessions, rangeStart, rangeEnd, selectedTherapistIdSet, therapistColors)
-      : [];
+  const expectedParams = useMemo(() => ({
+    from: rangeStart,
+    to: rangeEnd,
+    ...(selectedTherapistIds.length > 0
+      ? { therapistIds: selectedTherapistIds.map(Number) }
+      : {}),
+    sortKey: "scheduled_at",
+    sortDir: SortDir.Asc,
+  }), [rangeStart, rangeEnd, selectedTherapistIds]);
 
-    return [...sessionEvents, ...placeholders];
-  }, [sessions, clients, selectedTherapistIdSet, therapistColors, rangeStart, rangeEnd, showPlaceholders]);
+  const { data: expectedSessions } = useSuspenseQuery({
+    queryKey: queryKeys.sessions.expected(expectedParams),
+    queryFn: () =>
+      selectedTherapistIds.length > 0
+        ? ipc.listExpectedSessions(expectedParams)
+        : Promise.resolve([]),
+    refetchInterval: minutesToMilliseconds(1),
+  });
 
-  const overdueEvents = useMemo(
-    () => allEvents.filter((e) => e.isOverdue),
-    [allEvents],
+  const overlappingIds = useMemo(
+    () => computeOverlappingIds(rangeSessions),
+    [rangeSessions],
   );
 
-  const unconfirmedEvents = useMemo(
-    () => allEvents.filter((e) => e.isUnconfirmed),
+  const unconfirmedIds = useMemo(
+    () => computeUnconfirmedIds(rangeSessions, new Date()),
+    [rangeSessions],
+  );
+
+  const allEvents = useMemo((): CalendarEvent[] => {
+    const sessionEvents = sessionsToEvents(rangeSessions, therapistColors);
+
+    const expected = showExpectedSessions
+      ? expectedToEvents(expectedSessions, therapistColors, selectedTherapistIdSet)
+      : [];
+
+    return [...sessionEvents, ...expected];
+  }, [rangeSessions, expectedSessions, therapistColors, selectedTherapistIdSet, showExpectedSessions]);
+
+  const overdueEvents = useMemo(
+    () => allEvents.filter((e) => isOverdue(e)),
     [allEvents],
   );
 
   const overlappingEvents = useMemo(
-    () => allEvents.filter((e) => e.isOverlapping),
-    [allEvents],
+    () => allEvents.filter((e) => isOverlapping(e, overlappingIds)),
+    [allEvents, overlappingIds],
+  );
+
+  const unconfirmedEvents = useMemo(
+    () => allEvents.filter((e) => isUnconfirmed(e, unconfirmedIds)),
+    [allEvents, unconfirmedIds],
   );
 
   const events = useMemo(() => {
@@ -205,10 +266,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   }, [allEvents, overdueEvents, unconfirmedEvents, overlappingEvents, showOverlappingOnly, unconfirmedOnly, overdueOnly]);
 
   const eventPropGetter = useCallback((event: CalendarEvent) => ({
-    className: event.isPlaceholder ? "is-placeholder" : undefined,
+    className: event.isExpected ? "is-expected" : undefined,
     style: {
       backgroundColor: event.color,
-      opacity: event.isPlaceholder ? 0.45 : 1,
+      opacity: event.isExpected ? 0.45 : 1,
       border: "none",
     },
   }), []);
@@ -220,12 +281,14 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         currentDate, setCurrentDate,
         rangeStart, rangeEnd,
         selectedTherapistIds, setTherapistIds,
-        showPlaceholders, setShowPlaceholders,
+        showExpectedSessions, setShowExpectedSessions,
         showOverlappingOnly, handleOverlappingOnly,
         unconfirmedOnly, handleUnconfirmedOnly,
         overdueOnly, handleOverdueOnly,
         therapistOptions,
         events,
+        overlappingIds,
+        unconfirmedIds,
         overdueCount: overdueEvents.length,
         unconfirmedCount: unconfirmedEvents.length,
         overlappingCount: overlappingEvents.length,

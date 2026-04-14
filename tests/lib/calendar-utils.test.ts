@@ -1,14 +1,17 @@
-import { differenceInMinutes, addDays, set } from "date-fns";
+import { differenceInMinutes } from "date-fns";
 import { describe, it, expect } from "vitest";
 import {
   sessionsToEvents,
-  generatePlaceholders,
-  detectOverlaps,
   buildTherapistColorMap,
   THERAPIST_COLORS,
+  isOverlapping,
+  isUnconfirmed,
+  isOverdue,
+  expectedToEvents,
 } from "@/lib/calendar-utils";
-import { mockTherapists, MOCK_UPDATED_AT } from "../helpers/ipc-mocks";
-import type { SessionWithRelations, ClientWithTherapist } from "@/types/ipc";
+import { mockTherapists, MOCK_UPDATED_AT, MOCK_SESSION_DATE_RECENT } from "../helpers/ipc-mocks";
+import type { SessionWithRelations } from "@/types/sessions";
+import type { ExpectedSession } from "@shared/types/sessions";
 
 const clientBase = {
   hospital_number: "HN001",
@@ -37,10 +40,30 @@ const sessionBase = {
   therapist: mockTherapists[0]!,
 };
 
-// Monday 2026-03-16 (local time — avoids UTC offset shifting the day boundary)
-const MONDAY = new Date(2026, 2, 16, 0, 0, 0, 0);
-// Sunday 2026-03-22
-const SUNDAY = new Date(2026, 2, 22, 23, 59, 59, 999);
+const colorMap = new Map([[1, "#3b82f6"]]);
+
+const session: SessionWithRelations = {
+  ...sessionBase,
+  id: 1,
+  client_id: 1,
+  therapist_id: 1,
+  scheduled_at: new Date(2026, 2, 16, 10, 0, 0),
+  duration: 60,
+  status: "Attended",
+  session_type: "Child",
+};
+
+function makeExpected(scheduledAt: Date): ExpectedSession {
+  return {
+    id: "exp-1",
+    client_id: 3,
+    therapist_id: 1,
+    scheduled_at: scheduledAt,
+    duration: 60,
+    client: { id: 3, first_name: "Eve", last_name: "Walker" },
+    therapist: { id: 1, first_name: "Alice", last_name: "Morgan" },
+  };
+}
 
 describe("buildTherapistColorMap", () => {
   it("assigns colors by selection order", () => {
@@ -52,196 +75,41 @@ describe("buildTherapistColorMap", () => {
 
 describe("sessionsToEvents", () => {
   it("converts a session to a calendar event", () => {
-    const colorMap = new Map([[1, "#3b82f6"]]);
-    const session: SessionWithRelations = {
-      ...sessionBase,
-      id: 1,
-      client_id: 1,
-      therapist_id: 1,
-      scheduled_at: new Date(2026, 2, 16, 10, 0, 0),
-      duration: 60,
-      status: "Attended",
-      session_type: "Child",
-    };
     const [evt] = sessionsToEvents([session], colorMap);
     expect(evt!.id).toBe("session-1");
-    expect(evt!.isPlaceholder).toBe(false);
+    expect(evt!.isExpected).toBe(false);
     expect(evt!.resourceId).toBe(1);
     expect(differenceInMinutes(evt!.end, evt!.start)).toBe(60);
     expect(evt!.color).toBe("#3b82f6");
   });
 });
 
-describe("detectOverlaps", () => {
-  it("marks overlapping events for the same therapist", () => {
-    const tomorrow10am = set(addDays(new Date(), 1), { hours: 10, minutes: 0, seconds: 0, milliseconds: 0 });
-    const tomorrow1030 = set(addDays(new Date(), 1), { hours: 10, minutes: 30, seconds: 0, milliseconds: 0 });
-    const colorMap = new Map([[1, "#3b82f6"]]);
-    const sessions: SessionWithRelations[] = [
-      {
-        ...sessionBase,
-        id: 1,
-        client_id: 1,
-        therapist_id: 1,
-        scheduled_at: tomorrow10am,
-        duration: 60,
-        status: "Scheduled",
-        session_type: "Child",
-      },
-      {
-        ...sessionBase,
-        id: 2,
-        client_id: 1,
-        therapist_id: 1,
-        scheduled_at: tomorrow1030,
-        duration: 60,
-        status: "Scheduled",
-        session_type: "Child",
-      },
-    ];
-    const evts = detectOverlaps(sessionsToEvents(sessions, colorMap));
-    expect(evts.every((e) => e.isOverlapping)).toBe(true);
+describe("isOverlapping / isUnconfirmed / isOverdue utility functions", () => {
+  it("isOverlapping returns true when sessionId is in overlappingIds", () => {
+    const [evt] = sessionsToEvents([session], colorMap);
+    expect(isOverlapping(evt!, new Set([1]))).toBe(true);
+    expect(isOverlapping(evt!, new Set())).toBe(false);
   });
 
-  it("does not mark non-overlapping events", () => {
-    const colorMap = new Map([[1, "#3b82f6"]]);
-    const sessions: SessionWithRelations[] = [
-      {
-        ...sessionBase,
-        id: 1,
-        client_id: 1,
-        therapist_id: 1,
-        scheduled_at: new Date(2026, 2, 16, 10, 0, 0),
-        duration: 60,
-        status: "Attended",
-        session_type: "Child",
-      },
-      {
-        ...sessionBase,
-        id: 2,
-        client_id: 1,
-        therapist_id: 1,
-        scheduled_at: new Date(2026, 2, 16, 11, 0, 0),
-        duration: 60,
-        status: "Attended",
-        session_type: "Child",
-      },
-    ];
-    const evts = detectOverlaps(sessionsToEvents(sessions, colorMap));
-    expect(evts.every((e) => !e.isOverlapping)).toBe(true);
+  it("isUnconfirmed returns true when sessionId is in unconfirmedIds", () => {
+    const [evt] = sessionsToEvents([session], colorMap);
+    expect(isUnconfirmed(evt!, new Set([1]))).toBe(true);
+    expect(isUnconfirmed(evt!, new Set())).toBe(false);
   });
 
-  it("does not flag overlaps across different therapists", () => {
-    const colorMap = new Map([[1, "#3b82f6"], [2, "#10b981"]]);
-    const sessions: SessionWithRelations[] = [
-      {
-        ...sessionBase,
-        id: 1,
-        client_id: 1,
-        therapist_id: 1,
-        scheduled_at: new Date(2026, 2, 16, 10, 0, 0),
-        duration: 60,
-        status: "Attended",
-        session_type: "Child",
-      },
-      {
-        ...sessionBase,
-        id: 2,
-        client_id: 1,
-        therapist_id: 2,
-        scheduled_at: new Date(2026, 2, 16, 10, 30, 0),
-        duration: 60,
-        status: "Attended",
-        session_type: "Child",
-        therapist: mockTherapists[1]!,
-      },
-    ];
-    const evts = detectOverlaps(sessionsToEvents(sessions, colorMap));
-    expect(evts.every((e) => !e.isOverlapping)).toBe(true);
-  });
-});
-
-describe("generatePlaceholders", () => {
-  const colorMap = new Map([[1, "#3b82f6"]]);
-  const selectedIds = new Set([1]);
-
-  const client: ClientWithTherapist = {
-    ...clientBase,
-    id: 1,
-    first_name: "Jane",
-    last_name: "Smith",
-    therapist_id: 1,
-    session_day: "Monday",
-    session_time: "10:00",
-    session_duration: 60,
-  };
-
-  it("generates a placeholder when no session exists that week", () => {
-    const placeholders = generatePlaceholders(
-      [client],
-      [],
-      MONDAY,
-      SUNDAY,
-      selectedIds,
-      colorMap,
-    );
-    expect(placeholders).toHaveLength(1);
-    expect(placeholders[0]!.isPlaceholder).toBe(true);
-    expect(placeholders[0]!.clientId).toBe(1);
-    expect(placeholders[0]!.start.getHours()).toBe(10);
+  it("isOverdue returns true for expected events with start in the past", () => {
+    const [evt] = expectedToEvents([makeExpected(new Date(2020, 0, 1))], colorMap, new Set([1]));
+    expect(isOverdue(evt!)).toBe(true);
   });
 
-  it("skips a client when a session already exists that week", () => {
-    const session: SessionWithRelations = {
-      ...sessionBase,
-      id: 1,
-      client_id: 1,
-      therapist_id: 1,
-      scheduled_at: new Date(2026, 2, 16, 9, 0, 0),
-      duration: 60,
-      status: "Attended",
-      session_type: "Child",
-    };
-    const placeholders = generatePlaceholders(
-      [client],
-      [session],
-      MONDAY,
-      SUNDAY,
-      selectedIds,
-      colorMap,
-    );
-    expect(placeholders).toHaveLength(0);
+  it("isOverdue returns false for future expected events", () => {
+    const [evt] = expectedToEvents([makeExpected(new Date(2099, 0, 1))], colorMap, new Set([1]));
+    expect(isOverdue(evt!)).toBe(false);
   });
 
-  it("skips closed clients", () => {
-    const closed: ClientWithTherapist = { ...client, closed_date: new Date("2025-12-01T00:00:00.000Z") };
-    const placeholders = generatePlaceholders(
-      [closed],
-      [],
-      MONDAY,
-      SUNDAY,
-      selectedIds,
-      colorMap,
-    );
-    expect(placeholders).toHaveLength(0);
-  });
-
-  it("skips clients whose therapist is not in selected set", () => {
-    const placeholders = generatePlaceholders(
-      [client],
-      [],
-      MONDAY,
-      SUNDAY,
-      new Set([2]), // therapist 2 selected, client belongs to therapist 1
-      colorMap,
-    );
-    expect(placeholders).toHaveLength(0);
-  });
-
-  it("skips clients without session_day or session_time", () => {
-    const noDay: ClientWithTherapist = { ...client, session_day: null };
-    const noTime: ClientWithTherapist = { ...client, session_time: null };
-    expect(generatePlaceholders([noDay], [], MONDAY, SUNDAY, selectedIds, colorMap)).toHaveLength(0);
-    expect(generatePlaceholders([noTime], [], MONDAY, SUNDAY, selectedIds, colorMap)).toHaveLength(0);
+  it("isOverlapping and isUnconfirmed return false for expected events", () => {
+    const [evt] = expectedToEvents([makeExpected(MOCK_SESSION_DATE_RECENT)], colorMap, new Set([1]));
+    expect(isOverlapping(evt!, new Set([3]))).toBe(false);
+    expect(isUnconfirmed(evt!, new Set([3]))).toBe(false);
   });
 });

@@ -7,7 +7,7 @@ import { queryKeys } from "@/lib/queryKeys";
 import { therapistFormSchema } from "@/schemas/forms";
 import { useFormState } from "@/hooks/useFormState";
 import { FormState } from "@/types/enums";
-import type { Therapist } from "@/types/ipc";
+import type { Therapist } from "@/types/therapists";
 
 export type FormFields = z.input<typeof therapistFormSchema>;
 
@@ -87,11 +87,11 @@ export function useTherapistForm(therapistId?: number) {
       const payload = buildPayload(form);
       if (isEdit && therapistId !== undefined) {
         await ipc.updateTherapist(therapistId, { ...payload, updated_at: updatedAt! });
-        await queryClient.invalidateQueries({ queryKey: queryKeys.therapists.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.therapists.root });
         await queryClient.invalidateQueries({ queryKey: queryKeys.therapists.detail(therapistId) });
       } else {
         await ipc.createTherapist(payload);
-        await queryClient.invalidateQueries({ queryKey: queryKeys.therapists.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.therapists.root });
       }
       navigate("/therapists");
     } catch (err) {

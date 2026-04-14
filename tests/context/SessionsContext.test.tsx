@@ -4,37 +4,41 @@ import React, { Suspense } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import { SessionProvider, useSessions } from "@/context/SessionsContext";
-import { wrapped, mockTherapists, mockSessions, mockClients, mockClientBase, MOCK_SESSION_DATE_RECENT, MOCK_SESSION_DATE_OLDER } from "../helpers/ipc-mocks";
+import { wrapped, wrappedPaginated, mockTherapists, mockSessions, mockClients } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 
 const mockInvoke = vi.fn();
 
+function defaultMock() {
+  mockInvoke.mockImplementation((channel: string) => {
+    if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+    if (channel === "session:list") return Promise.resolve(wrappedPaginated(mockSessions));
+    if (channel === "session:list-range") return Promise.resolve(wrapped([]));
+    if (channel === "session:list-expected") return Promise.resolve(wrapped([]));
+    if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
+    return Promise.resolve(wrapped([]));
+  });
+}
+
 beforeEach(() => {
   localStorage.clear();
   mockInvoke.mockReset();
   window.electronAPI = { invoke: mockInvoke } as never;
-  mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") {
-      return Promise.resolve(wrapped(mockTherapists));
-    }
-    return Promise.resolve(wrapped([]));
-  });
+  defaultMock();
 });
 
 const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
 const weekEnd = format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
-const recentDate = format(MOCK_SESSION_DATE_RECENT, "yyyy-MM-dd");
-const olderDate = format(MOCK_SESSION_DATE_OLDER, "yyyy-MM-dd");
 
-function renderSessionsHook(sessions = mockSessions, clients = mockClients) {
+function renderSessionsHook() {
   const queryClient = createTestQueryClient();
   function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
         <Suspense fallback={<div>Loading...</div>}>
           <SelectedTherapistProvider>
-            <SessionProvider sessions={sessions} clients={clients}>
+            <SessionProvider>
               {children}
             </SessionProvider>
           </SelectedTherapistProvider>
@@ -46,114 +50,90 @@ function renderSessionsHook(sessions = mockSessions, clients = mockClients) {
 }
 
 describe("SessionProvider", () => {
-  it("provides filtered sessions within the default 'this week' range", async () => {
+  it("returns sessions from IPC on initial load", async () => {
     const { result } = renderSessionsHook();
     await waitFor(() => {
-      expect(result.current.filtered.length).toBeGreaterThan(0);
+      expect(result.current.displayedSessions).toHaveLength(2);
     });
-
-    // Both mock sessions should be within this week
-    expect(result.current.filtered).toHaveLength(2);
   });
 
   it("defaults date preset to 'this week'", async () => {
     const { result } = renderSessionsHook();
-    await waitFor(() => expect(result.current.filtered.length).toBeGreaterThan(0));
+    await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
 
     expect(result.current.datePreset).toBe("this_week");
     expect(result.current.dateFromFilter).toBe(weekStart);
     expect(result.current.dateToFilter).toBe(weekEnd);
   });
 
-  it("filters by client", async () => {
+  it("updating clientFilter changes state and resets page", async () => {
     const { result } = renderSessionsHook();
-    await waitFor(() => expect(result.current.filtered.length).toBeGreaterThan(0));
+    await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
 
-    act(() => {
-      result.current.setClientFilter("1");
+    await act(async () => { result.current.setPage(3); });
+    await act(async () => { result.current.setClientFilter("1"); });
+
+    await waitFor(() => {
+      expect(result.current.clientFilter).toBe("1");
+      expect(result.current.page).toBe(1);
     });
-
-    expect(result.current.filtered).toHaveLength(1);
-    expect(result.current.filtered[0]!.client.first_name).toBe("Jane");
   });
 
-  it("filters by therapist", async () => {
+  it("updating therapistFilter changes state and resets page", async () => {
     const { result } = renderSessionsHook();
-    await waitFor(() => expect(result.current.filtered.length).toBeGreaterThan(0));
+    await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
 
-    act(() => {
-      result.current.setTherapistFilter("2");
+    await act(async () => { result.current.setPage(2); });
+    await act(async () => { result.current.setTherapistFilter("2"); });
+
+    await waitFor(() => {
+      expect(result.current.therapistFilter).toBe("2");
+      expect(result.current.page).toBe(1);
     });
-
-    expect(result.current.filtered).toHaveLength(1);
-    expect(result.current.filtered[0]!.therapist.last_name).toBe("Chen");
   });
 
-  it("filters by status", async () => {
+  it("updating statusFilter changes state and resets page", async () => {
     const { result } = renderSessionsHook();
-    await waitFor(() => expect(result.current.filtered.length).toBeGreaterThan(0));
+    await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
 
-    act(() => {
-      result.current.setStatusFilter("DNA");
+    await act(async () => { result.current.setPage(2); });
+    await act(async () => { result.current.setStatusFilter("DNA"); });
+
+    await waitFor(() => {
+      expect(result.current.statusFilter).toBe("DNA");
+      expect(result.current.page).toBe(1);
     });
-
-    expect(result.current.filtered).toHaveLength(1);
-    expect(result.current.filtered[0]!.status).toBe("DNA");
-  });
-
-  it("filters by from date", async () => {
-    const { result } = renderSessionsHook();
-    await waitFor(() => expect(result.current.filtered.length).toBeGreaterThan(0));
-
-    act(() => {
-      result.current.setDateFromFilter(recentDate);
-    });
-
-    expect(result.current.filtered).toHaveLength(1);
-    expect(result.current.filtered[0]!.client.first_name).toBe("Jane");
-  });
-
-  it("filters by to date", async () => {
-    const { result } = renderSessionsHook();
-    await waitFor(() => expect(result.current.filtered.length).toBeGreaterThan(0));
-
-    act(() => {
-      result.current.setDateToFilter(olderDate);
-    });
-
-    expect(result.current.filtered).toHaveLength(1);
-    expect(result.current.filtered[0]!.client.first_name).toBe("Tom");
   });
 
   it("switches to custom preset when dates are manually changed", async () => {
     const { result } = renderSessionsHook();
-    await waitFor(() => expect(result.current.filtered.length).toBeGreaterThan(0));
+    await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
 
-    act(() => {
-      result.current.setDateFromFilter("2026-01-01");
+    await act(async () => { result.current.setDateFromFilter("2026-01-01"); });
+
+    await waitFor(() => {
+      expect(result.current.datePreset).toBe("custom");
     });
-
-    expect(result.current.datePreset).toBe("custom");
   });
 
   it("resets all filters to defaults", async () => {
     const { result } = renderSessionsHook();
-    await waitFor(() => expect(result.current.filtered.length).toBeGreaterThan(0));
+    await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
 
     act(() => {
       result.current.setClientFilter("1");
       result.current.setTherapistFilter("2");
       result.current.setStatusFilter("DNA");
       result.current.setDateFromFilter("2026-01-01");
+      result.current.setPage(3);
     });
 
-    act(() => {
-      result.current.reset();
-    });
+    act(() => { result.current.reset(); });
 
     expect(result.current.clientFilter).toBe("all");
     expect(result.current.statusFilter).toBe("all");
     expect(result.current.datePreset).toBe("this_week");
+    expect(result.current.page).toBe(1);
     expect(result.current.overdueOnly).toBe(false);
     expect(result.current.unconfirmedOnly).toBe(false);
     expect(result.current.overlappingOnly).toBe(false);
@@ -162,79 +142,138 @@ describe("SessionProvider", () => {
 
   it("checkbox handlers are mutually exclusive", async () => {
     const { result } = renderSessionsHook();
-    await waitFor(() => expect(result.current.filtered.length).toBeGreaterThan(0));
+    await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
 
-    act(() => {
-      result.current.handleOverdueOnly(true);
-    });
+    act(() => { result.current.handleOverdueOnly(true); });
     expect(result.current.overdueOnly).toBe(true);
     expect(result.current.expectedOpen).toBe(true);
 
-    act(() => {
-      result.current.handleUnconfirmedOnly(true);
-    });
+    act(() => { result.current.handleUnconfirmedOnly(true); });
     expect(result.current.unconfirmedOnly).toBe(true);
     expect(result.current.overdueOnly).toBe(false);
 
-    act(() => {
-      result.current.handleOverlappingOnly(true);
-    });
+    act(() => { result.current.handleOverlappingOnly(true); });
     expect(result.current.overlappingOnly).toBe(true);
     expect(result.current.unconfirmedOnly).toBe(false);
   });
 
-  it("provides unique clients derived from sessions", async () => {
-    const { result } = renderSessionsHook();
-    await waitFor(() => expect(result.current.uniqueClients.length).toBeGreaterThan(0));
+  it("shows unconfirmed sessions computed from range sessions", async () => {
+    const past = new Date("2020-01-01T10:00:00");
+    const unconfirmedSession = { ...mockSessions[0]!, id: 10, status: "Scheduled" as const, scheduled_at: past };
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "session:list") return Promise.resolve(wrappedPaginated(mockSessions));
+      if (channel === "session:list-range") return Promise.resolve(wrapped([unconfirmedSession]));
+      if (channel === "session:list-expected") return Promise.resolve(wrapped([]));
+      if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
+      return Promise.resolve(wrapped([]));
+    });
 
-    expect(result.current.uniqueClients).toHaveLength(2);
-    // Sorted by "last, first"
-    const names = result.current.uniqueClients.map((c) => c.name);
-    expect(names).toEqual([...names].sort());
+    const { result } = renderSessionsHook();
+    await waitFor(() => expect(result.current.displayedSessions).toHaveLength(2));
+
+    act(() => { result.current.handleUnconfirmedOnly(true); });
+
+    await waitFor(() => {
+      expect(result.current.displayedSessions).toHaveLength(1);
+      expect(result.current.displayedSessions[0]!.id).toBe(10);
+    });
   });
 
-  it("defaults therapist filter to selected therapist", async () => {
+  it("shows overlapping sessions computed from range sessions", async () => {
+    // Two sessions for the same therapist at overlapping times
+    const sessionA = {
+      ...mockSessions[0]!,
+      id: 20,
+      therapist_id: 1,
+      scheduled_at: new Date("2026-06-01T10:00:00"),
+      duration: 60,
+    };
+    const sessionB = {
+      ...mockSessions[0]!,
+      id: 21,
+      therapist_id: 1,
+      scheduled_at: new Date("2026-06-01T10:30:00"),
+      duration: 60,
+    };
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "session:list") return Promise.resolve(wrappedPaginated([sessionA, sessionB]));
+      if (channel === "session:list-range") return Promise.resolve(wrapped([sessionA, sessionB]));
+      if (channel === "session:list-expected") return Promise.resolve(wrapped([]));
+      if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
+      return Promise.resolve(wrapped([]));
+    });
+
+    const { result } = renderSessionsHook();
+    await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
+
+    act(() => { result.current.handleOverlappingOnly(true); });
+
+    await waitFor(() => {
+      expect(result.current.displayedSessions).toHaveLength(2);
+    });
+  });
+
+  it("exposes totalSessions and pageSize from paginated response", async () => {
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "session:list") {
+        return Promise.resolve(wrapped({ data: mockSessions, total: 100, page: 1, pageSize: 25 }));
+      }
+      if (channel === "session:list-range") return Promise.resolve(wrapped([]));
+      if (channel === "session:list-expected") return Promise.resolve(wrapped([]));
+      if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
+      return Promise.resolve(wrapped([]));
+    });
+
+    const { result } = renderSessionsHook();
+    await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
+
+    expect(result.current.totalSessions).toBe(100);
+    expect(result.current.pageSize).toBe(25);
+  });
+
+it("defaults therapist filter to selected therapist", async () => {
     localStorage.setItem("selectedTherapistId", "1");
     const { result } = renderSessionsHook();
-    await waitFor(() => expect(result.current.filtered.length).toBeGreaterThan(0));
+    await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
 
     expect(result.current.therapistFilter).toBe("1");
     expect(result.current.showMine).toBe(true);
-    // Only therapist 1's session should be visible
-    expect(result.current.filtered).toHaveLength(1);
-  });
-
-  it("computes expected session rows when date range is bounded", async () => {
-    const overdueClient = {
-      ...mockClientBase,
-      id: 3,
-      first_name: "Eve",
-      last_name: "Walker",
-      hospital_number: "HN003",
-      therapist_id: 1,
-      therapist: mockTherapists[0]!,
-      session_day: "Monday" as const,
-      session_time: "09:00",
-      session_duration: 60,
-      session_delivery_method: "FaceToFace" as const,
-    };
-
-    const { result } = renderSessionsHook(mockSessions, [...mockClients, overdueClient]);
-    await waitFor(() => expect(result.current.filtered.length).toBeGreaterThan(0));
-
-    // Default range is "this week" (bounded), so expected sessions should be computed
-    expect(result.current.displayedExpectedRows.length).toBeGreaterThanOrEqual(0);
   });
 
   it("hides expected section when date range is unbounded", async () => {
     const { result } = renderSessionsHook();
-    await waitFor(() => expect(result.current.filtered.length).toBeGreaterThan(0));
+    await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
 
-    act(() => {
-      result.current.setDatePreset("all_time" as const);
-    });
+    act(() => { result.current.setDatePreset("all_time" as const); });
 
     expect(result.current.showExpectedSection).toBe(false);
+  });
+
+  it("shows expected section when date range is bounded and expected sessions exist", async () => {
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "session:list") return Promise.resolve(wrappedPaginated(mockSessions));
+      if (channel === "session:list-range") return Promise.resolve(wrapped([]));
+      if (channel === "session:list-expected") {
+        return Promise.resolve(wrapped([{
+          id: "exp-1",
+          client_id: 3,
+          therapist_id: 1,
+          scheduled_at: new Date(),
+          duration: 60,
+          client: { id: 3, first_name: "Eve", last_name: "Walker" },
+          therapist: { id: 1, first_name: "Alice", last_name: "Morgan" },
+        }]));
+      }
+      if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
+      return Promise.resolve(wrapped([]));
+    });
+
+    const { result } = renderSessionsHook();
+    await waitFor(() => expect(result.current.showExpectedSection).toBe(true));
   });
 });
 

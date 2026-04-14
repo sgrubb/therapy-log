@@ -1,6 +1,8 @@
+import { useMemo } from "react";
 import { AlertCircle, Clock, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, sortableName } from "@/lib/utils";
 import { useSessions, DatePreset } from "@/context/SessionsContext";
+import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { FilterToolbar } from "@/components/ui/filter-toolbar";
 import { Input } from "@/components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -24,11 +26,30 @@ export function SessionFilters() {
     overdueOnly, handleOverdueOnly,
     unconfirmedOnly, handleUnconfirmedOnly,
     overlappingOnly, handleOverlappingOnly,
-    uniqueClients, sortedTherapists,
-    showMine, selectedTherapistId,
-    overdueCount, unconfirmedCount, overlappingCount,
+    overlappingIds, unconfirmedIds,
+    displayedExpectedSessions,
+    showMine,
+    allClients,
     reset,
   } = useSessions();
+
+  const { therapists, selectedTherapistId } = useSelectedTherapist();
+
+  const sortedTherapists = useMemo(
+    () => [...therapists].sort((a, b) => sortableName(a).localeCompare(sortableName(b))),
+    [therapists],
+  );
+
+  const sortedClients = useMemo(
+    () => [...allClients]
+      .sort((a, b) => `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`))
+      .map((c) => ({ value: c.id.toString(), label: `${c.last_name}, ${c.first_name}` })),
+    [allClients],
+  );
+
+  const overdueCount = displayedExpectedSessions.filter((s) => s.scheduled_at < new Date()).length;
+  const unconfirmedCount = unconfirmedIds.size;
+  const overlappingCount = overlappingIds.size;
 
   return (
     <FilterToolbar onReset={reset}>
@@ -42,10 +63,7 @@ export function SessionFilters() {
           placeholder="All clients"
           options={[
             { value: "all", label: "All clients" },
-            ...uniqueClients.map((c) => ({
-              value: c.id.toString(),
-              label: c.name,
-            })),
+            ...sortedClients,
           ]}
         />
       </label>

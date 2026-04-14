@@ -1,26 +1,17 @@
 import { z } from "zod";
-import {
-  therapistSchema,
-  clientSchema,
-  clientWithTherapistSchema,
-  sessionSchema,
-  sessionWithRelationsSchema,
-} from "@/schemas/ipc";
+import { therapistSchema } from "@/schemas/therapists";
+import { clientSchema, clientWithTherapistSchema } from "@/schemas/clients";
+import { sessionSchema, sessionWithRelationsSchema, expectedSessionSchema } from "@/schemas/sessions";
+import type { Therapist, CreateTherapist, UpdateTherapist } from "@/types/therapists";
+import type { Client, ClientWithTherapist, CreateClient, UpdateClient, CloseClient, ReopenClient } from "@/types/clients";
+import type { Session, SessionWithRelations, CreateSession, UpdateSession } from "@/types/sessions";
+import type { SortDir } from "@shared/types/enums";
 import type {
-  Therapist,
-  Client,
-  ClientWithTherapist,
-  Session,
-  SessionWithRelations,
-  CreateTherapist,
-  UpdateTherapist,
-  CreateClient,
-  UpdateClient,
-  CloseClient,
-  ReopenClient,
-  CreateSession,
-  UpdateSession,
-} from "@/types/ipc";
+  SessionListParams,
+  SessionListRangeParams,
+  PaginatedResult,
+  ExpectedSession,
+} from "@shared/types/sessions";
 
 const ERROR_MESSAGES: Record<string, string> = {
   UNIQUE_CONSTRAINT: "A record with this value already exists.",
@@ -56,6 +47,14 @@ function unwrapResponse(response: unknown): unknown {
 
   return r.data;
 }
+
+const paginatedResultSchema = <T>(itemSchema: z.ZodType<T>) =>
+  z.object({
+    data: z.array(itemSchema),
+    total: z.number(),
+    page: z.number(),
+    pageSize: z.number(),
+  });
 
 export const ipc = {
   // ── App ────────────────────────────────────────────────────────────────
@@ -149,8 +148,13 @@ export const ipc = {
   },
 
   // ── Therapists ─────────────────────────────────────────────────────────
-  async listTherapists(): Promise<Therapist[]> {
-    const response = await window.electronAPI.invoke("therapist:list");
+  async listTherapists(params: { page: number; pageSize: number; sortKey: string; sortDir: SortDir }): Promise<PaginatedResult<Therapist>> {
+    const response = await window.electronAPI.invoke("therapist:list", params);
+    return paginatedResultSchema(therapistSchema).parse(unwrapResponse(response));
+  },
+
+  async listAllTherapists(): Promise<Therapist[]> {
+    const response = await window.electronAPI.invoke("therapist:list-all");
     return z.array(therapistSchema).parse(unwrapResponse(response));
   },
 
@@ -170,8 +174,21 @@ export const ipc = {
   },
 
   // ── Clients ────────────────────────────────────────────────────────────
-  async listClients(): Promise<ClientWithTherapist[]> {
-    const response = await window.electronAPI.invoke("client:list");
+  async listClients(params: {
+    page: number;
+    pageSize: number;
+    status?: string;
+    therapistId?: number | null;
+    search?: string;
+    sortKey: string;
+    sortDir: SortDir;
+  }): Promise<PaginatedResult<ClientWithTherapist>> {
+    const response = await window.electronAPI.invoke("client:list", params);
+    return paginatedResultSchema(clientWithTherapistSchema).parse(unwrapResponse(response));
+  },
+
+  async listAllClients(): Promise<ClientWithTherapist[]> {
+    const response = await window.electronAPI.invoke("client:list-all");
     return z.array(clientWithTherapistSchema).parse(unwrapResponse(response));
   },
 
@@ -201,9 +218,34 @@ export const ipc = {
   },
 
   // ── Sessions ───────────────────────────────────────────────────────────
-  async listSessions(): Promise<SessionWithRelations[]> {
-    const response = await window.electronAPI.invoke("session:list");
+  async listSessions(params: SessionListParams): Promise<PaginatedResult<SessionWithRelations>> {
+    const response = await window.electronAPI.invoke("session:list", params);
+    const raw = unwrapResponse(response) as { data: unknown[]; total: number; page: number; pageSize: number };
+    return {
+      data: z.array(sessionWithRelationsSchema).parse(raw.data),
+      total: raw.total,
+      page: raw.page,
+      pageSize: raw.pageSize,
+    };
+  },
+
+  async listSessionsRange(params: SessionListRangeParams): Promise<SessionWithRelations[]> {
+    const response = await window.electronAPI.invoke("session:list-range", params);
     return z.array(sessionWithRelationsSchema).parse(unwrapResponse(response));
+  },
+
+  async listExpectedSessions(
+    params: {
+      from: Date;
+      to: Date;
+      therapistIds?: number[];
+      clientId?: number;
+      sortKey: string;
+      sortDir: SortDir;
+    },
+  ): Promise<ExpectedSession[]> {
+    const response = await window.electronAPI.invoke("session:list-expected", params);
+    return z.array(expectedSessionSchema).parse(unwrapResponse(response));
   },
 
   async getSession(id: number): Promise<SessionWithRelations> {

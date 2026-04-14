@@ -7,7 +7,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import SessionDetailPage from "@/pages/SessionDetailPage";
-import { wrapped, mockTherapists, mockSession, errorResponse } from "../helpers/ipc-mocks";
+import { wrapped, wrappedPaginated, mockTherapists, mockSession, errorResponse } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
 
 function EditFormSpy() {
@@ -35,7 +35,7 @@ function renderDetailPage(sessionOverride?: Partial<typeof mockSession> | null) 
       : { ...mockSession, ...sessionOverride };
 
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") {
+    if (channel === "therapist:list-all") {
       return Promise.resolve(wrapped(mockTherapists));
     }
     if (channel === "session:get") {
@@ -106,7 +106,7 @@ describe("SessionDetailPage", () => {
     });
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") {
+      if (channel === "therapist:list-all") {
         return Promise.resolve(wrapped(mockTherapists));
       }
       if (channel === "session:get") {
@@ -207,7 +207,7 @@ describe("SessionDetailPage", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") {
+      if (channel === "therapist:list-all") {
         return Promise.resolve(wrapped(mockTherapists));
       }
       if (channel === "session:get") {

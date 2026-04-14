@@ -1,11 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import React, { Suspense } from "react";
-import { addDays, set } from "date-fns";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import { CalendarProvider, useCalendar } from "@/context/CalendarContext";
-import { wrapped, mockTherapists, mockSessions, mockClients, mockClientBase } from "../helpers/ipc-mocks";
+import { wrapped, wrappedPaginated, mockTherapists, mockSessions, mockClients } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
 
 const mockInvoke = vi.fn();
@@ -15,13 +14,16 @@ beforeEach(() => {
   mockInvoke.mockReset();
   window.electronAPI = { invoke: mockInvoke } as never;
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") {
+    if (channel === "therapist:list-all") {
       return Promise.resolve(wrapped(mockTherapists));
     }
-    if (channel === "session:list") {
+    if (channel === "session:list-range") {
       return Promise.resolve(wrapped(mockSessions));
     }
-    if (channel === "client:list") {
+    if (channel === "session:list-expected") {
+      return Promise.resolve(wrapped([]));
+    }
+    if (channel === "client:list-all") {
       return Promise.resolve(wrapped(mockClients));
     }
     return Promise.resolve(wrapped([]));
@@ -79,11 +81,11 @@ describe("CalendarProvider", () => {
     const { result } = renderCalendarHook();
     await waitFor(() => expect(result.current.therapistOptions.length).toBeGreaterThan(0));
 
-    act(() => {
+    await act(async () => {
       result.current.setView("month");
     });
 
-    expect(result.current.view).toBe("month");
+    await waitFor(() => expect(result.current.view).toBe("month"));
   });
 
   it("updates current date", async () => {
@@ -91,18 +93,18 @@ describe("CalendarProvider", () => {
     await waitFor(() => expect(result.current.therapistOptions.length).toBeGreaterThan(0));
 
     const newDate = new Date(2026, 5, 15);
-    act(() => {
+    await act(async () => {
       result.current.setCurrentDate(newDate);
     });
 
-    expect(result.current.currentDate).toBe(newDate);
+    await waitFor(() => expect(result.current.currentDate).toBe(newDate));
   });
 
-  it("defaults showPlaceholders to true", async () => {
+  it("defaults showExpectedSessions to true", async () => {
     const { result } = renderCalendarHook();
     await waitFor(() => expect(result.current.therapistOptions.length).toBeGreaterThan(0));
 
-    expect(result.current.showPlaceholders).toBe(true);
+    expect(result.current.showExpectedSessions).toBe(true);
   });
 
   it("checkbox handlers are mutually exclusive", async () => {
@@ -113,7 +115,7 @@ describe("CalendarProvider", () => {
       result.current.handleOverdueOnly(true);
     });
     expect(result.current.overdueOnly).toBe(true);
-    expect(result.current.showPlaceholders).toBe(true);
+    expect(result.current.showExpectedSessions).toBe(true);
     expect(result.current.showOverlappingOnly).toBe(false);
 
     act(() => {
@@ -136,7 +138,7 @@ describe("CalendarProvider", () => {
 
     act(() => {
       result.current.setTherapistIds(["1", "2"]);
-      result.current.setShowPlaceholders(false);
+      result.current.setShowExpectedSessions(false);
       result.current.handleOverlappingOnly(true);
     });
 
@@ -145,43 +147,22 @@ describe("CalendarProvider", () => {
     });
 
     expect(result.current.selectedTherapistIds).toEqual(["1"]);
-    expect(result.current.showPlaceholders).toBe(true);
+    expect(result.current.showExpectedSessions).toBe(true);
     expect(result.current.showOverlappingOnly).toBe(false);
     expect(result.current.overdueOnly).toBe(false);
     expect(result.current.unconfirmedOnly).toBe(false);
   });
 
-  it("computes overlapping count for same-therapist concurrent sessions", async () => {
-    const tomorrow10am = set(addDays(new Date(), 1), { hours: 10, minutes: 0, seconds: 0, milliseconds: 0 });
-
-    const overlappingSessions = [
-      { ...mockSessions[0]!, scheduled_at: tomorrow10am },
-      {
-        ...mockSessions[0]!,
-        id: 99,
-        scheduled_at: tomorrow10am,
-        client_id: 2,
-        client: {
-          ...mockClientBase,
-          id: 2,
-          first_name: "Tom",
-          last_name: "Jones",
-          therapist_id: 1,
-          hospital_number: "HN002",
-        },
-      },
-    ];
+  it("computes overlapping count from range sessions", async () => {
+    // Two sessions for the same therapist at overlapping times
+    const sessionA = { ...mockSessions[0]!, id: 1, therapist_id: 1, scheduled_at: new Date("2026-06-01T10:00:00"), duration: 60 };
+    const sessionB = { ...mockSessions[0]!, id: 2, therapist_id: 1, scheduled_at: new Date("2026-06-01T10:30:00"), duration: 60 };
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "session:list") {
-        return Promise.resolve(wrapped(overlappingSessions));
-      }
-      if (channel === "client:list") {
-        return Promise.resolve(wrapped(mockClients));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "session:list-range") return Promise.resolve(wrapped([sessionA, sessionB]));
+      if (channel === "session:list-expected") return Promise.resolve(wrapped([]));
+      if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
       return Promise.resolve(wrapped([]));
     });
 

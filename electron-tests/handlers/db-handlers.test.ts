@@ -48,10 +48,12 @@ async function invoke<C extends keyof IpcApi>(
 // ── Therapists ────────────────────────────────────────────────────────
 
 describe("therapist:list", () => {
-  it("returns all therapists", async () => {
-    const result = await invoke("therapist:list");
+  it("returns paginated therapists", async () => {
+    const result = await invoke("therapist:list", { page: 1, pageSize: 25 });
     assert(result.success);
-    expect(result.data).toHaveLength(2);
+    expect(result.data.data).toHaveLength(2);
+    expect(result.data.page).toBe(1);
+    expect(result.data.total).toBe(2);
   });
 });
 
@@ -123,11 +125,20 @@ describe("therapist:update", () => {
 // ── Clients ───────────────────────────────────────────────────────────
 
 describe("client:list", () => {
-  it("returns all clients with therapist relation", async () => {
-    const result = await invoke("client:list");
+  it("returns paginated clients with therapist relation", async () => {
+    const result = await invoke("client:list", { page: 1, pageSize: 25 });
     assert(result.success);
-    expect(result.data.length).toBeGreaterThanOrEqual(2);
-    expect(result.data[0]).toHaveProperty("therapist");
+    expect(result.data.data.length).toBeGreaterThanOrEqual(2);
+    expect(result.data.data[0]).toHaveProperty("therapist");
+    expect(result.data.page).toBe(1);
+    expect(result.data.pageSize).toBe(25);
+    expect(result.data.total).toBeGreaterThanOrEqual(2);
+  });
+
+  it("respects pageSize", async () => {
+    const result = await invoke("client:list", { page: 1, pageSize: 1 });
+    assert(result.success);
+    expect(result.data.data).toHaveLength(1);
   });
 });
 
@@ -271,12 +282,128 @@ describe("client:reopen", () => {
 // ── Sessions ──────────────────────────────────────────────────────────
 
 describe("session:list", () => {
-  it("returns all sessions with client and therapist relations", async () => {
-    const result = await invoke("session:list");
+  it("returns paginated sessions with client and therapist relations", async () => {
+    const result = await invoke("session:list", { page: 1, pageSize: 25 });
+    assert(result.success);
+    expect(result.data.data.length).toBeGreaterThanOrEqual(1);
+    expect(result.data.data[0]).toHaveProperty("client");
+    expect(result.data.data[0]).toHaveProperty("therapist");
+    expect(result.data.page).toBe(1);
+    expect(result.data.pageSize).toBe(25);
+    expect(result.data.total).toBeGreaterThanOrEqual(1);
+  });
+
+  it("filters by therapist id", async () => {
+    const result = await invoke("session:list", {
+      page: 1,
+      pageSize: 25,
+      therapistIds: [ids.therapistAlice],
+    });
+    assert(result.success);
+    expect(result.data.data.every((s) => s.therapist_id === ids.therapistAlice)).toBe(true);
+  });
+
+  it("respects pageSize", async () => {
+    const result = await invoke("session:list", { page: 1, pageSize: 1 });
+    assert(result.success);
+    expect(result.data.data).toHaveLength(1);
+    expect(result.data.pageSize).toBe(1);
+  });
+});
+
+describe("session:list-range", () => {
+  it("returns sessions within the date range", async () => {
+    const result = await invoke("session:list-range", {
+      from: new Date("2026-02-01T00:00:00"),
+      to: new Date("2026-02-28T23:59:59"),
+    });
+    assert(result.success);
+    expect(result.data.some((s) => s.id === ids.sessionId)).toBe(true);
+  });
+
+  it("returns empty when no sessions in range", async () => {
+    const result = await invoke("session:list-range", {
+      from: new Date("2020-01-01T00:00:00"),
+      to: new Date("2020-01-31T23:59:59"),
+    });
+    assert(result.success);
+    expect(result.data).toHaveLength(0);
+  });
+
+  it("filters by therapist id", async () => {
+    const result = await invoke("session:list-range", {
+      from: new Date("2026-01-01T00:00:00"),
+      to: new Date("2026-12-31T23:59:59"),
+      therapistIds: [ids.therapistBob],
+    });
+    assert(result.success);
+    expect(result.data.every((s) => s.therapist_id === ids.therapistBob)).toBe(true);
+  });
+});
+
+describe("session:list-expected", () => {
+  it("returns expected sessions for clients with a session schedule", async () => {
+    // Charlie has session_day: Tuesday, session_time: 10:00
+    // Use a range in the far future with no logged sessions
+    const result = await invoke("session:list-expected", {
+      from: new Date("2030-06-02T00:00:00"), // Monday
+      to: new Date("2030-06-08T23:59:59"),   // Sunday — one week containing a Tuesday
+      sortKey: "scheduled_at",
+      sortDir: "asc",
+    });
     assert(result.success);
     expect(result.data.length).toBeGreaterThanOrEqual(1);
-    expect(result.data[0]).toHaveProperty("client");
-    expect(result.data[0]).toHaveProperty("therapist");
+    const charlieExpected = result.data.find((e) => e.client_id === ids.clientCharlie);
+    expect(charlieExpected).toBeDefined();
+    expect(charlieExpected!.scheduled_at.getDay()).toBe(2); // Tuesday
+    expect(charlieExpected!.scheduled_at.getHours()).toBe(10);
+  });
+
+  it("does not return expected when session already logged for that week", async () => {
+    // 2030-06-04 is a Tuesday — log a session for Charlie that week
+    await invoke("session:create", {
+      client_id: ids.clientCharlie,
+      therapist_id: ids.therapistAlice,
+      scheduled_at: new Date("2030-06-04T10:00:00"),
+      duration: 60,
+      status: "Attended",
+      session_type: "Child",
+      delivery_method: "FaceToFace",
+    });
+
+    const result = await invoke("session:list-expected", {
+      from: new Date("2030-06-02T00:00:00"),
+      to: new Date("2030-06-08T23:59:59"),
+      sortKey: "scheduled_at",
+      sortDir: "asc",
+    });
+    assert(result.success);
+    expect(result.data.find((e) => e.client_id === ids.clientCharlie)).toBeUndefined();
+  });
+
+  it("does not return expected for clients without a session_day set", async () => {
+    // Dana has no session_day
+    const result = await invoke("session:list-expected", {
+      from: new Date("2030-07-01T00:00:00"),
+      to: new Date("2030-07-31T23:59:59"),
+      sortKey: "scheduled_at",
+      sortDir: "asc",
+    });
+    assert(result.success);
+    expect(result.data.find((e) => e.client_id === ids.clientDana)).toBeUndefined();
+  });
+
+  it("filters by therapist id", async () => {
+    const result = await invoke("session:list-expected", {
+      from: new Date("2030-08-01T00:00:00"),
+      to: new Date("2030-08-31T23:59:59"),
+      therapistIds: [ids.therapistBob],
+      sortKey: "scheduled_at",
+      sortDir: "asc",
+    });
+    assert(result.success);
+    // Charlie belongs to Alice, so nothing should appear for Bob's filter
+    expect(result.data.find((e) => e.client_id === ids.clientCharlie)).toBeUndefined();
   });
 });
 

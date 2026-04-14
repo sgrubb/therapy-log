@@ -1,7 +1,9 @@
-import { SessionStatus, SESSION_TYPE_NAMES } from "@/types/enums";
-import type { SessionWithRelations, ClientWithTherapist, Therapist } from "@/types/ipc";
-import { getExpectedSessions } from "@/lib/sessions-utils";
+import { SESSION_TYPE_NAMES } from "@/types/enums";
+import type { SessionWithRelations } from "@/types/sessions";
+import type { Therapist } from "@/types/therapists";
+import type { ExpectedSession } from "@shared/types/sessions";
 import { getWeekStart } from "@/lib/datetime-utils";
+import { minutesToMilliseconds } from "date-fns";
 
 export const THERAPIST_COLORS = [
   "#3b82f6", // blue
@@ -17,13 +19,22 @@ export interface CalendarEvent {
   start: Date;
   end: Date;
   resourceId: number;
-  isPlaceholder: boolean;
-  isOverdue: boolean;
-  isUnconfirmed: boolean;
-  isOverlapping: boolean;
+  isExpected: boolean;
   clientId: number;
   sessionId?: number;
   color: string;
+}
+
+export function isOverdue(event: CalendarEvent): boolean {
+  return event.isExpected && event.start < new Date();
+}
+
+export function isUnconfirmed(event: CalendarEvent, unconfirmedIds: Set<number>): boolean {
+  return !event.isExpected && event.sessionId !== undefined && unconfirmedIds.has(event.sessionId);
+}
+
+export function isOverlapping(event: CalendarEvent, overlappingIds: Set<number>): boolean {
+  return !event.isExpected && event.sessionId !== undefined && overlappingIds.has(event.sessionId);
 }
 
 export function sessionsToEvents(
@@ -36,73 +47,30 @@ export function sessionsToEvents(
     start: s.scheduled_at,
     end: new Date(s.scheduled_at.getTime() + s.duration * 60_000),
     resourceId: s.therapist_id,
-    isPlaceholder: false,
-    isOverdue: false,
-    isUnconfirmed: s.status === SessionStatus.Scheduled && s.scheduled_at < new Date(),
-    isOverlapping: false,
+    isExpected: false,
     clientId: s.client_id,
     sessionId: s.id,
     color: therapistColors.get(s.therapist_id) ?? THERAPIST_COLORS[0]!,
   }));
 }
 
-export function generatePlaceholders(
-  clients: ClientWithTherapist[],
-  sessions: SessionWithRelations[],
-  rangeStart: Date,
-  rangeEnd: Date,
-  selectedTherapistIds: Set<number>,
+export function expectedToEvents(
+  expectedSessions: ExpectedSession[],
   therapistColors: Map<number, string>,
+  selectedTherapistIds: Set<number>,
 ): CalendarEvent[] {
-  const clientMap = new Map(clients.map((c) => [c.id, c]));
-  return getExpectedSessions(clients, sessions, rangeStart, rangeEnd, selectedTherapistIds)
-    .map((expected) => {
-      const weekKey = getWeekStart(expected.start);
-      const client = clientMap.get(expected.clientId);
-      const title = client
-        ? `${client.first_name} ${client.last_name} (expected)`
-        : "Unknown (expected)";
-      return {
-        id: `placeholder-${expected.clientId}-${weekKey}`,
-        title,
-        start: expected.start,
-        end: expected.end,
-        resourceId: expected.therapistId,
-        isPlaceholder: true,
-        isOverdue: expected.start < new Date(),
-        isUnconfirmed: false,
-        isOverlapping: false,
-        clientId: expected.clientId,
-        color: therapistColors.get(expected.therapistId) ?? THERAPIST_COLORS[0]!,
-      };
-    });
-}
-
-export function detectOverlaps(events: CalendarEvent[]): CalendarEvent[] {
-  const now = new Date();
-  const byTherapistEvents = events
-    .filter((e) => !e.isPlaceholder && e.start >= now)
-    .reduce((btes, e) => {
-      const therapistSessions = btes.get(e.resourceId) ?? [];
-      therapistSessions.push(e);
-      btes.set(e.resourceId, therapistSessions);
-      return btes;
-    }, new Map<number, CalendarEvent[]>());
-
-  const overlappingIds = new Set(
-    Array.from(byTherapistEvents.values()).flatMap((sessions) =>
-      sessions.flatMap((a, i) =>
-        sessions
-          .slice(i + 1)
-          .filter((b) => a.start < b.end && b.start < a.end)
-          .flatMap((b) => [a.id, b.id]),
-      ),
-    ),
-  );
-
-  return events.map((e) =>
-    overlappingIds.has(e.id) ? { ...e, isOverlapping: true } : e,
-  );
+  return expectedSessions
+    .filter((e) => selectedTherapistIds.size === 0 || selectedTherapistIds.has(e.therapist_id))
+    .map((expected) => ({
+      id: `expected-${expected.client_id}-${getWeekStart(expected.scheduled_at)}`,
+      title: `${expected.client.first_name} ${expected.client.last_name} (expected)`,
+      start: expected.scheduled_at,
+      end: new Date(expected.scheduled_at.getTime() + minutesToMilliseconds(expected.duration)),
+      resourceId: expected.therapist_id,
+      isExpected: true,
+      clientId: expected.client_id,
+      color: therapistColors.get(expected.therapist_id) ?? THERAPIST_COLORS[0]!,
+    }));
 }
 
 export function buildTherapistColorMap(
@@ -114,4 +82,3 @@ export function buildTherapistColorMap(
   });
   return map;
 }
-

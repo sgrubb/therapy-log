@@ -9,7 +9,7 @@ import { clientFormSchema } from "@/schemas/forms";
 import { SessionDay, Outcome, FormState } from "@/types/enums";
 import type { DeliveryMethod } from "@/types/enums";
 import { useFormState } from "@/hooks/useFormState";
-import type { ClientWithTherapist } from "@/types/ipc";
+import type { ClientWithTherapist } from "@/types/clients";
 import { toDuration, fromDuration } from "@/lib/sessions-utils";
 
 // Field names mirror the database schema (snake_case) so they map directly
@@ -142,12 +142,12 @@ export function useClientForm(clientId?: number) {
       const payload = buildPayload(form);
       if (isEdit && clientId !== undefined) {
         await ipc.updateClient(clientId, { ...payload, updated_at: updatedAt! });
-        await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.clients.root });
         await queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(clientId) });
         navigate(`/clients/${clientId}`);
       } else {
         const created = await ipc.createClient(payload);
-        await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.clients.root });
         navigate(`/clients/${created.id}`);
       }
     } catch (err) {

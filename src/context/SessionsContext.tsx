@@ -1,9 +1,18 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { format, parse, startOfMonth, endOfMonth, endOfDay } from "date-fns";
+import { createContext, useContext, useEffect, useMemo, useState, startTransition, type ReactNode } from "react";
+import { SortDir } from "@shared/types/enums";
+import { format, parse, startOfMonth, endOfMonth, endOfDay, minutesToMilliseconds } from "date-fns";
 import { startOfWeekMon, endOfWeekMon } from "@/lib/datetime-utils";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
-import { getExpectedSessions, getOverlappingSessions, getUnconfirmedSessions } from "@/lib/sessions-utils";
-import type { ClientWithTherapist, SessionWithRelations } from "@/types/ipc";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { ipc } from "@/lib/ipc";
+import { queryKeys } from "@/lib/queryKeys";
+import type { SessionWithRelations } from "@/types/sessions";
+import type { ClientWithTherapist } from "@/types/clients";
+import type { ExpectedSession, SessionFilters, SessionListParams } from "@shared/types/sessions";
+import {
+  computeOverlappingIds,
+  computeUnconfirmedIds,
+} from "@/lib/sessions-utils";
 
 export const DatePreset = {
   ThisWeek: "this_week",
@@ -12,6 +21,9 @@ export const DatePreset = {
   Custom: "custom",
 } as const;
 export type DatePreset = (typeof DatePreset)[keyof typeof DatePreset];
+
+const DEFAULT_PAGE_SIZE = 25;
+
 
 function getPresetRange(preset: DatePreset): { from: string; to: string } {
   const now = new Date();
@@ -28,15 +40,6 @@ function getPresetRange(preset: DatePreset): { from: string; to: string } {
     };
   }
   return { from: "", to: "" };
-}
-
-export interface ExpectedSessionRow {
-  id: string;
-  start: Date;
-  clientName: string;
-  therapistName: string;
-  isOverdue: boolean;
-  logUrl: string;
 }
 
 interface SessionContextValue {
@@ -60,47 +63,53 @@ interface SessionContextValue {
   handleOverlappingOnly: (checked: boolean) => void;
   expectedOpen: boolean;
   setExpectedOpen: (value: boolean) => void;
-  filtered: SessionWithRelations[];
+  page: number;
+  setPage: (page: number) => void;
+  totalSessions: number;
+  pageSize: number;
   displayedSessions: SessionWithRelations[];
-  displayedExpectedRows: ExpectedSessionRow[];
+  displayedExpectedSessions: ExpectedSession[];
   showExpectedSection: boolean;
   overlappingIds: Set<number>;
   unconfirmedIds: Set<number>;
-  overdueCount: number;
-  unconfirmedCount: number;
-  overlappingCount: number;
-  uniqueClients: { id: number; name: string }[];
-  sortedTherapists: { id: number; first_name: string; last_name: string }[];
   showMine: boolean;
-  selectedTherapistId: number | null;
+  allClients: ClientWithTherapist[];
+  sortKey: string;
+  sortDir: SortDir;
+  setSort: (key: string) => void;
+  expectedSortKey: string;
+  expectedSortDir: SortDir;
+  setExpectedSort: (key: string) => void;
   reset: () => void;
 }
 
 const SessionCtx = createContext<SessionContextValue | null>(null);
 
-interface SessionProviderProps {
-  sessions: SessionWithRelations[];
-  clients: ClientWithTherapist[];
-  children: ReactNode;
-}
+export function SessionProvider({ children }: { children: ReactNode }) {
+  const { selectedTherapistId } = useSelectedTherapist();
 
-export function SessionProvider({ sessions, clients, children }: SessionProviderProps) {
-  const { therapists, selectedTherapistId } = useSelectedTherapist();
-
-  const [clientFilter, setClientFilter] = useState("all");
-  const [therapistFilter, setTherapistFilter] = useState(
+  const [clientFilter, setClientFilterRaw] = useState("all");
+  const [therapistFilter, setTherapistFilterRaw] = useState(
     () => selectedTherapistId !== null ? String(selectedTherapistId) : "all",
   );
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilterRaw] = useState("all");
   const [datePreset, setDatePresetState] = useState<DatePreset>(DatePreset.ThisWeek);
   const initialRange = getPresetRange(DatePreset.ThisWeek);
   const [dateFromFilter, setDateFromFilterState] = useState(initialRange.from);
   const [dateToFilter, setDateToFilterState] = useState(initialRange.to);
-
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [unconfirmedOnly, setUnconfirmedOnly] = useState(false);
   const [overlappingOnly, setOverlappingOnly] = useState(false);
   const [expectedOpen, setExpectedOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [sortKey, setSortKey] = useState("scheduled_at");
+  const [sortDir, setSortDir] = useState<SortDir>(SortDir.Desc);
+  const [expectedSortKey, setExpectedSortKey] = useState("scheduled_at");
+  const [expectedSortDir, setExpectedSortDir] = useState<SortDir>(SortDir.Asc);
+
+  useEffect(() => {
+    setTherapistFilterRaw(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
+  }, [selectedTherapistId]);
 
   function handleOverdueOnly(checked: boolean) {
     setOverdueOnly(checked);
@@ -128,150 +137,201 @@ export function SessionProvider({ sessions, clients, children }: SessionProvider
   }
 
   function setDatePreset(preset: DatePreset) {
-    setDatePresetState(preset);
-    if (preset !== DatePreset.Custom) {
-      const range = getPresetRange(preset);
-      setDateFromFilterState(range.from);
-      setDateToFilterState(range.to);
-    }
+    startTransition(() => {
+      setDatePresetState(preset);
+      if (preset !== DatePreset.Custom) {
+        const range = getPresetRange(preset);
+        setDateFromFilterState(range.from);
+        setDateToFilterState(range.to);
+      }
+      setPage(1);
+    });
   }
 
   function setDateFromFilter(value: string) {
-    setDateFromFilterState(value);
-    setDatePresetState(DatePreset.Custom);
+    startTransition(() => {
+      setDateFromFilterState(value);
+      setDatePresetState(DatePreset.Custom);
+      setPage(1);
+    });
   }
 
   function setDateToFilter(value: string) {
-    setDateToFilterState(value);
-    setDatePresetState(DatePreset.Custom);
+    startTransition(() => {
+      setDateToFilterState(value);
+      setDatePresetState(DatePreset.Custom);
+      setPage(1);
+    });
   }
 
-  useEffect(() => {
-    setTherapistFilter(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
-  }, [selectedTherapistId]);
+  function setClientFilter(value: string) {
+    startTransition(() => {
+      setClientFilterRaw(value);
+      setPage(1);
+    });
+  }
 
-  const showMine = selectedTherapistId !== null && therapistFilter === String(selectedTherapistId);
+  function setTherapistFilter(value: string) {
+    startTransition(() => {
+      setTherapistFilterRaw(value);
+      setPage(1);
+    });
+  }
 
-  const sortedTherapists = useMemo(
-    () => [...therapists].sort((a, b) => {
-      const nameA = `${a.last_name} ${a.first_name}`;
-      const nameB = `${b.last_name} ${b.first_name}`;
-      return nameA.localeCompare(nameB);
-    }),
-    [therapists],
-  );
-
-  const uniqueClients = useMemo(() => {
-    const { clients: derived } = sessions.reduce(
-      (acc, s) => {
-        if (!acc.seen.has(s.client_id)) {
-          acc.seen.add(s.client_id);
-          acc.clients.push({ id: s.client_id, name: `${s.client.last_name}, ${s.client.first_name}` });
-        }
-        return acc;
-      },
-      { seen: new Set<number>(), clients: [] as { id: number; name: string }[] },
-    );
-    return derived.sort((a, b) => a.name.localeCompare(b.name));
-  }, [sessions]);
-
-  const filtered = useMemo(() => {
-    const from = dateFromFilter ? parse(dateFromFilter, "yyyy-MM-dd", new Date()) : null;
-    const to = dateToFilter ? endOfDay(parse(dateToFilter, "yyyy-MM-dd", new Date())) : null;
-
-    return sessions
-      .filter((s) => clientFilter === "all" || s.client_id === Number(clientFilter))
-      .filter((s) => therapistFilter === "all" || s.therapist_id === Number(therapistFilter))
-      .filter((s) => statusFilter === "all" || s.status === statusFilter)
-      .filter((s) => !from || s.scheduled_at >= from)
-      .filter((s) => !to || s.scheduled_at <= to);
-  }, [sessions, clientFilter, therapistFilter, statusFilter, dateFromFilter, dateToFilter]);
-
-  const clientMap = useMemo(
-    () => new Map(clients.map((c) => [c.id, c])),
-    [clients],
-  );
+  function setStatusFilter(value: string) {
+    startTransition(() => {
+      setStatusFilterRaw(value);
+      setPage(1);
+    });
+  }
 
   const hasBoundedRange = dateFromFilter !== "" && dateToFilter !== "";
 
-  const expectedSessionRows = useMemo((): ExpectedSessionRow[] => {
-    if (!hasBoundedRange) {
-      return [];
-    }
+  const baseFilters: SessionFilters = useMemo(() => ({
+    ...(dateFromFilter ? { from: parse(dateFromFilter, "yyyy-MM-dd", new Date()) } : {}),
+    ...(dateToFilter ? { to: endOfDay(parse(dateToFilter, "yyyy-MM-dd", new Date())) } : {}),
+    ...(therapistFilter !== "all" ? { therapistIds: [Number(therapistFilter)] } : {}),
+    ...(clientFilter !== "all" ? { clientId: Number(clientFilter) } : {}),
+    ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+  }), [dateFromFilter, dateToFilter, therapistFilter, clientFilter, statusFilter]);
 
-    const now = new Date();
-    const rangeStart = parse(dateFromFilter, "yyyy-MM-dd", new Date());
-    const rangeEnd = endOfDay(parse(dateToFilter, "yyyy-MM-dd", new Date()));
+  // Range filters without status — used for overlap and unconfirmed computation
+  const rangeFilters: SessionFilters = useMemo(() => ({
+    ...(dateFromFilter ? { from: parse(dateFromFilter, "yyyy-MM-dd", new Date()) } : {}),
+    ...(dateToFilter ? { to: endOfDay(parse(dateToFilter, "yyyy-MM-dd", new Date())) } : {}),
+    ...(therapistFilter !== "all" ? { therapistIds: [Number(therapistFilter)] } : {}),
+    ...(clientFilter !== "all" ? { clientId: Number(clientFilter) } : {}),
+  }), [dateFromFilter, dateToFilter, therapistFilter, clientFilter]);
 
-    const therapistIds = therapistFilter !== "all"
-      ? new Set([Number(therapistFilter)])
-      : undefined;
+  const listParams: SessionListParams = useMemo(() => ({
+    ...baseFilters,
+    page,
+    pageSize: DEFAULT_PAGE_SIZE,
+    sortKey,
+    sortDir,
+  }), [baseFilters, page, sortKey, sortDir]);
 
-    return getExpectedSessions(clients, sessions, rangeStart, rangeEnd, therapistIds)
-      .filter((s) => clientFilter === "all" || s.clientId === Number(clientFilter))
-      .map((s) => {
-        const client = clientMap.get(s.clientId);
-        const therapist = client?.therapist;
-        return {
-          id: s.id,
-          start: s.start,
-          clientName: client ? `${client.first_name} ${client.last_name}` : "—",
-          therapistName: therapist ? `${therapist.first_name} ${therapist.last_name}` : "—",
-          isOverdue: s.start < now,
-          logUrl: `/sessions/new?clientId=${s.clientId}&date=${format(s.start, "yyyy-MM-dd")}&time=${format(s.start, "HH:mm")}`,
-        };
-      });
-  }, [clients, sessions, therapistFilter, clientFilter, dateFromFilter, dateToFilter, clientMap, hasBoundedRange]);
+  const { data: paginatedSessions } = useSuspenseQuery({
+    queryKey: queryKeys.sessions.list(listParams),
+    queryFn: () => ipc.listSessions(listParams),
+    refetchInterval: minutesToMilliseconds(1),
+  });
 
-  const overdueCount = useMemo(
-    () => expectedSessionRows.filter((s) => s.isOverdue).length,
-    [expectedSessionRows],
-  );
+  const { data: rangeSessions } = useSuspenseQuery({
+    queryKey: queryKeys.sessions.range(rangeFilters),
+    queryFn: () =>
+      hasBoundedRange ? ipc.listSessionsRange(rangeFilters) : Promise.resolve([]),
+    refetchInterval: minutesToMilliseconds(1),
+  });
+
+  const expectedParams = useMemo(() => (
+    hasBoundedRange
+      ? {
+          from: parse(dateFromFilter, "yyyy-MM-dd", new Date()),
+          to: endOfDay(parse(dateToFilter, "yyyy-MM-dd", new Date())),
+          ...(therapistFilter !== "all" ? { therapistIds: [Number(therapistFilter)] } : {}),
+          ...(clientFilter !== "all" ? { clientId: Number(clientFilter) } : {}),
+          sortKey: expectedSortKey,
+          sortDir: expectedSortDir,
+        }
+      : null
+  ), [hasBoundedRange, dateFromFilter, dateToFilter, therapistFilter, clientFilter, expectedSortKey, expectedSortDir]);
+
+  const { data: expectedSessions } = useSuspenseQuery({
+    queryKey: queryKeys.sessions.expected(expectedParams),
+    queryFn: () =>
+      expectedParams ? ipc.listExpectedSessions(expectedParams) : Promise.resolve([]),
+    refetchInterval: minutesToMilliseconds(1),
+  });
+
+  const { data: allClients } = useSuspenseQuery({
+    queryKey: queryKeys.clients.all,
+    queryFn: () => ipc.listAllClients(),
+    refetchInterval: minutesToMilliseconds(5),
+  });
 
   const overlappingIds = useMemo(
-    () => new Set(getOverlappingSessions(filtered).map((s) => s.id)),
-    [filtered],
+    () => computeOverlappingIds(rangeSessions),
+    [rangeSessions],
   );
 
   const unconfirmedIds = useMemo(
-    () => new Set(getUnconfirmedSessions(filtered).map((s) => s.id)),
-    [filtered],
+    () => computeUnconfirmedIds(rangeSessions, new Date()),
+    [rangeSessions],
   );
 
-  const overlappingCount = useMemo(
-    () => filtered.filter((s) => overlappingIds.has(s.id) && s.scheduled_at >= new Date()).length,
-    [filtered, overlappingIds],
+  const overlappingSessions = useMemo(
+    () => rangeSessions.filter((s) => overlappingIds.has(s.id)),
+    [rangeSessions, overlappingIds],
   );
 
-  const unconfirmedCount = unconfirmedIds.size;
+  const unconfirmedSessions = useMemo(
+    () => rangeSessions.filter((s) => unconfirmedIds.has(s.id)),
+    [rangeSessions, unconfirmedIds],
+  );
 
   const displayedSessions = useMemo(() => {
     if (unconfirmedOnly) {
-      return filtered.filter((s) => unconfirmedIds.has(s.id));
+      return unconfirmedSessions;
     }
     if (overlappingOnly) {
-      return filtered.filter((s) => overlappingIds.has(s.id) && s.scheduled_at >= new Date());
+      return overlappingSessions;
     }
-    return filtered;
-  }, [filtered, unconfirmedOnly, overlappingOnly, unconfirmedIds, overlappingIds]);
+    return paginatedSessions.data;
+  }, [paginatedSessions, unconfirmedOnly, overlappingOnly, unconfirmedSessions, overlappingSessions]);
 
-  const displayedExpectedRows = useMemo(
+  const totalSessions = useMemo(() => {
+    if (unconfirmedOnly) {
+      return unconfirmedSessions.length;
+    }
+    if (overlappingOnly) {
+      return overlappingSessions.length;
+    }
+    return paginatedSessions.total;
+  }, [paginatedSessions, unconfirmedOnly, overlappingOnly, unconfirmedSessions, overlappingSessions]);
+
+  const displayedExpectedSessions = useMemo(
     () => overdueOnly
-      ? expectedSessionRows.filter((s) => s.isOverdue)
-      : expectedSessionRows,
-    [expectedSessionRows, overdueOnly],
+      ? expectedSessions.filter((s) => s.scheduled_at < new Date())
+      : expectedSessions,
+    [expectedSessions, overdueOnly],
   );
 
   const showExpectedSection = hasBoundedRange
-    && displayedExpectedRows.length > 0
+    && displayedExpectedSessions.length > 0
     && !unconfirmedOnly
     && !overlappingOnly;
 
+  const showMine = selectedTherapistId !== null && therapistFilter === String(selectedTherapistId);
+
+  function setSort(key: string) {
+    startTransition(() => {
+      if (key === sortKey) {
+        setSortDir((d) => (d === SortDir.Asc ? SortDir.Desc : SortDir.Asc));
+      } else {
+        setSortKey(key);
+        setSortDir(SortDir.Asc);
+      }
+      setPage(1);
+    });
+  }
+
+  function setExpectedSort(key: string) {
+    startTransition(() => {
+      if (key === expectedSortKey) {
+        setExpectedSortDir((d) => (d === SortDir.Asc ? SortDir.Desc : SortDir.Asc));
+      } else {
+        setExpectedSortKey(key);
+        setExpectedSortDir(SortDir.Asc);
+      }
+    });
+  }
+
   function reset() {
     const range = getPresetRange(DatePreset.ThisWeek);
-    setClientFilter("all");
-    setTherapistFilter(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
-    setStatusFilter("all");
+    setClientFilterRaw("all");
+    setTherapistFilterRaw(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
+    setStatusFilterRaw("all");
     setDatePresetState(DatePreset.ThisWeek);
     setDateFromFilterState(range.from);
     setDateToFilterState(range.to);
@@ -279,6 +339,11 @@ export function SessionProvider({ sessions, clients, children }: SessionProvider
     setUnconfirmedOnly(false);
     setOverlappingOnly(false);
     setExpectedOpen(false);
+    setSortKey("scheduled_at");
+    setSortDir(SortDir.Desc);
+    setExpectedSortKey("scheduled_at");
+    setExpectedSortDir(SortDir.Asc);
+    setPage(1);
   }
 
   return (
@@ -294,12 +359,21 @@ export function SessionProvider({ sessions, clients, children }: SessionProvider
         unconfirmedOnly, handleUnconfirmedOnly,
         overlappingOnly, handleOverlappingOnly,
         expectedOpen, setExpectedOpen,
-        filtered, displayedSessions,
-        displayedExpectedRows, showExpectedSection,
+        page, setPage,
+        totalSessions,
+        pageSize: DEFAULT_PAGE_SIZE,
+        displayedSessions,
+        displayedExpectedSessions,
+        showExpectedSection,
         overlappingIds, unconfirmedIds,
-        overdueCount, unconfirmedCount, overlappingCount,
-        uniqueClients, sortedTherapists,
-        showMine, selectedTherapistId,
+        showMine,
+        allClients,
+        sortKey,
+        sortDir,
+        setSort,
+        expectedSortKey,
+        expectedSortDir,
+        setExpectedSort,
         reset,
       }}
     >

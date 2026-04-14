@@ -6,26 +6,34 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import ClientsPage from "@/pages/ClientsPage";
-import { wrapped, mockTherapists, mockClients } from "../helpers/ipc-mocks";
+import { wrapped, wrappedPaginated, mockTherapists, mockClients } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
 
 vi.mock("@/components/ui/select");
 
 const mockInvoke = vi.fn();
 
+const openClients = mockClients.filter((c) => c.closed_date === null);
+
+function defaultMock() {
+  mockInvoke.mockImplementation((channel: string, params: unknown) => {
+    if (channel === "therapist:list-all") { return Promise.resolve(wrapped(mockTherapists)); }
+    if (channel === "client:list") {
+      const { status } = (params ?? {}) as { status?: string };
+      const data = status === "all" ? mockClients : status === "closed"
+        ? mockClients.filter((c) => c.closed_date !== null)
+        : openClients;
+      return Promise.resolve(wrappedPaginated(data));
+    }
+    return Promise.resolve(wrapped([]));
+  });
+}
+
 beforeEach(() => {
   localStorage.clear();
   mockInvoke.mockReset();
   window.electronAPI = { invoke: mockInvoke } as never;
-  mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") {
-      return Promise.resolve(wrapped(mockTherapists));
-    }
-    if (channel === "client:list") {
-      return Promise.resolve(wrapped(mockClients));
-    }
-    return Promise.resolve(wrapped([]));
-  });
+  defaultMock();
 });
 
 function renderClientsPage() {
@@ -57,7 +65,7 @@ describe("ClientsPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Jane Smith")).toBeInTheDocument();
     });
-    // Tom Jones is closed — default status filter is "open"
+    // Tom Jones is closed — default status filter sends status:"open" to backend
     expect(screen.queryByText("Tom Jones")).not.toBeInTheDocument();
   });
 
@@ -65,7 +73,7 @@ describe("ClientsPage", () => {
     renderClientsPage();
     await waitFor(() => {
       expect(screen.getByText("HN001")).toBeInTheDocument();
-      expect(screen.getByText("Alice Morgan")).toBeInTheDocument();
+      expect(screen.getAllByText("Alice Morgan").length).toBeGreaterThan(0);
     });
   });
 
@@ -92,25 +100,22 @@ describe("ClientsPage", () => {
   });
 
   it("shows loading state while fetching clients", async () => {
-    let resolveClients!: (v: typeof mockClients) => void;
-    const clientsPromise = new Promise<typeof mockClients>((res) => {
+    type WrappedClients = ReturnType<typeof wrappedPaginated<(typeof mockClients)[0]>>;
+    let resolveClients!: (v: WrappedClients) => void;
+    const clientsPromise = new Promise<WrappedClients>((res) => {
       resolveClients = res;
     });
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "client:list") {
-        return clientsPromise.then((data) => wrapped(data));
-      }
+      if (channel === "therapist:list-all") { return Promise.resolve(wrapped(mockTherapists)); }
+      if (channel === "client:list") { return clientsPromise; }
       return Promise.resolve(wrapped([]));
     });
 
     renderClientsPage();
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
 
-    resolveClients(mockClients);
+    resolveClients(wrappedPaginated(openClients));
     await waitFor(() => screen.getByText("Jane Smith"));
   });
 
@@ -118,12 +123,8 @@ describe("ClientsPage", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "client:list") {
-        return Promise.reject(new Error("DB error"));
-      }
+      if (channel === "therapist:list-all") { return Promise.resolve(wrapped(mockTherapists)); }
+      if (channel === "client:list") { return Promise.reject(new Error("DB error")); }
       return Promise.resolve(wrapped([]));
     });
 
@@ -138,13 +139,8 @@ describe("ClientsPage", () => {
 
   it("shows empty state when no clients match filters", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      // only Tom (closed) — default "open" filter will hide him
-      if (channel === "client:list") {
-        return Promise.resolve(wrapped([mockClients[1]]));
-      }
+      if (channel === "therapist:list-all") { return Promise.resolve(wrapped(mockTherapists)); }
+      if (channel === "client:list") { return Promise.resolve(wrappedPaginated([])); }
       return Promise.resolve(wrapped([]));
     });
 

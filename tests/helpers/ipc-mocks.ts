@@ -4,6 +4,10 @@ export function wrapped<T>(data: T) {
   return { success: true, data };
 }
 
+export function wrappedPaginated<T>(data: T[], total?: number, page = 1, pageSize = 25) {
+  return wrapped({ data, total: total ?? data.length, page, pageSize });
+}
+
 export const errorResponse = {
   notFound: {
     success: false,
@@ -96,6 +100,19 @@ export const mockClients = [
     closed_date: new Date("2025-12-01T00:00:00.000Z"),
     email: "tom@example.com",
   },
+  {
+    ...mockClientBase,
+    id: 3,
+    first_name: "Eve",
+    last_name: "Walker",
+    hospital_number: "HN003",
+    dob: new Date("1998-03-20T00:00:00.000Z"),
+    therapist_id: 1,
+    therapist: mockTherapists[0]!,
+    session_day: "Monday" as const,
+    session_time: "10:00",
+    session_duration: 60,
+  },
 ];
 
 // ── Sessions ─────────────────────────────────────────────────────────────────
@@ -121,6 +138,16 @@ export const mockSession = {
     therapist_id: 1,
   },
   therapist: mockTherapist,
+};
+
+export const mockExpectedSession = {
+  id: "expected-1",
+  client_id: 3,
+  therapist_id: 1,
+  scheduled_at: MOCK_SESSION_DATE_RECENT,
+  duration: 60,
+  client: { id: 3, first_name: "Eve", last_name: "Walker" },
+  therapist: { id: 1, first_name: "Alice", last_name: "Morgan" },
 };
 
 export const mockSessions = [

@@ -14,6 +14,11 @@ export default defineConfig({
         ],
       }),
     ],
+    resolve: {
+      alias: {
+        "@shared": resolve(__dirname, "shared"),
+      },
+    },
     build: {
       rollupOptions: {
         input: resolve(__dirname, "electron/main.ts"),
@@ -22,6 +27,11 @@ export default defineConfig({
   },
   preload: {
     plugins: [externalizeDepsPlugin()],
+    resolve: {
+      alias: {
+        "@shared": resolve(__dirname, "shared"),
+      },
+    },
     build: {
       rollupOptions: {
         input: resolve(__dirname, "electron/preload.ts"),
@@ -38,6 +48,7 @@ export default defineConfig({
     resolve: {
       alias: {
         "@": resolve(__dirname, "src"),
+        "@shared": resolve(__dirname, "shared"),
       },
     },
     plugins: [react(), tailwindcss()],

@@ -1,5 +1,5 @@
 import { Dialog } from "radix-ui";
-import type { ClientWithTherapist } from "@/types/ipc";
+import type { ClientWithTherapist } from "@/types/clients";
 import { useReopenClient } from "@/hooks/useReopenClient";
 import { FormState } from "@/types/enums";
 import { Button } from "@/components/ui/button";

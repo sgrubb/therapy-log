@@ -6,29 +6,36 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import SessionsPage from "@/pages/SessionsPage";
-import { wrapped, mockTherapists, mockSessions, mockClients, mockClientBase } from "../helpers/ipc-mocks";
+import {
+  wrapped,
+  wrappedPaginated,
+  mockTherapists,
+  mockSessions,
+  mockClients,
+  mockExpectedSession,
+} from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
 
 vi.mock("@/components/ui/select");
 
 const mockInvoke = vi.fn();
 
+function defaultMock() {
+  mockInvoke.mockImplementation((channel: string) => {
+    if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+    if (channel === "session:list") return Promise.resolve(wrappedPaginated(mockSessions));
+    if (channel === "session:list-range") return Promise.resolve(wrapped([]));
+    if (channel === "session:list-expected") return Promise.resolve(wrapped([]));
+    if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
+    return Promise.resolve(wrapped([]));
+  });
+}
+
 beforeEach(() => {
   localStorage.clear();
   mockInvoke.mockReset();
   window.electronAPI = { invoke: mockInvoke } as never;
-  mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") {
-      return Promise.resolve(wrapped(mockTherapists));
-    }
-    if (channel === "session:list") {
-      return Promise.resolve(wrapped(mockSessions));
-    }
-    if (channel === "client:list") {
-      return Promise.resolve(wrapped([]));
-    }
-    return Promise.resolve(wrapped([]));
-  });
+  defaultMock();
 });
 
 function renderSessionsPage() {
@@ -53,21 +60,6 @@ function renderSessionsPage() {
     </QueryClientProvider>,
   );
 }
-
-// A client with a regular Monday slot but no sessions → always overdue within 2 weeks
-const overdueClient = {
-  ...mockClientBase,
-  id: 3,
-  first_name: "Eve",
-  last_name: "Walker",
-  hospital_number: "HN003",
-  therapist_id: 1,
-  therapist: mockTherapists[0]!,
-  session_day: "Monday" as const,
-  session_time: "09:00",
-  session_duration: 60,
-  session_delivery_method: "FaceToFace" as const,
-};
 
 describe("SessionsPage", () => {
   it("renders session rows with client and therapist names", async () => {
@@ -108,36 +100,34 @@ describe("SessionsPage", () => {
   });
 
   it("shows loading state while fetching sessions", async () => {
-    let resolveSessions!: (v: typeof mockSessions) => void;
-    const sessionsPromise = new Promise<typeof mockSessions>((res) => {
+    let resolveSessions!: (v: ReturnType<typeof wrappedPaginated>) => void;
+    const sessionsPromise = new Promise<ReturnType<typeof wrappedPaginated>>((res) => {
       resolveSessions = res;
     });
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "session:list") {
-        return sessionsPromise.then((d) => wrapped(d));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "session:list") return sessionsPromise;
+      if (channel === "session:list-range") return Promise.resolve(wrapped([]));
+      if (channel === "session:list-expected") return Promise.resolve(wrapped([]));
+      if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
       return Promise.resolve(wrapped([]));
     });
 
     renderSessionsPage();
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
 
-    resolveSessions(mockSessions);
+    resolveSessions(wrappedPaginated(mockSessions));
     await waitFor(() => screen.getByText("Jane Smith"));
   });
 
   it("shows empty state when no sessions found", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "session:list") {
-        return Promise.resolve(wrapped([]));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "session:list") return Promise.resolve(wrappedPaginated([]));
+      if (channel === "session:list-range") return Promise.resolve(wrapped([]));
+      if (channel === "session:list-expected") return Promise.resolve(wrapped([]));
+      if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
       return Promise.resolve(wrapped([]));
     });
 
@@ -151,12 +141,11 @@ describe("SessionsPage", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "session:list") {
-        return Promise.reject(new Error("DB error"));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "session:list") return Promise.reject(new Error("DB error"));
+      if (channel === "session:list-range") return Promise.resolve(wrapped([]));
+      if (channel === "session:list-expected") return Promise.resolve(wrapped([]));
+      if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
       return Promise.resolve(wrapped([]));
     });
 
@@ -190,44 +179,46 @@ describe("SessionsPage", () => {
     });
   });
 
-  describe("overdue sessions section", () => {
-    function renderWithOverdueClient() {
+  it("renders a Refresh button", async () => {
+    renderSessionsPage();
+    await waitFor(() => screen.getByText("Jane Smith"));
+    expect(screen.getByRole("button", { name: /refresh/i })).toBeInTheDocument();
+  });
+
+  describe("expected sessions section", () => {
+    function renderWithExpected() {
       mockInvoke.mockImplementation((channel: string) => {
-        if (channel === "therapist:list") {
-          return Promise.resolve(wrapped(mockTherapists));
-        }
-        if (channel === "session:list") {
-          return Promise.resolve(wrapped(mockSessions));
-        }
-        if (channel === "client:list") {
-          return Promise.resolve(wrapped([...mockClients, overdueClient]));
-        }
+        if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+        if (channel === "session:list") return Promise.resolve(wrappedPaginated(mockSessions));
+        if (channel === "session:list-range") return Promise.resolve(wrapped([]));
+        if (channel === "session:list-expected") return Promise.resolve(wrapped([mockExpectedSession]));
+        if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
         return Promise.resolve(wrapped([]));
       });
       return renderSessionsPage();
     }
 
-    it("does not show expected sessions section when no clients have regular sessions", async () => {
+    it("does not show expected sessions section when IPC returns empty list", async () => {
       renderSessionsPage();
       await waitFor(() => screen.getByText("Jane Smith"));
       expect(screen.queryByText(/expected sessions/i)).not.toBeInTheDocument();
     });
 
-    it("shows collapsible expected sessions section when overdue sessions exist", async () => {
-      renderWithOverdueClient();
+    it("shows collapsible expected sessions section when expected sessions exist", async () => {
+      renderWithExpected();
       await waitFor(() => {
         expect(screen.getByRole("button", { name: /expected sessions/i })).toBeInTheDocument();
       });
     });
 
     it("expected sessions table is collapsed by default", async () => {
-      renderWithOverdueClient();
+      renderWithExpected();
       await waitFor(() => screen.getByRole("button", { name: /expected sessions/i }));
       expect(screen.queryByText("Expected date")).not.toBeInTheDocument();
     });
 
     it("expands expected sessions table when header button is clicked", async () => {
-      renderWithOverdueClient();
+      renderWithExpected();
       await waitFor(() => screen.getByRole("button", { name: /expected sessions/i }));
 
       fireEvent.click(screen.getByRole("button", { name: /expected sessions/i }));
@@ -239,7 +230,7 @@ describe("SessionsPage", () => {
     });
 
     it("collapses again when header button is clicked a second time", async () => {
-      renderWithOverdueClient();
+      renderWithExpected();
       await waitFor(() => screen.getByRole("button", { name: /expected sessions/i }));
 
       const header = screen.getByRole("button", { name: /expected sessions/i });
@@ -253,7 +244,7 @@ describe("SessionsPage", () => {
     });
 
     it("shows therapist name in the expected sessions table", async () => {
-      renderWithOverdueClient();
+      renderWithExpected();
       await waitFor(() => screen.getByRole("button", { name: /expected sessions/i }));
 
       fireEvent.click(screen.getByRole("button", { name: /expected sessions/i }));
@@ -265,7 +256,7 @@ describe("SessionsPage", () => {
     });
 
     it("Log link navigates to /sessions/new with the overdue client pre-filled", async () => {
-      renderWithOverdueClient();
+      renderWithExpected();
       await waitFor(() => screen.getByRole("button", { name: /expected sessions/i }));
 
       fireEvent.click(screen.getByRole("button", { name: /expected sessions/i }));

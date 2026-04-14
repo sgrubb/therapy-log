@@ -33,7 +33,7 @@ describe("SelectedTherapistProvider", () => {
   it("fetches therapist list via IPC on mount", async () => {
     renderSelectedTherapistHook();
     await waitFor(() => {
-      expect(mockInvoke).toHaveBeenCalledWith("therapist:list");
+      expect(mockInvoke).toHaveBeenCalledWith("therapist:list-all");
     });
   });
 

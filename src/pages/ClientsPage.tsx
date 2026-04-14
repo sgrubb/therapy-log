@@ -1,46 +1,43 @@
 import { useNavigate, Link } from "react-router-dom";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { ipc } from "@/lib/ipc";
-import { queryKeys } from "@/lib/queryKeys";
+import { Pagination } from "@/components/ui/pagination";
 import { ClientProvider, useClients } from "@/context/ClientsContext";
 import { ClientFilters } from "@/components/filters/ClientFilters";
 import { Badge, BadgeVariant } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { buttonVariants } from "@/components/ui/button";
-import { sortableName } from "@/lib/utils";
 import type { Column } from "@/components/ui/data-table";
-import type { ClientWithTherapist } from "@/types/ipc";
+import type { ClientWithTherapist } from "@/types/clients";
 
 const columns: Column<ClientWithTherapist>[] = [
   {
-    key: "name",
+    key: "last_name",
     label: "Name",
-    sortFn: (a, b) => sortableName(a).localeCompare(sortableName(b)),
+    sortable: true,
     render: (c) => `${c.first_name} ${c.last_name}`,
   },
   {
     key: "hospital_number",
     label: "Hospital No.",
-    sortFn: (a, b) => a.hospital_number.localeCompare(b.hospital_number),
+    sortable: true,
     render: (c) => c.hospital_number,
   },
   {
-    key: "therapist",
+    key: "therapist.last_name",
     label: "Therapist",
-    sortFn: (a, b) => sortableName(a.therapist).localeCompare(sortableName(b.therapist)),
+    sortable: true,
     render: (c) => `${c.therapist.first_name} ${c.therapist.last_name}`,
   },
   {
     key: "session_day",
     label: "Session Day",
-    sortFn: (a, b) => (a.session_day ?? "").localeCompare(b.session_day ?? ""),
+    sortable: true,
     render: (c) => c.session_day ?? "—",
   },
   {
-    key: "status",
+    key: "closed_date",
     label: "Status",
-    sortFn: (a, b) => Number(a.closed_date !== null) - Number(b.closed_date !== null),
+    sortable: true,
     render: (c) => (
       <Badge variant={c.closed_date !== null ? BadgeVariant.Closed : BadgeVariant.Open}>
         {c.closed_date !== null ? "Closed" : "Open"}
@@ -50,13 +47,8 @@ const columns: Column<ClientWithTherapist>[] = [
 ];
 
 export default function ClientsPage() {
-  const { data: clients } = useSuspenseQuery({
-    queryKey: queryKeys.clients.all,
-    queryFn: () => ipc.listClients(),
-  });
-
   return (
-    <ClientProvider clients={clients}>
+    <ClientProvider>
       <ClientsPageContent />
     </ClientProvider>
   );
@@ -64,25 +56,36 @@ export default function ClientsPage() {
 
 function ClientsPageContent() {
   const navigate = useNavigate();
-  const { filtered } = useClients();
+  const { clients, page, setPage, pageSize, totalClients, sortKey, sortDir, setSort } = useClients();
 
   return (
     <div className="space-y-4">
       <PageHeader>
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Clients</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold">Clients</h1>
+          </div>
           <Link to="/clients/new" className={buttonVariants()}>Add Client</Link>
         </div>
         <ClientFilters />
       </PageHeader>
 
       <DataTable
-        data={filtered}
+        data={clients}
         columns={columns}
         keyFn={(c) => c.id}
-        defaultSortKey="name"
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSort={setSort}
         onRowClick={(c) => navigate(`/clients/${c.id}`)}
         emptyMessage="No clients found."
+      />
+
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={totalClients}
+        onPageChange={setPage}
       />
     </div>
   );

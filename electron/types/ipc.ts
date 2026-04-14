@@ -1,30 +1,14 @@
 import type {
   Therapist,
   Client,
-  Session,
   Prisma,
 } from "../../generated/prisma/client";
 import type { ClientGetPayload } from "../../generated/prisma/models/Client";
 import type { SessionGetPayload } from "../../generated/prisma/models/Session";
+import type { IpcResponse } from "@shared/types/ipc";
+import type { PaginatedResult, ExpectedSession } from "@shared/types/sessions";
 
-// ── Structured error types ─────────────────────────────────────────────────
-
-export type IpcErrorCode =
-  | "UNIQUE_CONSTRAINT"
-  | "NOT_FOUND"
-  | "FOREIGN_KEY"
-  | "VALIDATION"
-  | "CONFLICT"
-  | "UNKNOWN";
-
-export interface IpcError {
-  code: IpcErrorCode;
-  message: string;
-}
-
-export type IpcResponse<T> =
-  | { success: true; data: T }
-  | { success: false; error: IpcError };
+export type { IpcErrorCode, IpcError, IpcResponse } from "@shared/types/ipc";
 
 // ── Query / Mutation payloads ──────────────────────────────────────────
 
@@ -61,7 +45,14 @@ export type IpcApi = {
   "settings:open-file-dialog": { args: void; result: IpcResponse<string | null> };
 
   // Therapists
-  "therapist:list": { args: void; result: IpcResponse<Therapist[]> };
+  "therapist:list": {
+    args: unknown;
+    result: IpcResponse<PaginatedResult<Therapist>>;
+  };
+  "therapist:list-all": {
+    args: void;
+    result: IpcResponse<Therapist[]>;
+  };
   "therapist:get": { args: number; result: IpcResponse<Therapist> };
   "therapist:create": {
     args: Prisma.TherapistCreateInput;
@@ -74,6 +65,10 @@ export type IpcApi = {
 
   // Clients
   "client:list": {
+    args: unknown;
+    result: IpcResponse<PaginatedResult<ClientGetPayload<{ include: { therapist: true } }>>>;
+  };
+  "client:list-all": {
     args: void;
     result: IpcResponse<ClientGetPayload<{ include: { therapist: true } }>[]>;
   };
@@ -100,8 +95,16 @@ export type IpcApi = {
 
   // Sessions
   "session:list": {
-    args: void;
+    args: unknown;
+    result: IpcResponse<PaginatedResult<SessionGetPayload<{ include: { client: true; therapist: true } }>>>;
+  };
+  "session:list-range": {
+    args: unknown;
     result: IpcResponse<SessionGetPayload<{ include: { client: true; therapist: true } }>[]>;
+  };
+  "session:list-expected": {
+    args: unknown;
+    result: IpcResponse<ExpectedSession[]>;
   };
   "session:get": {
     args: number;
@@ -111,11 +114,11 @@ export type IpcApi = {
   };
   "session:create": {
     args: Prisma.SessionUncheckedCreateInput;
-    result: IpcResponse<Session>;
+    result: IpcResponse<SessionGetPayload<Record<string, never>>>;
   };
   "session:update": {
     args: { id: number; data: Prisma.SessionUncheckedUpdateInput };
-    result: IpcResponse<Session>;
+    result: IpcResponse<SessionGetPayload<Record<string, never>>>;
   };
 };
 

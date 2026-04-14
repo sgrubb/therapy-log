@@ -24,6 +24,7 @@ export default defineConfig({
           alias: [
             { find: "@/lib/logger", replacement: resolve(__dirname, "tests/helpers/logger-mock.ts") },
             { find: "@", replacement: resolve(__dirname, "src") },
+            { find: "@shared", replacement: resolve(__dirname, "shared") },
           ],
         },
       },

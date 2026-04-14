@@ -7,7 +7,7 @@ import { SearchableMultiSelect } from "@/components/ui/searchable-multi-select";
 export function CalendarFilters() {
   const {
     selectedTherapistIds, setTherapistIds,
-    showPlaceholders, setShowPlaceholders,
+    showExpectedSessions, setShowExpectedSessions,
     showOverlappingOnly, handleOverlappingOnly,
     unconfirmedOnly, handleUnconfirmedOnly,
     overdueOnly, handleOverdueOnly,
@@ -36,12 +36,12 @@ export function CalendarFilters() {
           <label className="text-muted-foreground flex cursor-pointer items-center gap-1.5 text-xs">
             <input
               type="checkbox"
-              checked={showPlaceholders}
-              onChange={(e) => setShowPlaceholders(e.target.checked)}
+              checked={showExpectedSessions}
+              onChange={(e) => setShowExpectedSessions(e.target.checked)}
             />
             Show expected
           </label>
-          {showPlaceholders && (
+          {showExpectedSessions && (
             <label className={cn(
               "flex items-center gap-1.5 text-xs",
               overdueCount === 0

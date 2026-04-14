@@ -2,11 +2,14 @@ import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertCircle, Clock } from "lucide-react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
+import { RefreshButton } from "@/components/ui/refresh-button";
+import { queryKeys } from "@/lib/queryKeys";
 import { format, parse, getDay } from "date-fns";
 import { startOfWeekMon } from "@/lib/datetime-utils";
 import { enGB } from "date-fns/locale";
 import { CalendarProvider, useCalendar } from "@/context/CalendarContext";
 import { CalendarFilters } from "@/components/filters/CalendarFilters";
+import { isOverdue, isUnconfirmed, isOverlapping } from "@/lib/calendar-utils";
 import type { CalendarEvent } from "@/lib/calendar-utils";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
@@ -19,15 +22,16 @@ const localizer = dateFnsLocalizer({
 });
 
 function EventComponent({ event }: { event: CalendarEvent }) {
+  const { overlappingIds, unconfirmedIds } = useCalendar();
   return (
     <div className="h-full overflow-hidden px-1 py-0.5 text-xs text-white" title={event.title}>
-      {event.isOverlapping && (
+      {isOverlapping(event, overlappingIds) && (
         <AlertCircle size={10} className="mb-0.5 mr-1 inline shrink-0" aria-label="Overlapping session" />
       )}
-      {event.isUnconfirmed && (
+      {isUnconfirmed(event, unconfirmedIds) && (
         <Clock size={10} className="mb-0.5 mr-1 inline shrink-0" aria-label="Unconfirmed session" />
       )}
-      {event.isOverdue && (
+      {isOverdue(event) && (
         <Clock size={10} className="mb-0.5 mr-1 inline shrink-0" aria-label="Overdue session" />
       )}
       {event.title}
@@ -53,7 +57,7 @@ function CalendarPageContent() {
 
   const handleSelectEvent = useCallback(
     (event: CalendarEvent) => {
-      if (event.isPlaceholder) {
+      if (event.isExpected) {
         const dateStr = format(event.start, "yyyy-MM-dd");
         const timeStr = format(event.start, "HH:mm");
         navigate(
@@ -83,7 +87,10 @@ function CalendarPageContent() {
   return (
     <div className="flex h-full flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Calendar</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold">Calendar</h1>
+          <RefreshButton queryKey={queryKeys.sessions.root} />
+        </div>
       </div>
 
       <CalendarFilters />

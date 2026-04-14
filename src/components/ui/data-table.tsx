@@ -1,13 +1,12 @@
-import { useState, useMemo } from "react";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SortDir } from "@/types/enums";
+import { SortDir } from "@shared/types/enums";
 
 export interface Column<T> {
   key: string;
   label: string;
   className?: string;
-  sortFn?: (a: T, b: T) => number;
+  sortable?: boolean;
   render: (row: T) => React.ReactNode;
 }
 
@@ -15,8 +14,9 @@ interface Props<T> {
   data: T[];
   columns: Column<T>[];
   keyFn: (row: T) => string | number;
-  defaultSortKey?: string;
-  defaultSortDir?: SortDir;
+  sortKey?: string;
+  sortDir?: SortDir;
+  onSort?: (key: string) => void;
   onRowClick?: (row: T) => void;
   emptyMessage?: string;
 }
@@ -25,34 +25,12 @@ export function DataTable<T>({
   data,
   columns,
   keyFn,
-  defaultSortKey,
-  defaultSortDir = SortDir.Asc,
+  sortKey,
+  sortDir = SortDir.Asc,
+  onSort,
   onRowClick,
   emptyMessage = "No results found.",
 }: Props<T>) {
-  const [sortKey, setSortKey] = useState<string>(defaultSortKey ?? "");
-  const [sortDir, setSortDir] = useState<SortDir>(defaultSortDir);
-
-  function handleSort(key: string) {
-    if (key === sortKey) {
-      setSortDir((d) => (d === SortDir.Asc ? SortDir.Desc : SortDir.Asc));
-    } else {
-      setSortKey(key);
-      setSortDir(SortDir.Asc);
-    }
-  }
-
-  const sorted = useMemo(() => {
-    const col = columns.find((c) => c.key === sortKey);
-    if (!col?.sortFn) {
-      return data;
-    }
-    return [...data].sort((a, b) => {
-      const cmp = col.sortFn!(a, b);
-      return sortDir === SortDir.Asc ? cmp : -cmp;
-    });
-  }, [data, columns, sortKey, sortDir]);
-
   return (
     <div className="min-w-0 overflow-x-auto">
       <table className="w-full text-sm">
@@ -63,13 +41,13 @@ export function DataTable<T>({
                 key={col.key}
                 className={cn(
                   "px-3 py-2 font-medium",
-                  col.sortFn && "hover:text-foreground cursor-pointer select-none",
+                  col.sortable && onSort && "hover:text-foreground cursor-pointer select-none",
                   col.className,
                 )}
-                onClick={col.sortFn ? () => handleSort(col.key) : undefined}
+                onClick={col.sortable && onSort ? () => onSort(col.key) : undefined}
               >
                 {col.label}
-                {col.sortFn && sortKey === col.key && (
+                {col.sortable && sortKey === col.key && (
                   sortDir === SortDir.Asc
                     ? <ArrowUp size={12} className="ml-1 inline" />
                     : <ArrowDown size={12} className="ml-1 inline" />
@@ -79,7 +57,7 @@ export function DataTable<T>({
           </tr>
         </thead>
         <tbody>
-          {sorted.map((row) => (
+          {data.map((row) => (
             <tr
               key={keyFn(row)}
               className={cn(
@@ -95,7 +73,7 @@ export function DataTable<T>({
               ))}
             </tr>
           ))}
-          {sorted.length === 0 && (
+          {data.length === 0 && (
             <tr>
               <td colSpan={columns.length} className="text-muted-foreground py-6 text-center">
                 {emptyMessage}

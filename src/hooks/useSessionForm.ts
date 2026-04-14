@@ -8,7 +8,8 @@ import { queryKeys } from "@/lib/queryKeys";
 import { sessionFormSchema } from "@/schemas/forms";
 import { SessionStatus, FormState } from "@/types/enums";
 import type { SessionType, DeliveryMethod, MissedReason } from "@/types/enums";
-import type { ClientWithTherapist, SessionWithRelations } from "@/types/ipc";
+import type { ClientWithTherapist } from "@/types/clients";
+import type { SessionWithRelations } from "@/types/sessions";
 import { useFormState } from "@/hooks/useFormState";
 import { mostRecentOccurrence, toDuration, fromDuration } from "@/lib/sessions-utils";
 
@@ -165,12 +166,12 @@ export function useSessionForm(sessionId?: number, defaults?: SessionFormDefault
       const payload = buildPayload(form);
       if (isEdit && sessionId !== undefined) {
         await ipc.updateSession(sessionId, { ...payload, updated_at: updatedAt! });
-        await queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.sessions.root });
         await queryClient.invalidateQueries({ queryKey: queryKeys.sessions.detail(sessionId) });
         navigate(`/sessions/${sessionId}`);
       } else {
         const created = await ipc.createSession(payload);
-        await queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.sessions.root });
         navigate(`/sessions/${created.id}`);
       }
     } catch (err) {

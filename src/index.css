@@ -134,8 +134,8 @@ button { cursor: pointer; }
 .rbc-time-content { cursor: pointer; }
 
 /* Brighten real events on hover; increase opacity on placeholder events */
-.rbc-event:not(.is-placeholder):hover { filter: brightness(1.15); }
-.rbc-event.is-placeholder:hover { opacity: 0.75 !important; }
+.rbc-event:not(.is-expected):hover { filter: brightness(1.15); }
+.rbc-event.is-expected:hover { opacity: 0.75 !important; }
 
 /* Hide the empty all-day row — we don't use all-day events */
 .rbc-allday-cell { display: none; }

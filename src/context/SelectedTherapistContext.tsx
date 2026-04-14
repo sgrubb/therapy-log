@@ -5,9 +5,10 @@ import {
   type ReactNode,
 } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { minutesToMilliseconds } from "date-fns";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
-import type { Therapist } from "@/types/ipc";
+import type { Therapist } from "@/types/therapists";
 
 interface SelectedTherapistContextValue {
   therapists: Therapist[];
@@ -22,7 +23,8 @@ const STORAGE_KEY = "selectedTherapistId";
 export function SelectedTherapistProvider({ children }: { children: ReactNode }) {
   const { data: therapists } = useSuspenseQuery({
     queryKey: queryKeys.therapists.all,
-    queryFn: () => ipc.listTherapists(),
+    queryFn: () => ipc.listAllTherapists(),
+    refetchInterval: minutesToMilliseconds(1),
   });
 
   const [selectedTherapistId, setSelectedTherapistIdState] = useState<number | null>(() => {

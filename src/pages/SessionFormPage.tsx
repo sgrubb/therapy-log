@@ -44,7 +44,7 @@ export default function SessionFormPage() {
 
   const { data: clients } = useSuspenseQuery({
     queryKey: queryKeys.clients.all,
-    queryFn: () => ipc.listClients(),
+    queryFn: () => ipc.listAllClients(),
   });
 
   const sessionId = id !== undefined ? Number(id) : undefined;

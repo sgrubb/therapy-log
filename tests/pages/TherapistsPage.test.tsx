@@ -5,7 +5,7 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import TherapistsPage from "@/pages/TherapistsPage";
-import { wrapped, mockTherapists } from "../helpers/ipc-mocks";
+import { wrapped, wrappedPaginated, mockTherapists } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
 
 const mockInvoke = vi.fn();
@@ -16,13 +16,16 @@ beforeEach(() => {
   window.electronAPI = { invoke: mockInvoke } as never;
 });
 
-function renderPage() {
+function defaultMock() {
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list") {
-      return Promise.resolve(wrapped(mockTherapists));
-    }
+    if (channel === "therapist:list-all") { return Promise.resolve(wrapped(mockTherapists)); }
+    if (channel === "therapist:list") { return Promise.resolve(wrappedPaginated(mockTherapists)); }
     return Promise.resolve(wrapped(null));
   });
+}
+
+function renderPage() {
+  defaultMock();
 
   const queryClient = createTestQueryClient();
   return render(
@@ -54,13 +57,13 @@ describe("TherapistsPage", () => {
   });
 
   it("shows loading state while fetching", async () => {
-    let resolve!: (v: typeof mockTherapists) => void;
-    const promise = new Promise<typeof mockTherapists>((res) => { resolve = res; });
+    type WrappedPaginatedTherapists = ReturnType<typeof wrappedPaginated<(typeof mockTherapists)[0]>>;
+    let resolve!: (v: WrappedPaginatedTherapists) => void;
+    const promise = new Promise<WrappedPaginatedTherapists>((res) => { resolve = res; });
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") {
-        return promise.then((data) => wrapped(data));
-      }
+      if (channel === "therapist:list-all") { return Promise.resolve(wrapped(mockTherapists)); }
+      if (channel === "therapist:list") { return promise; }
       return Promise.resolve(wrapped(null));
     });
 
@@ -80,7 +83,7 @@ describe("TherapistsPage", () => {
     );
 
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
-    resolve(mockTherapists);
+    resolve(wrappedPaginated(mockTherapists));
     await waitFor(() => screen.getByText("Alice Morgan"));
   });
 
@@ -145,10 +148,10 @@ describe("TherapistsPage", () => {
     renderPage();
     await waitFor(() => screen.getByText("Alice Morgan"));
 
-    // Sorted by last name asc: Chen (Bob) before Morgan (Alice)
+    // Mock returns Alice Morgan first, Bob Chen second
     const rows = screen.getAllByRole("row").slice(1); // skip header
-    expect(rows[0]!.querySelector("svg")).not.toBeInTheDocument(); // Bob has no icon
-    expect(rows[1]!.querySelector("svg")).toBeInTheDocument(); // Alice has icon
+    expect(rows[0]!.querySelector("svg")).toBeInTheDocument(); // Alice has icon
+    expect(rows[1]!.querySelector("svg")).not.toBeInTheDocument(); // Bob has no icon
   });
 
   it("hides admin column for non-admin users", async () => {
@@ -160,12 +163,7 @@ describe("TherapistsPage", () => {
   });
 
   it("shows error message from navigation state", async () => {
-    mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      return Promise.resolve(wrapped(null));
-    });
+    defaultMock();
 
     const queryClient = createTestQueryClient();
     render(
@@ -191,9 +189,8 @@ describe("TherapistsPage", () => {
 
   it("shows empty state when no therapists exist", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list") {
-        return Promise.resolve(wrapped([]));
-      }
+      if (channel === "therapist:list-all") { return Promise.resolve(wrapped([])); }
+      if (channel === "therapist:list") { return Promise.resolve(wrappedPaginated([])); }
       return Promise.resolve(wrapped(null));
     });
 

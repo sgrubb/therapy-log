@@ -1,4 +1,7 @@
+import { useMemo } from "react";
 import { useClients, ClientStatusFilter } from "@/context/ClientsContext";
+import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
+import { sortableName } from "@/lib/utils";
 import { FilterToolbar } from "@/components/ui/filter-toolbar";
 import { Input } from "@/components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -15,10 +18,16 @@ export function ClientFilters() {
     search, setSearch,
     statusFilter, setStatusFilter,
     therapistFilter, setTherapistFilter,
-    sortedTherapists,
-    showMine, selectedTherapistId,
+    showMine,
     reset,
   } = useClients();
+
+  const { therapists, selectedTherapistId } = useSelectedTherapist();
+
+  const sortedTherapists = useMemo(
+    () => [...therapists].sort((a, b) => sortableName(a).localeCompare(sortableName(b))),
+    [therapists],
+  );
 
   return (
     <FilterToolbar onReset={reset}>

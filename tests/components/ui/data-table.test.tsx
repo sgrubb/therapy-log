@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { DataTable, type Column } from "@/components/ui/data-table";
+import { SortDir } from "@shared/types/enums";
 
 interface Row {
   id: number;
@@ -12,13 +13,13 @@ const columns: Column<Row>[] = [
   {
     key: "name",
     label: "Name",
-    sortFn: (a, b) => a.name.localeCompare(b.name),
+    sortable: true,
     render: (row) => row.name,
   },
   {
     key: "score",
     label: "Score",
-    sortFn: (a, b) => a.score - b.score,
+    sortable: true,
     render: (row) => String(row.score),
   },
   {
@@ -53,56 +54,60 @@ describe("DataTable", () => {
     expect(screen.getByText("Bob")).toBeInTheDocument();
   });
 
-  it("applies default sort ascending on render", () => {
-    render(<DataTable data={data} columns={columns} keyFn={keyFn} defaultSortKey="name" />);
-    const cells = screen.getAllByRole("cell").filter((c) => ["Alice", "Bob", "Charlie"].includes(c.textContent ?? ""));
-    expect(cells.map((c) => c.textContent)).toEqual(["Alice", "Bob", "Charlie"]);
+  it("renders data in the order provided (no internal sort)", () => {
+    render(<DataTable data={data} columns={columns} keyFn={keyFn} />);
+    const cells = screen.getAllByRole("cell").filter((c) =>
+      ["Charlie", "Alice", "Bob"].includes(c.textContent ?? ""),
+    );
+    expect(cells.map((c) => c.textContent)).toEqual(["Charlie", "Alice", "Bob"]);
   });
 
-  it("applies default sort descending when defaultSortDir is Desc", () => {
+  it("calls onSort with the column key when a sortable header is clicked", () => {
+    const onSort = vi.fn();
     render(
       <DataTable
         data={data}
         columns={columns}
         keyFn={keyFn}
-        defaultSortKey="name"
-        defaultSortDir="desc"
+        sortKey="score"
+        sortDir={SortDir.Asc}
+        onSort={onSort}
       />,
     );
-    const cells = screen.getAllByRole("cell").filter((c) => ["Alice", "Bob", "Charlie"].includes(c.textContent ?? ""));
-    expect(cells.map((c) => c.textContent)).toEqual(["Charlie", "Bob", "Alice"]);
-  });
-
-  it("sorts ascending when a sortable header is clicked", () => {
-    render(<DataTable data={data} columns={columns} keyFn={keyFn} />);
     fireEvent.click(screen.getByText("Name"));
-    const cells = screen.getAllByRole("cell").filter((c) => ["Alice", "Bob", "Charlie"].includes(c.textContent ?? ""));
-    expect(cells.map((c) => c.textContent)).toEqual(["Alice", "Bob", "Charlie"]);
-  });
-
-  it("reverses to descending when the active sort header is clicked again", () => {
-    render(<DataTable data={data} columns={columns} keyFn={keyFn} defaultSortKey="name" />);
-    fireEvent.click(screen.getByText("Name"));
-    const cells = screen.getAllByRole("cell").filter((c) => ["Alice", "Bob", "Charlie"].includes(c.textContent ?? ""));
-    expect(cells.map((c) => c.textContent)).toEqual(["Charlie", "Bob", "Alice"]);
-  });
-
-  it("resets to ascending on the new column when a different header is clicked", () => {
-    render(<DataTable data={data} columns={columns} keyFn={keyFn} defaultSortKey="name" />);
-    // Currently sorted by name asc: Alice(10), Bob(20), Charlie(30)
-    // Click score — should sort score ascending: 10, 20, 30
-    fireEvent.click(screen.getByText("Score"));
-    const cells = screen.getAllByRole("cell").filter((c) => ["10", "20", "30"].includes(c.textContent ?? ""));
-    expect(cells.map((c) => c.textContent)).toEqual(["10", "20", "30"]);
+    expect(onSort).toHaveBeenCalledOnce();
+    expect(onSort).toHaveBeenCalledWith("name");
   });
 
   it("shows the sort icon only on the active column", () => {
-    render(<DataTable data={data} columns={columns} keyFn={keyFn} defaultSortKey="name" />);
-    // ArrowUp icon is rendered as an svg inside the Name header
+    render(
+      <DataTable
+        data={data}
+        columns={columns}
+        keyFn={keyFn}
+        sortKey="name"
+        sortDir={SortDir.Asc}
+      />,
+    );
     const nameHeader = screen.getByText("Name").closest("th")!;
     const scoreHeader = screen.getByText("Score").closest("th")!;
     expect(nameHeader.querySelector("svg")).toBeInTheDocument();
     expect(scoreHeader.querySelector("svg")).not.toBeInTheDocument();
+  });
+
+  it("shows ascending icon when sortDir is Asc", () => {
+    render(
+      <DataTable
+        data={data}
+        columns={columns}
+        keyFn={keyFn}
+        sortKey="name"
+        sortDir={SortDir.Asc}
+      />,
+    );
+    const nameHeader = screen.getByText("Name").closest("th")!;
+    // ArrowUp has aria-label or title — just check svg presence for now
+    expect(nameHeader.querySelector("svg")).toBeInTheDocument();
   });
 
   it("calls onRowClick with the correct row when a row is clicked", () => {

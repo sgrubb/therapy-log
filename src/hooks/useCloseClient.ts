@@ -3,7 +3,7 @@ import { format, parse } from "date-fns";
 import type { z } from "zod";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
-import type { ClientWithTherapist } from "@/types/ipc";
+import type { ClientWithTherapist } from "@/types/clients";
 import { Outcome, FormState } from "@/types/enums";
 import { closeClientSchema } from "@/schemas/forms";
 import { useFormState } from "@/hooks/useFormState";
@@ -73,7 +73,7 @@ export function useCloseClient(clientId: number, client: ClientWithTherapist) {
         notes: notesUpdate,
       });
       await queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(clientId) });
-      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.root });
       setShowCloseDialog(false);
     } catch (err) {
       log.error("Failed to close client:", err);

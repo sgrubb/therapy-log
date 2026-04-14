@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import type { z } from "zod";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
-import type { ClientWithTherapist } from "@/types/ipc";
+import type { ClientWithTherapist } from "@/types/clients";
 import { reopenClientSchema } from "@/schemas/forms";
 import { useFormState } from "@/hooks/useFormState";
 import { FormState } from "@/types/enums";
@@ -75,7 +75,7 @@ export function useReopenClient(clientId: number, client: ClientWithTherapist) {
 
       await ipc.reopenClient(clientId, { notes: notesUpdate });
       await queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(clientId) });
-      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.root });
       setShowReopenDialog(false);
     } catch (err) {
       log.error("Failed to reopen client:", err);
