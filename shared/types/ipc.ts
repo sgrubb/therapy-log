@@ -1,13 +1,15 @@
 // ── IPC error + response envelope ─────────────────────────────────────────
 // Shared between renderer (src/) and electron main process.
 
-export type IpcErrorCode =
-  | "UNIQUE_CONSTRAINT"
-  | "NOT_FOUND"
-  | "FOREIGN_KEY"
-  | "VALIDATION"
-  | "CONFLICT"
-  | "UNKNOWN";
+export const IpcErrorCode = {
+  UniqueConstraint: "UNIQUE_CONSTRAINT",
+  NotFound: "NOT_FOUND",
+  ForeignKey: "FOREIGN_KEY",
+  Validation: "VALIDATION",
+  Conflict: "CONFLICT",
+  Unknown: "UNKNOWN",
+} as const;
+export type IpcErrorCode = (typeof IpcErrorCode)[keyof typeof IpcErrorCode];
 
 export interface IpcError {
   code: IpcErrorCode;

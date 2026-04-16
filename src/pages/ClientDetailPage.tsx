@@ -13,7 +13,7 @@ import { ReopenClientDialog } from "@/components/ReopenClientDialog";
 import { Link } from "react-router-dom";
 import { DataTable } from "@/components/ui/data-table";
 import { SortDir } from "@shared/types/enums";
-import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES, OUTCOME_NAMES } from "@/types/enums";
+import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES, OUTCOME_NAMES } from "@/lib/display";
 import { buttonVariants } from "@/components/ui/button";
 import type { Column } from "@/components/ui/data-table";
 

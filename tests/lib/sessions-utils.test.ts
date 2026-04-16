@@ -6,7 +6,7 @@ import {
   fromDuration,
 } from "@/lib/sessions-utils";
 import { MOCK_UPDATED_AT, mockTherapists, mockClients } from "../helpers/ipc-mocks";
-import type { SessionWithRelations } from "@/types/sessions";
+import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
 
 // ── Shared fixtures ───────────────────────────────────────────────────────────
 
@@ -30,7 +30,7 @@ const clientBase = {
   therapist: mockTherapists[0]!,
 };
 
-function makeSession(overrides: Partial<SessionWithRelations> & Pick<SessionWithRelations, "id" | "therapist_id" | "scheduled_at" | "duration">): SessionWithRelations {
+function makeSession(overrides: Partial<SessionWithClientAndTherapist> & Pick<SessionWithClientAndTherapist, "id" | "therapist_id" | "scheduled_at" | "duration">): SessionWithClientAndTherapist {
   return {
     client_id: 1,
     occurred_at: null,

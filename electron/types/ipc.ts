@@ -1,12 +1,9 @@
-import type {
-  Therapist,
-  Client,
-  Prisma,
-} from "../../generated/prisma/client";
-import type { ClientGetPayload } from "../../generated/prisma/models/Client";
-import type { SessionGetPayload } from "../../generated/prisma/models/Session";
 import type { IpcResponse } from "@shared/types/ipc";
-import type { PaginatedResult, ExpectedSession } from "@shared/types/sessions";
+import type { PaginatedResult } from "@shared/types/common";
+import type { ExpectedSession, SessionWithClientAndTherapist, Session } from "@shared/types/sessions";
+import type { Therapist, CreateTherapist, UpdateTherapist } from "@shared/types/therapists";
+import type { Client, ClientWithTherapist, CreateClient, UpdateClient } from "@shared/types/clients";
+import type { CreateSession, UpdateSession } from "@shared/types/sessions";
 
 export type { IpcErrorCode, IpcError, IpcResponse } from "@shared/types/ipc";
 
@@ -55,52 +52,52 @@ export type IpcApi = {
   };
   "therapist:get": { args: number; result: IpcResponse<Therapist> };
   "therapist:create": {
-    args: Prisma.TherapistCreateInput;
+    args: CreateTherapist;
     result: IpcResponse<Therapist>;
   };
   "therapist:update": {
-    args: { id: number; data: Prisma.TherapistUpdateInput };
+    args: { id: number; data: UpdateTherapist };
     result: IpcResponse<Therapist>;
   };
 
   // Clients
   "client:list": {
     args: unknown;
-    result: IpcResponse<PaginatedResult<ClientGetPayload<{ include: { therapist: true } }>>>;
+    result: IpcResponse<PaginatedResult<ClientWithTherapist>>;
   };
   "client:list-all": {
     args: void;
-    result: IpcResponse<ClientGetPayload<{ include: { therapist: true } }>[]>;
+    result: IpcResponse<ClientWithTherapist[]>;
   };
   "client:get": {
     args: number;
-    result: IpcResponse<ClientGetPayload<{ include: { therapist: true } }>>;
+    result: IpcResponse<ClientWithTherapist>;
   };
   "client:create": {
-    args: Prisma.ClientUncheckedCreateInput;
+    args: CreateClient;
     result: IpcResponse<Client>;
   };
   "client:update": {
-    args: { id: number; data: Prisma.ClientUncheckedUpdateInput };
+    args: { id: number; data: UpdateClient };
     result: IpcResponse<Client>;
   };
   "client:close": {
     args: { id: number; data: unknown };
-    result: IpcResponse<ClientGetPayload<{ include: { therapist: true } }>>;
+    result: IpcResponse<ClientWithTherapist>;
   };
   "client:reopen": {
     args: { id: number; data: unknown };
-    result: IpcResponse<ClientGetPayload<{ include: { therapist: true } }>>;
+    result: IpcResponse<ClientWithTherapist>;
   };
 
   // Sessions
   "session:list": {
     args: unknown;
-    result: IpcResponse<PaginatedResult<SessionGetPayload<{ include: { client: true; therapist: true } }>>>;
+    result: IpcResponse<PaginatedResult<SessionWithClientAndTherapist>>;
   };
   "session:list-range": {
     args: unknown;
-    result: IpcResponse<SessionGetPayload<{ include: { client: true; therapist: true } }>[]>;
+    result: IpcResponse<SessionWithClientAndTherapist[]>;
   };
   "session:list-expected": {
     args: unknown;
@@ -108,17 +105,15 @@ export type IpcApi = {
   };
   "session:get": {
     args: number;
-    result: IpcResponse<SessionGetPayload<{
-      include: { client: true; therapist: true };
-    }>>;
+    result: IpcResponse<SessionWithClientAndTherapist>;
   };
   "session:create": {
-    args: Prisma.SessionUncheckedCreateInput;
-    result: IpcResponse<SessionGetPayload<Record<string, never>>>;
+    args: CreateSession;
+    result: IpcResponse<Session>;
   };
   "session:update": {
-    args: { id: number; data: Prisma.SessionUncheckedUpdateInput };
-    result: IpcResponse<SessionGetPayload<Record<string, never>>>;
+    args: { id: number; data: UpdateSession };
+    result: IpcResponse<Session>;
   };
 };
 

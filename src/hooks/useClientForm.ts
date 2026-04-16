@@ -6,10 +6,11 @@ import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
 import { clientFormSchema } from "@/schemas/forms";
-import { SessionDay, Outcome, FormState } from "@/types/enums";
-import type { DeliveryMethod } from "@/types/enums";
+import { SessionDay, Outcome } from "@shared/types/enums";
+import type { DeliveryMethod } from "@shared/types/enums";
+import { FormState } from "@/types/enums";
 import { useFormState } from "@/hooks/useFormState";
-import type { ClientWithTherapist } from "@/types/clients";
+import type { ClientWithTherapist } from "@shared/types/clients";
 import { toDuration, fromDuration } from "@/lib/sessions-utils";
 
 // Field names mirror the database schema (snake_case) so they map directly

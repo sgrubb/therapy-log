@@ -9,10 +9,10 @@ import { SessionFilters } from "@/components/filters/SessionFilters";
 import { AlertCircle, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
-import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/types/enums";
+import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/lib/display";
 import { DataTable } from "@/components/ui/data-table";
 import type { Column } from "@/components/ui/data-table";
-import type { SessionWithRelations } from "@/types/sessions";
+import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
 import type { ExpectedSession } from "@shared/types/sessions";
 
 function formatDate(d: Date): string {
@@ -65,7 +65,7 @@ const expectedColumns: Column<ExpectedSession>[] = [
   },
 ];
 
-const sessionColumns: Column<SessionWithRelations>[] = [
+const sessionColumns: Column<SessionWithClientAndTherapist>[] = [
   {
     key: "scheduled_at",
     label: "Date",
@@ -130,7 +130,7 @@ function SessionsPageContent() {
   const showPagination = !unconfirmedOnly && !overlappingOnly && !overdueOnly;
   const showMainTable = !overdueOnly;
 
-  const warningSessionColumns: Column<SessionWithRelations>[] = useMemo(() => [
+  const warningSessionColumns: Column<SessionWithClientAndTherapist>[] = useMemo(() => [
     {
       key: "warning",
       label: "",

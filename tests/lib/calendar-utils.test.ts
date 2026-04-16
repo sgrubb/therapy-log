@@ -10,7 +10,7 @@ import {
   expectedToEvents,
 } from "@/lib/calendar-utils";
 import { mockTherapists, MOCK_UPDATED_AT, MOCK_SESSION_DATE_RECENT } from "../helpers/ipc-mocks";
-import type { SessionWithRelations } from "@/types/sessions";
+import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
 import type { ExpectedSession } from "@shared/types/sessions";
 
 const clientBase = {
@@ -42,7 +42,7 @@ const sessionBase = {
 
 const colorMap = new Map([[1, "#3b82f6"]]);
 
-const session: SessionWithRelations = {
+const session: SessionWithClientAndTherapist = {
   ...sessionBase,
   id: 1,
   client_id: 1,
@@ -99,12 +99,12 @@ describe("isOverlapping / isUnconfirmed / isOverdue utility functions", () => {
 
   it("isOverdue returns true for expected events with start in the past", () => {
     const [evt] = expectedToEvents([makeExpected(new Date(2020, 0, 1))], colorMap, new Set([1]));
-    expect(isOverdue(evt!)).toBe(true);
+    expect(isOverdue(evt!, new Set([evt!.id]))).toBe(true);
   });
 
   it("isOverdue returns false for future expected events", () => {
     const [evt] = expectedToEvents([makeExpected(new Date(2099, 0, 1))], colorMap, new Set([1]));
-    expect(isOverdue(evt!)).toBe(false);
+    expect(isOverdue(evt!, new Set())).toBe(false);
   });
 
   it("isOverlapping and isUnconfirmed return false for expected events", () => {

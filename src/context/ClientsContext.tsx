@@ -11,15 +11,8 @@ import { minutesToMilliseconds } from "date-fns";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
-import { SortDir } from "@shared/types/enums";
-import type { ClientWithTherapist } from "@/types/clients";
-
-export const ClientStatusFilter = {
-  Open: "open",
-  Closed: "closed",
-  All: "all",
-} as const;
-export type ClientStatusFilter = (typeof ClientStatusFilter)[keyof typeof ClientStatusFilter];
+import { SortDir, ClientStatus } from "@shared/types/enums";
+import type { ClientWithTherapist } from "@shared/types/clients";
 
 const DEFAULT_PAGE_SIZE = 25;
 
@@ -31,8 +24,8 @@ interface ClientContextValue {
   pageSize: number;
   search: string;
   setSearch: (value: string) => void;
-  statusFilter: ClientStatusFilter;
-  setStatusFilter: (value: ClientStatusFilter) => void;
+  statusFilter: ClientStatus;
+  setStatusFilter: (value: ClientStatus) => void;
   therapistFilter: string;
   setTherapistFilter: (value: string) => void;
   showMine: boolean;
@@ -49,7 +42,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
 
   const [page, setPageState] = useState(1);
   const [search, setSearchState] = useState("");
-  const [statusFilter, setStatusFilterState] = useState<ClientStatusFilter>(ClientStatusFilter.Open);
+  const [statusFilter, setStatusFilterState] = useState<ClientStatus>(ClientStatus.Open);
   const [therapistFilter, setTherapistFilterState] = useState(
     () => selectedTherapistId !== null ? String(selectedTherapistId) : "all",
   );
@@ -89,7 +82,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  function setStatusFilter(value: ClientStatusFilter) {
+  function setStatusFilter(value: ClientStatus) {
     startTransition(() => {
       setStatusFilterState(value);
       setPageState(1);
@@ -118,7 +111,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
   function reset() {
     startTransition(() => {
       setSearchState("");
-      setStatusFilterState(ClientStatusFilter.Open);
+      setStatusFilterState(ClientStatus.Open);
       setTherapistFilterState(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
       setSortKey("last_name");
       setSortDir(SortDir.Asc);

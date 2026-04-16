@@ -7,7 +7,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { Pagination } from "@/components/ui/pagination";
 import { buttonVariants } from "@/components/ui/button";
 import type { Column } from "@/components/ui/data-table";
-import type { Therapist } from "@/types/therapists";
+import type { Therapist } from "@shared/types/therapists";
 
 const columns = (isAdmin: boolean): Column<Therapist>[] => [
   {

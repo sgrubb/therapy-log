@@ -3,12 +3,8 @@ import { useParams, useLocation, Link } from "react-router-dom";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
-import {
-  SESSION_TYPE_NAMES,
-  DELIVERY_METHOD_NAMES,
-  MISSED_REASON_NAMES,
-  SessionStatus,
-} from "@/types/enums";
+import { SessionStatus } from "@shared/types/enums";
+import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES, MISSED_REASON_NAMES } from "@/lib/display";
 import { buttonVariants } from "@/components/ui/button";
 import { InfoRow } from "@/components/ui/info-row";
 import { PageHeader } from "@/components/ui/page-header";

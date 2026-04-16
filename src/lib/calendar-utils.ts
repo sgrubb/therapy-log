@@ -1,6 +1,6 @@
-import { SESSION_TYPE_NAMES } from "@/types/enums";
-import type { SessionWithRelations } from "@/types/sessions";
-import type { Therapist } from "@/types/therapists";
+import { SESSION_TYPE_NAMES } from "@/lib/display";
+import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
+import type { Therapist } from "@shared/types/therapists";
 import type { ExpectedSession } from "@shared/types/sessions";
 import { getWeekStart } from "@/lib/datetime-utils";
 import { minutesToMilliseconds } from "date-fns";
@@ -25,8 +25,8 @@ export interface CalendarEvent {
   color: string;
 }
 
-export function isOverdue(event: CalendarEvent): boolean {
-  return event.isExpected && event.start < new Date();
+export function isOverdue(event: CalendarEvent, overdueIds: Set<string>): boolean {
+  return event.isExpected && overdueIds.has(event.id);
 }
 
 export function isUnconfirmed(event: CalendarEvent, unconfirmedIds: Set<number>): boolean {
@@ -38,7 +38,7 @@ export function isOverlapping(event: CalendarEvent, overlappingIds: Set<number>)
 }
 
 export function sessionsToEvents(
-  sessions: SessionWithRelations[],
+  sessions: SessionWithClientAndTherapist[],
   therapistColors: Map<number, string>,
 ): CalendarEvent[] {
   return sessions.map((s) => ({

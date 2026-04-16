@@ -7,16 +7,9 @@ import { useSessionForm } from "@/hooks/useSessionForm";
 import { mostRecentOccurrence } from "@/lib/sessions-utils";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
-import {
-  SessionType,
-  DeliveryMethod,
-  SessionStatus,
-  MissedReason,
-  SESSION_TYPE_NAMES,
-  DELIVERY_METHOD_NAMES,
-  MISSED_REASON_NAMES,
-  FormState,
-} from "@/types/enums";
+import { SessionType, DeliveryMethod, SessionStatus, MissedReason } from "@shared/types/enums";
+import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES, MISSED_REASON_NAMES } from "@/lib/display";
+import { FormState } from "@/types/enums";
 import { Button } from "@/components/ui/button";
 import { DurationInput } from "@/components/ui/duration-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";

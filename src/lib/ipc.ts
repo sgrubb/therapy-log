@@ -1,17 +1,17 @@
 import { z } from "zod";
-import { therapistSchema } from "@/schemas/therapists";
-import { clientSchema, clientWithTherapistSchema } from "@/schemas/clients";
-import { sessionSchema, sessionWithRelationsSchema, expectedSessionSchema } from "@/schemas/sessions";
-import type { Therapist, CreateTherapist, UpdateTherapist } from "@/types/therapists";
-import type { Client, ClientWithTherapist, CreateClient, UpdateClient, CloseClient, ReopenClient } from "@/types/clients";
-import type { Session, SessionWithRelations, CreateSession, UpdateSession } from "@/types/sessions";
+import { therapistSchema } from "@shared/schemas/therapists";
+import { clientSchema, clientWithTherapistSchema } from "@shared/schemas/clients";
+import { sessionSchema, sessionWithClientAndTherapistSchema, expectedSessionSchema } from "@shared/schemas/sessions";
+import type { Therapist, CreateTherapist, UpdateTherapist } from "@shared/types/therapists";
+import type { Client, ClientWithTherapist, CreateClient, UpdateClient, CloseClient, ReopenClient } from "@shared/types/clients";
+import type { Session, SessionWithClientAndTherapist, CreateSession, UpdateSession } from "@shared/types/sessions";
 import type { SortDir } from "@shared/types/enums";
 import type {
   SessionListParams,
   SessionListRangeParams,
-  PaginatedResult,
   ExpectedSession,
 } from "@shared/types/sessions";
+import type { PaginatedResult } from "@shared/types/common";
 
 const ERROR_MESSAGES: Record<string, string> = {
   UNIQUE_CONSTRAINT: "A record with this value already exists.",
@@ -148,7 +148,9 @@ export const ipc = {
   },
 
   // ── Therapists ─────────────────────────────────────────────────────────
-  async listTherapists(params: { page: number; pageSize: number; sortKey: string; sortDir: SortDir }): Promise<PaginatedResult<Therapist>> {
+  async listTherapists(
+    params: { page: number; pageSize: number; sortKey: string; sortDir: SortDir },
+  ): Promise<PaginatedResult<Therapist>> {
     const response = await window.electronAPI.invoke("therapist:list", params);
     return paginatedResultSchema(therapistSchema).parse(unwrapResponse(response));
   },
@@ -218,20 +220,20 @@ export const ipc = {
   },
 
   // ── Sessions ───────────────────────────────────────────────────────────
-  async listSessions(params: SessionListParams): Promise<PaginatedResult<SessionWithRelations>> {
+  async listSessions(params: SessionListParams): Promise<PaginatedResult<SessionWithClientAndTherapist>> {
     const response = await window.electronAPI.invoke("session:list", params);
     const raw = unwrapResponse(response) as { data: unknown[]; total: number; page: number; pageSize: number };
     return {
-      data: z.array(sessionWithRelationsSchema).parse(raw.data),
+      data: z.array(sessionWithClientAndTherapistSchema).parse(raw.data),
       total: raw.total,
       page: raw.page,
       pageSize: raw.pageSize,
     };
   },
 
-  async listSessionsRange(params: SessionListRangeParams): Promise<SessionWithRelations[]> {
+  async listSessionsRange(params: SessionListRangeParams): Promise<SessionWithClientAndTherapist[]> {
     const response = await window.electronAPI.invoke("session:list-range", params);
-    return z.array(sessionWithRelationsSchema).parse(unwrapResponse(response));
+    return z.array(sessionWithClientAndTherapistSchema).parse(unwrapResponse(response));
   },
 
   async listExpectedSessions(
@@ -248,9 +250,9 @@ export const ipc = {
     return z.array(expectedSessionSchema).parse(unwrapResponse(response));
   },
 
-  async getSession(id: number): Promise<SessionWithRelations> {
+  async getSession(id: number): Promise<SessionWithClientAndTherapist> {
     const response = await window.electronAPI.invoke("session:get", id);
-    return sessionWithRelationsSchema.parse(unwrapResponse(response));
+    return sessionWithClientAndTherapistSchema.parse(unwrapResponse(response));
   },
 
   async createSession(input: CreateSession): Promise<Session> {

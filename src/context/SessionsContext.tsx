@@ -6,12 +6,13 @@ import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
-import type { SessionWithRelations } from "@/types/sessions";
-import type { ClientWithTherapist } from "@/types/clients";
+import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
+import type { ClientWithTherapist } from "@shared/types/clients";
 import type { ExpectedSession, SessionFilters, SessionListParams } from "@shared/types/sessions";
 import {
   computeOverlappingIds,
   computeUnconfirmedIds,
+  computeOverdueIds,
 } from "@/lib/sessions-utils";
 
 export const DatePreset = {
@@ -23,7 +24,6 @@ export const DatePreset = {
 export type DatePreset = (typeof DatePreset)[keyof typeof DatePreset];
 
 const DEFAULT_PAGE_SIZE = 25;
-
 
 function getPresetRange(preset: DatePreset): { from: string; to: string } {
   const now = new Date();
@@ -67,11 +67,12 @@ interface SessionContextValue {
   setPage: (page: number) => void;
   totalSessions: number;
   pageSize: number;
-  displayedSessions: SessionWithRelations[];
+  displayedSessions: SessionWithClientAndTherapist[];
   displayedExpectedSessions: ExpectedSession[];
   showExpectedSection: boolean;
   overlappingIds: Set<number>;
   unconfirmedIds: Set<number>;
+  overdueIds: Set<string>;
   showMine: boolean;
   allClients: ClientWithTherapist[];
   sortKey: string;
@@ -196,7 +197,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }), [dateFromFilter, dateToFilter, therapistFilter, clientFilter, statusFilter]);
 
   // Range filters without status — used for overlap and unconfirmed computation
-  const rangeFilters: SessionFilters = useMemo(() => ({
+  const rangeParams: SessionFilters = useMemo(() => ({
     ...(dateFromFilter ? { from: parse(dateFromFilter, "yyyy-MM-dd", new Date()) } : {}),
     ...(dateToFilter ? { to: endOfDay(parse(dateToFilter, "yyyy-MM-dd", new Date())) } : {}),
     ...(therapistFilter !== "all" ? { therapistIds: [Number(therapistFilter)] } : {}),
@@ -218,9 +219,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   });
 
   const { data: rangeSessions } = useSuspenseQuery({
-    queryKey: queryKeys.sessions.range(rangeFilters),
+    queryKey: queryKeys.sessions.range(rangeParams),
     queryFn: () =>
-      hasBoundedRange ? ipc.listSessionsRange(rangeFilters) : Promise.resolve([]),
+      hasBoundedRange ? ipc.listSessionsRange(rangeParams) : Promise.resolve([]),
     refetchInterval: minutesToMilliseconds(1),
   });
 
@@ -258,6 +259,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const unconfirmedIds = useMemo(
     () => computeUnconfirmedIds(rangeSessions, new Date()),
     [rangeSessions],
+  );
+
+  const overdueIds = useMemo(
+    () => computeOverdueIds(expectedSessions, new Date()),
+    [expectedSessions],
   );
 
   const overlappingSessions = useMemo(
@@ -365,7 +371,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         displayedSessions,
         displayedExpectedSessions,
         showExpectedSection,
-        overlappingIds, unconfirmedIds,
+        overlappingIds, unconfirmedIds, overdueIds,
         showMine,
         allClients,
         sortKey,

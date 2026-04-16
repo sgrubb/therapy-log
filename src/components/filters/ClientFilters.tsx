@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { useClients, ClientStatusFilter } from "@/context/ClientsContext";
+import { useClients } from "@/context/ClientsContext";
+import { ClientStatus } from "@shared/types/enums";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { sortableName } from "@/lib/utils";
 import { FilterToolbar } from "@/components/ui/filter-toolbar";
@@ -45,15 +46,15 @@ export function ClientFilters() {
         <span className="text-muted-foreground">Status</span>
         <Select
           value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v as ClientStatusFilter)}
+          onValueChange={(v) => setStatusFilter(v as ClientStatus)}
         >
           <SelectTrigger className="w-36" aria-label="Status filter">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ClientStatusFilter.Open}>Open</SelectItem>
-            <SelectItem value={ClientStatusFilter.Closed}>Closed</SelectItem>
-            <SelectItem value={ClientStatusFilter.All}>All</SelectItem>
+            <SelectItem value={ClientStatus.Open}>Open</SelectItem>
+            <SelectItem value={ClientStatus.Closed}>Closed</SelectItem>
+            <SelectItem value={ClientStatus.All}>All</SelectItem>
           </SelectContent>
         </Select>
       </label>

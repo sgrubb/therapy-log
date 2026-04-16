@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { addYears } from "date-fns";
-import { SessionDay, Outcome, SessionType, DeliveryMethod, SessionStatus, MissedReason } from "@/types/enums";
+import { SessionDay, Outcome, SessionType, DeliveryMethod, SessionStatus, MissedReason } from "@shared/types/enums";
 
 const durationSchema = z.object({
   hours: z.number().int().min(0),

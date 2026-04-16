@@ -6,6 +6,11 @@ export default defineConfig({
   test: {
     projects: [
       {
+        resolve: {
+          alias: [
+            { find: "@shared", replacement: resolve(__dirname, "shared") },
+          ],
+        },
         test: {
           name: "node",
           environment: "node",

@@ -1,7 +1,7 @@
 import { format, subDays, minutesToHours, hoursToMinutes, minutesToMilliseconds } from "date-fns";
-import { SESSION_DAY_INDEX } from "@/types/enums";
+import { SESSION_DAY_INDEX } from "@/lib/display";
 import type { Duration } from "@/types/ui";
-import type { SessionWithRelations } from "@/types/sessions";
+import type { SessionWithClientAndTherapist, ExpectedSession } from "@shared/types/sessions";
 
 // ── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -40,13 +40,13 @@ function sessionOverlaps(
   return aStart < bEnd && bStart < aEnd;
 }
 
-export function computeOverlappingIds(sessions: SessionWithRelations[]): Set<number> {
+export function computeOverlappingIds(sessions: SessionWithClientAndTherapist[]): Set<number> {
   const byTherapist = sessions.reduce((acc, s) => {
     const list = acc.get(s.therapist_id) ?? [];
     list.push(s);
     acc.set(s.therapist_id, list);
     return acc;
-  }, new Map<number, SessionWithRelations[]>());
+  }, new Map<number, SessionWithClientAndTherapist[]>());
 
   return new Set(
     Array.from(byTherapist.values()).flatMap((group) =>
@@ -60,10 +60,18 @@ export function computeOverlappingIds(sessions: SessionWithRelations[]): Set<num
   );
 }
 
-export function computeUnconfirmedIds(sessions: SessionWithRelations[], now: Date): Set<number> {
+export function computeUnconfirmedIds(sessions: SessionWithClientAndTherapist[], now: Date): Set<number> {
   return new Set(
     sessions
       .filter((s) => s.status === "Scheduled" && s.scheduled_at < now)
+      .map((s) => s.id),
+  );
+}
+
+export function computeOverdueIds(expectedSessions: ExpectedSession[], now: Date): Set<string> {
+  return new Set(
+    expectedSessions
+      .filter((s) => s.scheduled_at < now)
       .map((s) => s.id),
   );
 }

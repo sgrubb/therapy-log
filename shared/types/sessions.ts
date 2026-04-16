@@ -1,45 +1,24 @@
-// ── Session filter + pagination types ─────────────────────────────────────
-// Shared between renderer (src/) and electron main process.
+import { z } from "zod";
+import {
+  sessionSchema,
+  sessionWithClientAndTherapistSchema,
+  expectedSessionSchema,
+  sessionCreateSchema,
+  sessionUpdateSchema,
+  sessionFiltersSchema,
+  sessionListParamsSchema,
+  sessionListRangeParamsSchema,
+  sessionListExpectedParamsSchema,
+} from "@shared/schemas/sessions";
 
-import { SortDir } from "@shared/types/enums";
+export type Session = z.infer<typeof sessionSchema>;
+export type SessionWithClientAndTherapist = z.infer<typeof sessionWithClientAndTherapistSchema>;
+export type ExpectedSession = z.infer<typeof expectedSessionSchema>;
 
-export interface SessionFilters {
-  from?: Date;
-  to?: Date;
-  therapistIds?: number[];
-  clientId?: number;
-  status?: string;
-}
+export type CreateSession = z.infer<typeof sessionCreateSchema>;
+export type UpdateSession = z.infer<typeof sessionUpdateSchema>;
 
-export interface SessionListParams extends SessionFilters {
-  page: number;
-  pageSize: number;
-  sortKey: string;
-  sortDir: SortDir;
-}
-
-export interface PaginatedResult<T> {
-  data: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
-
-// ── ExpectedSession ────────────────────────────────────────────────────────
-
-export interface ExpectedSession {
-  id: string;
-  client_id: number;
-  therapist_id: number;
-  scheduled_at: Date;
-  duration: number;
-  client: { id: number; first_name: string; last_name: string };
-  therapist: { id: number; first_name: string; last_name: string };
-}
-
-// ── SessionListRangeParams ─────────────────────────────────────────────────
-
-export interface SessionListRangeParams extends SessionFilters {
-  sortKey?: string;
-  sortDir?: SortDir;
-}
+export type SessionFilters = z.infer<typeof sessionFiltersSchema>;
+export type SessionListParams = z.infer<typeof sessionListParamsSchema>;
+export type SessionListRangeParams = z.infer<typeof sessionListRangeParamsSchema>;
+export type SessionListExpectedParams = z.infer<typeof sessionListExpectedParamsSchema>;

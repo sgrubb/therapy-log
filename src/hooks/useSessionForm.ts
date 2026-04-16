@@ -6,10 +6,11 @@ import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
 import { sessionFormSchema } from "@/schemas/forms";
-import { SessionStatus, FormState } from "@/types/enums";
-import type { SessionType, DeliveryMethod, MissedReason } from "@/types/enums";
-import type { ClientWithTherapist } from "@/types/clients";
-import type { SessionWithRelations } from "@/types/sessions";
+import { SessionStatus } from "@shared/types/enums";
+import type { SessionType, DeliveryMethod, MissedReason } from "@shared/types/enums";
+import { FormState } from "@/types/enums";
+import type { ClientWithTherapist } from "@shared/types/clients";
+import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
 import { useFormState } from "@/hooks/useFormState";
 import { mostRecentOccurrence, toDuration, fromDuration } from "@/lib/sessions-utils";
 
@@ -31,7 +32,7 @@ const EMPTY: FormFields = {
   notes: "",
 };
 
-function mapSessionToFormFields(session: SessionWithRelations): FormFields {
+function mapSessionToFormFields(session: SessionWithClientAndTherapist): FormFields {
   return {
     client_id: session.client_id.toString(),
     therapist_id: session.therapist_id.toString(),
@@ -78,7 +79,7 @@ export function useSessionForm(sessionId?: number, defaults?: SessionFormDefault
     queryKey: isEdit ? queryKeys.sessions.detail(sessionId!) : ["session-form", "new"],
     queryFn: isEdit
       ? () => ipc.getSession(sessionId!)
-      : (): Promise<SessionWithRelations | null> => Promise.resolve(null),
+      : (): Promise<SessionWithClientAndTherapist | null> => Promise.resolve(null),
     staleTime: isEdit ? 0 : Infinity,
   });
 

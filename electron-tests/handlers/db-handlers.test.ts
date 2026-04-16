@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, assert } from "vitest";
 import type { PrismaClient } from "../../generated/prisma/client";
 import { registerDatabaseHandlers } from "../../electron/handlers/database-handlers";
 import type { IpcApi } from "../../electron/types/ipc";
+import { SortDir } from "@shared/types/enums";
 import {
   createTestPrismaClient,
   cleanupTestDb,
@@ -349,7 +350,7 @@ describe("session:list-expected", () => {
       from: new Date("2030-06-02T00:00:00"), // Monday
       to: new Date("2030-06-08T23:59:59"),   // Sunday — one week containing a Tuesday
       sortKey: "scheduled_at",
-      sortDir: "asc",
+      sortDir: SortDir.Asc,
     });
     assert(result.success);
     expect(result.data.length).toBeGreaterThanOrEqual(1);
@@ -375,7 +376,7 @@ describe("session:list-expected", () => {
       from: new Date("2030-06-02T00:00:00"),
       to: new Date("2030-06-08T23:59:59"),
       sortKey: "scheduled_at",
-      sortDir: "asc",
+      sortDir: SortDir.Asc,
     });
     assert(result.success);
     expect(result.data.find((e) => e.client_id === ids.clientCharlie)).toBeUndefined();
@@ -387,7 +388,7 @@ describe("session:list-expected", () => {
       from: new Date("2030-07-01T00:00:00"),
       to: new Date("2030-07-31T23:59:59"),
       sortKey: "scheduled_at",
-      sortDir: "asc",
+      sortDir: SortDir.Asc,
     });
     assert(result.success);
     expect(result.data.find((e) => e.client_id === ids.clientDana)).toBeUndefined();
@@ -399,10 +400,34 @@ describe("session:list-expected", () => {
       to: new Date("2030-08-31T23:59:59"),
       therapistIds: [ids.therapistBob],
       sortKey: "scheduled_at",
-      sortDir: "asc",
+      sortDir: SortDir.Asc,
     });
     assert(result.success);
     // Charlie belongs to Alice, so nothing should appear for Bob's filter
+    expect(result.data.find((e) => e.client_id === ids.clientCharlie)).toBeUndefined();
+  });
+
+  it("does not generate expected session when a logged session falls before the from date but within the same week", async () => {
+    // Charlie's session day is Tuesday. Log a session on Tuesday 2031-07-08.
+    // Then query from Wednesday 2031-07-09 — the Tuesday session is outside [from, to]
+    // but within the same week, so no expected session should be generated.
+    await invoke("session:create", {
+      client_id: ids.clientCharlie,
+      therapist_id: ids.therapistAlice,
+      scheduled_at: new Date("2031-07-08T10:00:00"),
+      duration: 60,
+      status: "Attended",
+      session_type: "Child",
+      delivery_method: "FaceToFace",
+    });
+
+    const result = await invoke("session:list-expected", {
+      from: new Date("2031-07-09T00:00:00"), // Wednesday — after the Tuesday session
+      to: new Date("2031-07-13T23:59:59"),   // Sunday — same week
+      sortKey: "scheduled_at",
+      sortDir: SortDir.Asc,
+    });
+    assert(result.success);
     expect(result.data.find((e) => e.client_id === ids.clientCharlie)).toBeUndefined();
   });
 });

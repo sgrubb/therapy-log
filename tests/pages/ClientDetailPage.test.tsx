@@ -887,7 +887,7 @@ describe("ClientDetailPage — reopen client", () => {
         "client:reopen",
         expect.objectContaining({
           data: expect.objectContaining({
-            notes: `Existing notes.\n\nClient closed on 01 Dec 2025\nClient reopened on ${today}\nReturning for further support.`,
+            notes: `Existing notes.\n\nClient closed on 01 Dec 2025, Outcome: Improved\nClient reopened on ${today}\nReturning for further support.`,
           }),
         }),
       );

@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import type { z } from "zod";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
-import type { ClientWithTherapist } from "@/types/clients";
+import type { ClientWithTherapist } from "@shared/types/clients";
 import { reopenClientSchema } from "@/schemas/forms";
 import { useFormState } from "@/hooks/useFormState";
 import { FormState } from "@/types/enums";
@@ -61,7 +61,13 @@ export function useReopenClient(clientId: number, client: ClientWithTherapist) {
       const existingNotes = client?.notes ?? "";
       const reopenDate = new Date();
       const closedLine = client?.closed_date
-        ? `Client closed on ${format(client.closed_date, "dd MMM yyyy")}`
+        ? [
+            `Client closed on ${format(client.closed_date, "dd MMM yyyy")}`,
+            client.outcome ? `Outcome: ${client.outcome}` : null,
+            client.post_score != null ? `Post-score: ${client.post_score}` : null,
+          ]
+            .filter(Boolean)
+            .join(", ")
         : null;
       const reopenLine = `Client reopened on ${format(reopenDate, "dd MMM yyyy")}`;
       const appendedEntry = [

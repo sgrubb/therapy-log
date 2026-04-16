@@ -7,7 +7,7 @@ import { queryKeys } from "@/lib/queryKeys";
 import { therapistFormSchema } from "@/schemas/forms";
 import { useFormState } from "@/hooks/useFormState";
 import { FormState } from "@/types/enums";
-import type { Therapist } from "@/types/therapists";
+import type { Therapist } from "@shared/types/therapists";
 
 export type FormFields = z.input<typeof therapistFormSchema>;
 

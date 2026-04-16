@@ -6,7 +6,7 @@ import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { FilterToolbar } from "@/components/ui/filter-toolbar";
 import { Input } from "@/components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { SessionStatus } from "@/types/enums";
+import { SessionStatus } from "@shared/types/enums";
 import {
   Select,
   SelectContent,
@@ -26,8 +26,7 @@ export function SessionFilters() {
     overdueOnly, handleOverdueOnly,
     unconfirmedOnly, handleUnconfirmedOnly,
     overlappingOnly, handleOverlappingOnly,
-    overlappingIds, unconfirmedIds,
-    displayedExpectedSessions,
+    overlappingIds, unconfirmedIds, overdueIds,
     showMine,
     allClients,
     reset,
@@ -47,7 +46,7 @@ export function SessionFilters() {
     [allClients],
   );
 
-  const overdueCount = displayedExpectedSessions.filter((s) => s.scheduled_at < new Date()).length;
+  const overdueCount = overdueIds.size;
   const unconfirmedCount = unconfirmedIds.size;
   const overlappingCount = overlappingIds.size;
 

@@ -12,7 +12,7 @@ export function CalendarFilters() {
     unconfirmedOnly, handleUnconfirmedOnly,
     overdueOnly, handleOverdueOnly,
     therapistOptions,
-    overdueCount, unconfirmedCount, overlappingCount,
+    overdueIds, unconfirmedIds, overlappingIds,
     reset,
   } = useCalendar();
 
@@ -44,67 +44,67 @@ export function CalendarFilters() {
           {showExpectedSessions && (
             <label className={cn(
               "flex items-center gap-1.5 text-xs",
-              overdueCount === 0
+              overdueIds.size === 0
                 ? "cursor-default text-muted-foreground/50"
                 : "cursor-pointer text-muted-foreground",
             )}>
               <input
                 type="checkbox"
                 checked={overdueOnly}
-                disabled={overdueCount === 0}
+                disabled={overdueIds.size === 0}
                 onChange={(e) => handleOverdueOnly(e.target.checked)}
               />
               Overdue only
               <span className={cn(
                 "ml-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-white",
-                overdueCount > 0 ? "bg-red-400" : "bg-muted-foreground/30",
+                overdueIds.size > 0 ? "bg-red-400" : "bg-muted-foreground/30",
               )}>
                 <Clock size={10} />
-                {overdueCount}
+                {overdueIds.size}
               </span>
             </label>
           )}
         </div>
         <label className={cn(
           "flex items-center gap-1.5 text-xs",
-          unconfirmedCount === 0
+          unconfirmedIds.size === 0
             ? "cursor-default text-muted-foreground/50"
             : "cursor-pointer text-muted-foreground",
         )}>
           <input
             type="checkbox"
             checked={unconfirmedOnly}
-            disabled={unconfirmedCount === 0}
+            disabled={unconfirmedIds.size === 0}
             onChange={(e) => handleUnconfirmedOnly(e.target.checked)}
           />
           Unconfirmed only
           <span className={cn(
             "ml-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-white",
-            unconfirmedCount > 0 ? "bg-amber-400" : "bg-muted-foreground/30",
+            unconfirmedIds.size > 0 ? "bg-amber-400" : "bg-muted-foreground/30",
           )}>
             <Clock size={10} />
-            {unconfirmedCount}
+            {unconfirmedIds.size}
           </span>
         </label>
         <label className={cn(
           "flex items-center gap-1.5 text-xs",
-          overlappingCount === 0
+          overlappingIds.size === 0
             ? "cursor-default text-muted-foreground/50"
             : "cursor-pointer text-muted-foreground",
         )}>
           <input
             type="checkbox"
             checked={showOverlappingOnly}
-            disabled={overlappingCount === 0}
+            disabled={overlappingIds.size === 0}
             onChange={(e) => handleOverlappingOnly(e.target.checked)}
           />
           Overlapping only
           <span className={cn(
             "ml-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-white",
-            overlappingCount > 0 ? "bg-red-400" : "bg-muted-foreground/30",
+            overlappingIds.size > 0 ? "bg-red-400" : "bg-muted-foreground/30",
           )}>
             <AlertCircle size={10} />
-            {overlappingCount}
+            {overlappingIds.size}
           </span>
         </label>
       </div>

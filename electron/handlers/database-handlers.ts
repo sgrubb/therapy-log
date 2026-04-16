@@ -1,42 +1,47 @@
 import type { IpcMain } from "electron";
 import type { PrismaClient } from "../../generated/prisma/client";
-import { eachWeekOfInterval, format } from "date-fns";
-import { therapistCreateSchema, therapistUpdateSchema, therapistListParamsSchema } from "../schemas/therapists";
+import { addDays, eachWeekOfInterval, endOfWeek, format, set, startOfWeek } from "date-fns";
+import {
+  therapistCreateSchema,
+  therapistUpdateSchema,
+  therapistListParamsSchema,
+} from "@shared/schemas/therapists";
 import {
   clientCreateSchema,
   clientUpdateSchema,
   clientCloseSchema,
   clientReopenSchema,
   clientListParamsSchema,
-} from "../schemas/clients";
+} from "@shared/schemas/clients";
 import {
   sessionCreateSchema,
   sessionUpdateSchema,
   sessionListParamsSchema,
   sessionListRangeParamsSchema,
-  sessionExpectedParamsSchema,
-} from "../schemas/sessions";
+  sessionListExpectedParamsSchema,
+} from "@shared/schemas/sessions";
 import type { IpcApi } from "../types/ipc";
 import { withErrorHandler } from "../lib/error-handler";
 import type { ExpectedSession } from "@shared/types/sessions";
+import { SortDir } from "@shared/types/enums";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function buildOrderBy(sortKey: string, sortDir: string) {
+function buildOrderBy(sortKey: string, sortDir: SortDir) {
   const parts = sortKey.split(".");
   return parts.length === 2
     ? { [parts[0]!]: { [parts[1]!]: sortDir } }
     : { [sortKey]: sortDir };
 }
 
-const SESSION_DAY_INDEX: Record<string, number> = {
-  Monday: 1,
-  Tuesday: 2,
-  Wednesday: 3,
-  Thursday: 4,
-  Friday: 5,
-  Saturday: 6,
-  Sunday: 0,
+const SESSION_DAY_OFFSET: Record<string, number> = {
+  Monday: 0,
+  Tuesday: 1,
+  Wednesday: 2,
+  Thursday: 3,
+  Friday: 4,
+  Saturday: 5,
+  Sunday: 6,
 };
 
 const WEEK_STARTS_ON = 1 as const; // Monday
@@ -72,11 +77,9 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
     (_e, rawParams: unknown): Promise<IpcApi["therapist:list"]["result"]> =>
       withErrorHandler("therapist:list", async () => {
         const { page, pageSize, sortKey, sortDir } = therapistListParamsSchema.parse(rawParams);
-        const where = {};
-        const total = await prisma.therapist.count({ where });
+        const total = await prisma.therapist.count();
         const orderBy = buildOrderBy(sortKey, sortDir);
         const data = await prisma.therapist.findMany({
-          where,
           orderBy,
           skip: (page - 1) * pageSize,
           take: pageSize,
@@ -89,7 +92,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
     "therapist:list-all",
     (): Promise<IpcApi["therapist:list-all"]["result"]> =>
       withErrorHandler("therapist:list-all", () =>
-        prisma.therapist.findMany({ orderBy: { last_name: "asc" } }),
+        prisma.therapist.findMany({ orderBy: { last_name: SortDir.Asc } }),
       ),
   );
 
@@ -173,7 +176,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
       withErrorHandler("client:list-all", () =>
         prisma.client.findMany({
           include: { therapist: true },
-          orderBy: { last_name: "asc" },
+          orderBy: { last_name: SortDir.Asc },
         }),
       ),
   );
@@ -264,7 +267,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
     "session:list-range",
     (_e, rawFilters: unknown): Promise<IpcApi["session:list-range"]["result"]> =>
       withErrorHandler("session:list-range", async () => {
-        const { sortKey = "scheduled_at", sortDir = "asc", ...filters } =
+        const { sortKey = "scheduled_at", sortDir = SortDir.Asc, ...filters } =
           sessionListRangeParamsSchema.parse(rawFilters);
         return prisma.session.findMany({
           where: buildSessionWhere(filters),
@@ -279,7 +282,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
     (_e, rawParams: unknown): Promise<IpcApi["session:list-expected"]["result"]> =>
       withErrorHandler("session:list-expected", async () => {
         const { from, to, therapistIds, clientId, sortKey, sortDir } =
-          sessionExpectedParamsSchema.parse(rawParams);
+          sessionListExpectedParamsSchema.parse(rawParams);
 
         const clients = await prisma.client.findMany({
           where: {
@@ -296,19 +299,18 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
         const sessions = await prisma.session.findMany({
           where: {
             client_id: { in: clientIds },
-            scheduled_at: { gte: from, lte: to },
+            scheduled_at: {
+              gte: startOfWeek(from, { weekStartsOn: WEEK_STARTS_ON }),
+              lte: endOfWeek(to, { weekStartsOn: WEEK_STARTS_ON }),
+            },
           },
           select: { client_id: true, scheduled_at: true },
         });
 
         const coveredWeeks = new Set(
-          sessions.map((s) => {
-            const d = new Date(s.scheduled_at);
-            const daysToMon = (d.getDay() + 6) % 7;
-            const mon = new Date(d);
-            mon.setDate(d.getDate() - daysToMon);
-            return `${s.client_id}-${format(mon, "yyyy-MM-dd")}`;
-          }),
+          sessions.map((s) =>
+            `${s.client_id}-${format(startOfWeek(s.scheduled_at, { weekStartsOn: WEEK_STARTS_ON }), "yyyy-MM-dd")}`,
+          ),
         );
 
         const weekStarts = eachWeekOfInterval(
@@ -322,13 +324,11 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
             if (coveredWeeks.has(`${client.id}-${weekKey}`)) {
               return [];
             }
-            const dayIdx = SESSION_DAY_INDEX[client.session_day!];
-            if (dayIdx === undefined) {
+            const offset = SESSION_DAY_OFFSET[client.session_day!];
+            if (offset === undefined) {
               return [];
             }
-            const daysFromMonday = dayIdx === 0 ? 6 : dayIdx - 1;
-            const sessionDay = new Date(weekDate);
-            sessionDay.setDate(weekDate.getDate() + daysFromMonday);
+            const sessionDay = addDays(weekDate, offset);
 
             const effectiveStart = client.start_date > from ? client.start_date : from;
             if (sessionDay < effectiveStart || sessionDay > to) {
@@ -336,13 +336,18 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
             }
 
             const [hStr, mStr] = client.session_time!.split(":");
-            sessionDay.setHours(Number(hStr ?? 0), Number(mStr ?? 0), 0, 0);
+            const scheduledAt = set(sessionDay, {
+              hours: Number(hStr ?? 0),
+              minutes: Number(mStr ?? 0),
+              seconds: 0,
+              milliseconds: 0,
+            });
 
             return [{
               id: `expected-${client.id}-${weekKey}`,
               client_id: client.id,
               therapist_id: client.therapist_id,
-              scheduled_at: new Date(sessionDay),
+              scheduled_at: scheduledAt,
               duration: client.session_duration ?? 60,
               client: {
                 id: client.id,
@@ -358,7 +363,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
           });
         });
 
-        const dir = sortDir === "asc" ? 1 : -1;
+        const dir = sortDir === SortDir.Asc ? 1 : -1;
         expected.sort((a, b) => {
           switch (sortKey) {
             case "scheduled_at":

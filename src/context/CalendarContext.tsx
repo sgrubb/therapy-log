@@ -26,12 +26,11 @@ import {
 import {
   computeOverlappingIds,
   computeUnconfirmedIds,
+  computeOverdueIds,
 } from "@/lib/sessions-utils";
 import type { View } from "react-big-calendar";
 import type { CalendarEvent } from "@/lib/calendar-utils";
-import type { Therapist } from "@/types/therapists";
-
-
+import type { Therapist } from "@shared/types/therapists";
 
 function getRangeForDate(date: Date, view: View): { start: Date; end: Date } {
   if (view === "week") {
@@ -67,9 +66,7 @@ interface CalendarContextValue {
   events: CalendarEvent[];
   overlappingIds: Set<number>;
   unconfirmedIds: Set<number>;
-  overdueCount: number;
-  unconfirmedCount: number;
-  overlappingCount: number;
+  overdueIds: Set<string>;
   eventPropGetter: (event: CalendarEvent) => { className?: string; style: Record<string, unknown> };
   reset: () => void;
 }
@@ -115,7 +112,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   }, [selectedTherapistId]);
 
   const therapistOptions = useMemo(
-    () => therapists.map((t) => ({ value: t.id.toString(), label: `${t.first_name} ${t.last_name}` })),
+    () => therapists.map((t) =>
+      ({ value: t.id.toString(), label: `${t.first_name} ${t.last_name}` })
+    ),
     [therapists],
   );
 
@@ -181,7 +180,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     [selectedTherapists],
   );
 
-  const rangeFilters = useMemo(() => ({
+  const rangeParams = useMemo(() => ({
     from: rangeStart,
     to: rangeEnd,
     ...(selectedTherapistIds.length > 0
@@ -190,10 +189,10 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   }), [rangeStart, rangeEnd, selectedTherapistIds]);
 
   const { data: rangeSessions } = useSuspenseQuery({
-    queryKey: queryKeys.sessions.range(rangeFilters),
+    queryKey: queryKeys.sessions.range(rangeParams),
     queryFn: () =>
       selectedTherapistIds.length > 0
-        ? ipc.listSessionsRange(rangeFilters)
+        ? ipc.listSessionsRange(rangeParams)
         : Promise.resolve([]),
     refetchInterval: minutesToMilliseconds(1),
   });
@@ -227,6 +226,11 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     [rangeSessions],
   );
 
+  const overdueIds = useMemo(
+    () => computeOverdueIds(expectedSessions, new Date()),
+    [expectedSessions],
+  );
+
   const allEvents = useMemo((): CalendarEvent[] => {
     const sessionEvents = sessionsToEvents(rangeSessions, therapistColors);
 
@@ -238,8 +242,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
   }, [rangeSessions, expectedSessions, therapistColors, selectedTherapistIdSet, showExpectedSessions]);
 
   const overdueEvents = useMemo(
-    () => allEvents.filter((e) => isOverdue(e)),
-    [allEvents],
+    () => allEvents.filter((e) => isOverdue(e, overdueIds)),
+    [allEvents, overdueIds],
   );
 
   const overlappingEvents = useMemo(
@@ -289,9 +293,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
         events,
         overlappingIds,
         unconfirmedIds,
-        overdueCount: overdueEvents.length,
-        unconfirmedCount: unconfirmedEvents.length,
-        overlappingCount: overlappingEvents.length,
+        overdueIds,
         eventPropGetter,
         reset,
       }}

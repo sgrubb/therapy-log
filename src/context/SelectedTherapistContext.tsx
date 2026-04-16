@@ -8,7 +8,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { minutesToMilliseconds } from "date-fns";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
-import type { Therapist } from "@/types/therapists";
+import type { Therapist } from "@shared/types/therapists";
 
 interface SelectedTherapistContextValue {
   therapists: Therapist[];

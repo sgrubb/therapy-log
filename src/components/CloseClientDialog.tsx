@@ -1,6 +1,7 @@
 import { Dialog } from "radix-ui";
-import { Outcome, FormState } from "@/types/enums";
-import type { ClientWithTherapist } from "@/types/clients";
+import { Outcome } from "@shared/types/enums";
+import { FormState } from "@/types/enums";
+import type { ClientWithTherapist } from "@shared/types/clients";
 import { useCloseClient } from "@/hooks/useCloseClient";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";

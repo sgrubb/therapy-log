@@ -10,7 +10,7 @@ import { minutesToMilliseconds } from "date-fns";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/queryKeys";
 import { SortDir } from "@shared/types/enums";
-import type { Therapist } from "@/types/therapists";
+import type { Therapist } from "@shared/types/therapists";
 
 const DEFAULT_PAGE_SIZE = 25;
 

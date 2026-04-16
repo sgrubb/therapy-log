@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { buttonVariants } from "@/components/ui/button";
 import type { Column } from "@/components/ui/data-table";
-import type { ClientWithTherapist } from "@/types/clients";
+import type { ClientWithTherapist } from "@shared/types/clients";
 
 const columns: Column<ClientWithTherapist>[] = [
   {

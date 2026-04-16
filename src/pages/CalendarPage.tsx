@@ -22,7 +22,7 @@ const localizer = dateFnsLocalizer({
 });
 
 function EventComponent({ event }: { event: CalendarEvent }) {
-  const { overlappingIds, unconfirmedIds } = useCalendar();
+  const { overlappingIds, unconfirmedIds, overdueIds } = useCalendar();
   return (
     <div className="h-full overflow-hidden px-1 py-0.5 text-xs text-white" title={event.title}>
       {isOverlapping(event, overlappingIds) && (
@@ -31,7 +31,7 @@ function EventComponent({ event }: { event: CalendarEvent }) {
       {isUnconfirmed(event, unconfirmedIds) && (
         <Clock size={10} className="mb-0.5 mr-1 inline shrink-0" aria-label="Unconfirmed session" />
       )}
-      {isOverdue(event) && (
+      {isOverdue(event, overdueIds) && (
         <Clock size={10} className="mb-0.5 mr-1 inline shrink-0" aria-label="Overdue session" />
       )}
       {event.title}
