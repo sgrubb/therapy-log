@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { format } from "date-fns";
+import { formatDisplayDate } from "@/lib/utils/datetime";
 import type { z } from "zod";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
 import type { ClientWithTherapist } from "@shared/types/clients";
-import { reopenClientSchema } from "@/schemas/forms";
-import { useFormState } from "@/hooks/useFormState";
-import { FormState } from "@/types/enums";
+import { reopenClientSchema } from "@/lib/schemas/forms";
+import { useFormState } from "@/hooks/use-form-state";
+import { FormState } from "@/lib/types/enums";
 import { useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/queryKeys";
+import { queryKeys } from "@/lib/query-keys";
 
 export type FormFields = z.input<typeof reopenClientSchema>;
 
@@ -62,14 +62,14 @@ export function useReopenClient(clientId: number, client: ClientWithTherapist) {
       const reopenDate = new Date();
       const closedLine = client?.closed_date
         ? [
-            `Client closed on ${format(client.closed_date, "dd MMM yyyy")}`,
+            `Client closed on ${formatDisplayDate(client.closed_date)}`,
             client.outcome ? `Outcome: ${client.outcome}` : null,
             client.post_score != null ? `Post-score: ${client.post_score}` : null,
           ]
             .filter(Boolean)
             .join(", ")
         : null;
-      const reopenLine = `Client reopened on ${format(reopenDate, "dd MMM yyyy")}`;
+      const reopenLine = `Client reopened on ${formatDisplayDate(reopenDate)}`;
       const appendedEntry = [
         closedLine,
         reopenLine,

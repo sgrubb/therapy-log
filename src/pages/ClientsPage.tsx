@@ -1,4 +1,6 @@
 import { useNavigate, Link } from "react-router-dom";
+import { RefreshButton } from "@/components/ui/refresh-button";
+import { queryKeys } from "@/lib/query-keys";
 import { Pagination } from "@/components/ui/pagination";
 import { ClientProvider, useClients } from "@/context/ClientsContext";
 import { ClientFilters } from "@/components/filters/ClientFilters";
@@ -64,6 +66,7 @@ function ClientsPageContent() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold">Clients</h1>
+            <RefreshButton queryKey={queryKeys.clients.root} />
           </div>
           <Link to="/clients/new" className={buttonVariants()}>Add Client</Link>
         </div>

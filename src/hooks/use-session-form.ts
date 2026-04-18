@@ -4,15 +4,15 @@ import { format, parse } from "date-fns";
 import type { z } from "zod";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
-import { queryKeys } from "@/lib/queryKeys";
-import { sessionFormSchema } from "@/schemas/forms";
+import { queryKeys } from "@/lib/query-keys";
+import { sessionFormSchema } from "@/lib/schemas/forms";
 import { SessionStatus } from "@shared/types/enums";
 import type { SessionType, DeliveryMethod, MissedReason } from "@shared/types/enums";
-import { FormState } from "@/types/enums";
+import { FormState } from "@/lib/types/enums";
 import type { ClientWithTherapist } from "@shared/types/clients";
 import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
-import { useFormState } from "@/hooks/useFormState";
-import { mostRecentOccurrence, toDuration, fromDuration } from "@/lib/sessions-utils";
+import { useFormState } from "@/hooks/use-form-state";
+import { mostRecentOccurrence, toDuration, fromDuration } from "@/lib/utils/sessions";
 
 // Field names mirror the database schema (snake_case) so they map directly
 // onto IPC payloads without a translation step.

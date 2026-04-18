@@ -14,3 +14,7 @@ export function endOfWeekMon(date: Date): Date {
 export function getWeekStart(date: Date): string {
   return format(startOfWeekMon(date), "yyyy-MM-dd");
 }
+
+export function formatDisplayDate(date: Date): string {
+  return format(date, "dd MMM yyyy");
+}

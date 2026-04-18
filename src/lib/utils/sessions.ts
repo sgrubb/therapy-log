@@ -1,9 +1,17 @@
 import { format, subDays, minutesToHours, hoursToMinutes, minutesToMilliseconds } from "date-fns";
-import { SESSION_DAY_INDEX } from "@/lib/display";
-import type { Duration } from "@/types/ui";
+import type { SessionDay } from "@shared/types/enums";
+import type { Duration } from "@/lib/types/ui";
 import type { SessionWithClientAndTherapist, ExpectedSession } from "@shared/types/sessions";
 
-// ── Date helpers ─────────────────────────────────────────────────────────────
+const SESSION_DAY_INDEX: Record<SessionDay, number> = {
+  Sunday: 0,
+  Monday: 1,
+  Tuesday: 2,
+  Wednesday: 3,
+  Thursday: 4,
+  Friday: 5,
+  Saturday: 6,
+};
 
 /**
  * Returns the most recent occurrence (including today) of the given day name

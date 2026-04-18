@@ -1,10 +1,10 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
-import { useClientForm } from "@/hooks/useClientForm";
+import { useClientForm } from "@/hooks/use-client-form";
 import { SessionDay, Outcome, DeliveryMethod } from "@shared/types/enums";
-import { DELIVERY_METHOD_NAMES } from "@/lib/display";
-import { FormState } from "@/types/enums";
+import { DELIVERY_METHOD_NAMES } from "@/lib/labels";
+import { FormState } from "@/lib/types/enums";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DurationInput } from "@/components/ui/duration-input";

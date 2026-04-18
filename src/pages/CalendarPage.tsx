@@ -3,14 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { AlertCircle, Clock } from "lucide-react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { RefreshButton } from "@/components/ui/refresh-button";
-import { queryKeys } from "@/lib/queryKeys";
-import { format, parse, getDay } from "date-fns";
-import { startOfWeekMon } from "@/lib/datetime-utils";
+import { queryKeys } from "@/lib/query-keys";
+import { format, parse, getDay, differenceInMinutes } from "date-fns";
+import { startOfWeekMon } from "@/lib/utils/datetime";
 import { enGB } from "date-fns/locale";
 import { CalendarProvider, useCalendar } from "@/context/CalendarContext";
 import { CalendarFilters } from "@/components/filters/CalendarFilters";
-import { isOverdue, isUnconfirmed, isOverlapping } from "@/lib/calendar-utils";
-import type { CalendarEvent } from "@/lib/calendar-utils";
+import { isOverdue, isUnconfirmed, isOverlapping, type CalendarEvent } from "@/lib/utils/calendar";
+import type { EventProps } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 const localizer = dateFnsLocalizer({
@@ -21,7 +21,7 @@ const localizer = dateFnsLocalizer({
   locales: { "en-GB": enGB },
 });
 
-function EventComponent({ event }: { event: CalendarEvent }) {
+function EventCard({ event }: EventProps<CalendarEvent>) {
   const { overlappingIds, unconfirmedIds, overdueIds } = useCalendar();
   return (
     <div className="h-full overflow-hidden px-1 py-0.5 text-xs text-white" title={event.title}>
@@ -75,7 +75,7 @@ function CalendarPageContent() {
     ({ start, end }: { start: Date; end: Date }) => {
       const dateStr = format(start, "yyyy-MM-dd");
       const timeStr = format(start, "HH:mm");
-      const durationMins = Math.round((end.getTime() - start.getTime()) / 60_000);
+      const durationMins = differenceInMinutes(end, start);
       navigate(
         `/sessions/new?date=${dateStr}&time=${timeStr}&duration=${durationMins}`,
         { state: { from: "/calendar" } },
@@ -96,7 +96,7 @@ function CalendarPageContent() {
       <CalendarFilters />
 
       <div className="min-h-0 flex-1">
-        <Calendar
+        <Calendar<CalendarEvent>
           localizer={localizer}
           events={events}
           view={view}
@@ -110,8 +110,8 @@ function CalendarPageContent() {
           startAccessor="start"
           endAccessor="end"
           titleAccessor="title"
-          eventPropGetter={eventPropGetter as never}
-          components={{ event: EventComponent as never }}
+          eventPropGetter={eventPropGetter}
+          components={{ event: EventCard }}
           scrollToTime={new Date(1970, 0, 1, 9, 0, 0)}
           style={{ height: "100%" }}
           culture="en-GB"

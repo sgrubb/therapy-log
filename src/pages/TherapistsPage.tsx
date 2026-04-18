@@ -6,6 +6,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Pagination } from "@/components/ui/pagination";
 import { buttonVariants } from "@/components/ui/button";
+import { RefreshButton } from "@/components/ui/refresh-button";
+import { queryKeys } from "@/lib/query-keys";
 import type { Column } from "@/components/ui/data-table";
 import type { Therapist } from "@shared/types/therapists";
 
@@ -52,6 +54,7 @@ function TherapistsPageContent() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold">Therapists</h1>
+            <RefreshButton queryKey={queryKeys.therapists.root} />
           </div>
           <div className="flex items-center gap-2">
             {isAdmin && (

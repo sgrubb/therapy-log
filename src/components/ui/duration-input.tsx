@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { Duration } from "@/types/ui";
+import type { Duration } from "@/lib/types/ui";
 
 export type { Duration };
 

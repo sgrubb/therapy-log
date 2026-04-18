@@ -1,9 +1,9 @@
-import { format } from "date-fns";
+import { formatDisplayDate } from "@/lib/utils/datetime";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
-import { queryKeys } from "@/lib/queryKeys";
+import { queryKeys } from "@/lib/query-keys";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { Badge, BadgeVariant } from "@/components/ui/badge";
 import { InfoRow } from "@/components/ui/info-row";
@@ -13,7 +13,7 @@ import { ReopenClientDialog } from "@/components/ReopenClientDialog";
 import { Link } from "react-router-dom";
 import { DataTable } from "@/components/ui/data-table";
 import { SortDir } from "@shared/types/enums";
-import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES, OUTCOME_NAMES } from "@/lib/display";
+import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES, OUTCOME_NAMES } from "@/lib/labels";
 import { buttonVariants } from "@/components/ui/button";
 import type { Column } from "@/components/ui/data-table";
 
@@ -59,7 +59,7 @@ export default function ClientDetailPage() {
       key: "scheduled_at",
       label: "Date",
       sortable: true,
-      render: (s) => format(s.scheduled_at, "dd MMM yyyy"),
+      render: (s) => formatDisplayDate(s.scheduled_at),
     },
     {
       key: "session_type",
@@ -134,7 +134,7 @@ export default function ClientDetailPage() {
         </h2>
         <div className="grid grid-cols-2 gap-4">
           <InfoRow label="Hospital Number" value={client.hospital_number} />
-          <InfoRow label="Date of Birth" value={format(client.dob, "dd MMM yyyy")} />
+          <InfoRow label="Date of Birth" value={formatDisplayDate(client.dob)} />
           <InfoRow label="Phone" value={client.phone ?? "—"} />
           <InfoRow label="Email" value={client.email ?? "—"} />
         </div>
@@ -154,9 +154,9 @@ export default function ClientDetailPage() {
             value={`${client.therapist.first_name} ${client.therapist.last_name}`}
             className="col-span-2"
           />
-          <InfoRow label="Start Date" value={format(client.start_date, "dd MMM yyyy")} />
+          <InfoRow label="Start Date" value={formatDisplayDate(client.start_date)} />
           {isClosed && (
-            <InfoRow label="Closed Date" value={format(client.closed_date!, "dd MMM yyyy")} />
+            <InfoRow label="Closed Date" value={formatDisplayDate(client.closed_date!)} />
           )}
           <InfoRow label="Pre Score" value={client.pre_score?.toString() ?? "—"} />
           {isClosed && (

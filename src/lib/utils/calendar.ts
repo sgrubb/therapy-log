@@ -1,8 +1,8 @@
-import { SESSION_TYPE_NAMES } from "@/lib/display";
+import { SESSION_TYPE_NAMES } from "@/lib/labels";
 import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
 import type { Therapist } from "@shared/types/therapists";
 import type { ExpectedSession } from "@shared/types/sessions";
-import { getWeekStart } from "@/lib/datetime-utils";
+import { getWeekStart } from "@/lib/utils/datetime";
 import { minutesToMilliseconds } from "date-fns";
 
 export const THERAPIST_COLORS = [

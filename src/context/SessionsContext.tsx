@@ -1,11 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useState, startTransition, type ReactNode } from "react";
 import { SortDir } from "@shared/types/enums";
 import { format, parse, startOfMonth, endOfMonth, endOfDay, minutesToMilliseconds } from "date-fns";
-import { startOfWeekMon, endOfWeekMon } from "@/lib/datetime-utils";
+import { startOfWeekMon, endOfWeekMon } from "@/lib/utils/datetime";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
-import { queryKeys } from "@/lib/queryKeys";
+import { queryKeys } from "@/lib/query-keys";
 import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
 import type { ClientWithTherapist } from "@shared/types/clients";
 import type { ExpectedSession, SessionFilters, SessionListParams } from "@shared/types/sessions";
@@ -13,7 +13,7 @@ import {
   computeOverlappingIds,
   computeUnconfirmedIds,
   computeOverdueIds,
-} from "@/lib/sessions-utils";
+} from "@/lib/utils/sessions";
 
 export const DatePreset = {
   ThisWeek: "this_week",
@@ -69,7 +69,7 @@ interface SessionContextValue {
   pageSize: number;
   displayedSessions: SessionWithClientAndTherapist[];
   displayedExpectedSessions: ExpectedSession[];
-  showExpectedSection: boolean;
+  showExpectedSessions: boolean;
   overlappingIds: Set<number>;
   unconfirmedIds: Set<number>;
   overdueIds: Set<string>;
@@ -303,7 +303,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [expectedSessions, overdueOnly],
   );
 
-  const showExpectedSection = hasBoundedRange
+  const showExpectedSessions = hasBoundedRange
     && displayedExpectedSessions.length > 0
     && !unconfirmedOnly
     && !overlappingOnly;
@@ -370,7 +370,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         pageSize: DEFAULT_PAGE_SIZE,
         displayedSessions,
         displayedExpectedSessions,
-        showExpectedSection,
+        showExpectedSessions,
         overlappingIds, unconfirmedIds, overdueIds,
         showMine,
         allClients,

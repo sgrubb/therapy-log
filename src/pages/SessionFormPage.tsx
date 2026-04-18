@@ -3,13 +3,13 @@ import { useParams, useNavigate, useSearchParams, useLocation } from "react-rout
 import { parse } from "date-fns";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
-import { useSessionForm } from "@/hooks/useSessionForm";
-import { mostRecentOccurrence } from "@/lib/sessions-utils";
+import { useSessionForm } from "@/hooks/use-session-form";
+import { mostRecentOccurrence } from "@/lib/utils/sessions";
 import { ipc } from "@/lib/ipc";
-import { queryKeys } from "@/lib/queryKeys";
+import { queryKeys } from "@/lib/query-keys";
 import { SessionType, DeliveryMethod, SessionStatus, MissedReason } from "@shared/types/enums";
-import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES, MISSED_REASON_NAMES } from "@/lib/display";
-import { FormState } from "@/types/enums";
+import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES, MISSED_REASON_NAMES } from "@/lib/labels";
+import { FormState } from "@/lib/types/enums";
 import { Button } from "@/components/ui/button";
 import { DurationInput } from "@/components/ui/duration-input";
 import { SearchableSelect } from "@/components/ui/searchable-select";

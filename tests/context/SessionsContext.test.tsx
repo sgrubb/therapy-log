@@ -249,7 +249,7 @@ it("defaults therapist filter to selected therapist", async () => {
 
     act(() => { result.current.setDatePreset("all_time" as const); });
 
-    expect(result.current.showExpectedSection).toBe(false);
+    expect(result.current.showExpectedSessions).toBe(false);
   });
 
   it("shows expected section when date range is bounded and expected sessions exist", async () => {
@@ -273,7 +273,7 @@ it("defaults therapist filter to selected therapist", async () => {
     });
 
     const { result } = renderSessionsHook();
-    await waitFor(() => expect(result.current.showExpectedSection).toBe(true));
+    await waitFor(() => expect(result.current.showExpectedSessions).toBe(true));
   });
 });
 

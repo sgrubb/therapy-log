@@ -1,10 +1,11 @@
 import { format } from "date-fns";
+import { formatDisplayDate } from "@/lib/utils/datetime";
 import { useParams, useLocation, Link } from "react-router-dom";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
-import { queryKeys } from "@/lib/queryKeys";
+import { queryKeys } from "@/lib/query-keys";
 import { SessionStatus } from "@shared/types/enums";
-import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES, MISSED_REASON_NAMES } from "@/lib/display";
+import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES, MISSED_REASON_NAMES } from "@/lib/labels";
 import { buttonVariants } from "@/components/ui/button";
 import { InfoRow } from "@/components/ui/info-row";
 import { PageHeader } from "@/components/ui/page-header";
@@ -23,7 +24,7 @@ export default function SessionDetailPage() {
     queryFn: () => ipc.getSession(sessionId),
   });
 
-  const date = format(session.scheduled_at, "dd MMM yyyy");
+  const date = formatDisplayDate(session.scheduled_at);
   const time = format(session.scheduled_at, "HH:mm");
   const durationLabel = `${Math.floor(session.duration / 60)}h ${String(session.duration % 60).padStart(2, "0")}m`;
   const showMissedReason =

@@ -1,14 +1,4 @@
-import type { SessionDay, Outcome, SessionType, DeliveryMethod, MissedReason } from "@shared/types/enums";
-
-export const SESSION_DAY_INDEX: Record<SessionDay, number> = {
-  Sunday: 0,
-  Monday: 1,
-  Tuesday: 2,
-  Wednesday: 3,
-  Thursday: 4,
-  Friday: 5,
-  Saturday: 6,
-};
+import type { Outcome, SessionType, DeliveryMethod, MissedReason } from "@shared/types/enums";
 
 export const OUTCOME_NAMES: Record<Outcome, string> = {
   Improved: "Improved",

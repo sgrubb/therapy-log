@@ -10,7 +10,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { minutesToMilliseconds } from "date-fns";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { ipc } from "@/lib/ipc";
-import { queryKeys } from "@/lib/queryKeys";
+import { queryKeys } from "@/lib/query-keys";
 import { SortDir, ClientStatus } from "@shared/types/enums";
 import type { ClientWithTherapist } from "@shared/types/clients";
 

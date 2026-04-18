@@ -8,7 +8,7 @@ import {
   isUnconfirmed,
   isOverdue,
   expectedToEvents,
-} from "@/lib/calendar-utils";
+} from "@/lib/utils/calendar";
 import { mockTherapists, MOCK_UPDATED_AT, MOCK_SESSION_DATE_RECENT } from "../helpers/ipc-mocks";
 import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
 import type { ExpectedSession } from "@shared/types/sessions";

@@ -50,7 +50,7 @@ async function invoke<C extends keyof IpcApi>(
 
 describe("therapist:list", () => {
   it("returns paginated therapists", async () => {
-    const result = await invoke("therapist:list", { page: 1, pageSize: 25 });
+    const result = await invoke("therapist:list", { page: 1, pageSize: 25, sortKey: "last_name", sortDir: "asc" });
     assert(result.success);
     expect(result.data.data).toHaveLength(2);
     expect(result.data.page).toBe(1);
@@ -127,7 +127,7 @@ describe("therapist:update", () => {
 
 describe("client:list", () => {
   it("returns paginated clients with therapist relation", async () => {
-    const result = await invoke("client:list", { page: 1, pageSize: 25 });
+    const result = await invoke("client:list", { page: 1, pageSize: 25, sortKey: "last_name", sortDir: "asc" });
     assert(result.success);
     expect(result.data.data.length).toBeGreaterThanOrEqual(2);
     expect(result.data.data[0]).toHaveProperty("therapist");
@@ -137,7 +137,7 @@ describe("client:list", () => {
   });
 
   it("respects pageSize", async () => {
-    const result = await invoke("client:list", { page: 1, pageSize: 1 });
+    const result = await invoke("client:list", { page: 1, pageSize: 1, sortKey: "last_name", sortDir: "asc" });
     assert(result.success);
     expect(result.data.data).toHaveLength(1);
   });
@@ -284,7 +284,7 @@ describe("client:reopen", () => {
 
 describe("session:list", () => {
   it("returns paginated sessions with client and therapist relations", async () => {
-    const result = await invoke("session:list", { page: 1, pageSize: 25 });
+    const result = await invoke("session:list", { page: 1, pageSize: 25, sortKey: "scheduled_at", sortDir: "desc" });
     assert(result.success);
     expect(result.data.data.length).toBeGreaterThanOrEqual(1);
     expect(result.data.data[0]).toHaveProperty("client");
@@ -298,6 +298,8 @@ describe("session:list", () => {
     const result = await invoke("session:list", {
       page: 1,
       pageSize: 25,
+      sortKey: "scheduled_at",
+      sortDir: "desc",
       therapistIds: [ids.therapistAlice],
     });
     assert(result.success);
@@ -305,7 +307,7 @@ describe("session:list", () => {
   });
 
   it("respects pageSize", async () => {
-    const result = await invoke("session:list", { page: 1, pageSize: 1 });
+    const result = await invoke("session:list", { page: 1, pageSize: 1, sortKey: "scheduled_at", sortDir: "desc" });
     assert(result.success);
     expect(result.data.data).toHaveLength(1);
     expect(result.data.pageSize).toBe(1);

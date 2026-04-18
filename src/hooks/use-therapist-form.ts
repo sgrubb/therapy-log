@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import type { z } from "zod";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
-import { queryKeys } from "@/lib/queryKeys";
-import { therapistFormSchema } from "@/schemas/forms";
-import { useFormState } from "@/hooks/useFormState";
-import { FormState } from "@/types/enums";
+import { queryKeys } from "@/lib/query-keys";
+import { therapistFormSchema } from "@/lib/schemas/forms";
+import { useFormState } from "@/hooks/use-form-state";
+import { FormState } from "@/lib/types/enums";
 import type { Therapist } from "@shared/types/therapists";
 
 export type FormFields = z.input<typeof therapistFormSchema>;

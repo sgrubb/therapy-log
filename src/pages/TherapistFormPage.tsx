@@ -1,13 +1,13 @@
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
-import { useTherapistForm } from "@/hooks/useTherapistForm";
+import { useTherapistForm } from "@/hooks/use-therapist-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { SaveErrorAlert } from "@/components/ui/save-error-alert";
 import { PageHeader } from "@/components/ui/page-header";
-import { FormState } from "@/types/enums";
+import { FormState } from "@/lib/types/enums";
 
 export default function TherapistFormPage() {
   const { id } = useParams<{ id?: string }>();

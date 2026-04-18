@@ -9,11 +9,12 @@ import {
   type ReactNode,
 } from "react";
 import { startOfMonth, endOfMonth, minutesToMilliseconds } from "date-fns";
+import type { EventPropGetter } from "react-big-calendar";
 import { SortDir } from "@shared/types/enums";
-import { startOfWeekMon, endOfWeekMon } from "@/lib/datetime-utils";
+import { startOfWeekMon, endOfWeekMon } from "@/lib/utils/datetime";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
-import { queryKeys } from "@/lib/queryKeys";
+import { queryKeys } from "@/lib/query-keys";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import {
   sessionsToEvents,
@@ -22,14 +23,14 @@ import {
   isOverdue,
   isUnconfirmed,
   isOverlapping,
-} from "@/lib/calendar-utils";
+} from "@/lib/utils/calendar";
 import {
   computeOverlappingIds,
   computeUnconfirmedIds,
   computeOverdueIds,
-} from "@/lib/sessions-utils";
+} from "@/lib/utils/sessions";
 import type { View } from "react-big-calendar";
-import type { CalendarEvent } from "@/lib/calendar-utils";
+import type { CalendarEvent } from "@/lib/utils/calendar";
 import type { Therapist } from "@shared/types/therapists";
 
 function getRangeForDate(date: Date, view: View): { start: Date; end: Date } {
@@ -67,7 +68,7 @@ interface CalendarContextValue {
   overlappingIds: Set<number>;
   unconfirmedIds: Set<number>;
   overdueIds: Set<string>;
-  eventPropGetter: (event: CalendarEvent) => { className?: string; style: Record<string, unknown> };
+  eventPropGetter: EventPropGetter<CalendarEvent>;
   reset: () => void;
 }
 

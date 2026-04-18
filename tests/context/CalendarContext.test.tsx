@@ -170,7 +170,7 @@ describe("CalendarProvider", () => {
     const { result } = renderCalendarHook();
     await waitFor(() => expect(result.current.events.length).toBeGreaterThan(0));
 
-    expect(result.current.overlappingCount).toBe(2);
+    expect(result.current.overlappingIds.size).toBe(2);
   });
 
   it("provides eventPropGetter that returns style with color", async () => {

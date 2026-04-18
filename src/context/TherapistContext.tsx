@@ -8,7 +8,7 @@ import {
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { minutesToMilliseconds } from "date-fns";
 import { ipc } from "@/lib/ipc";
-import { queryKeys } from "@/lib/queryKeys";
+import { queryKeys } from "@/lib/query-keys";
 import { SortDir } from "@shared/types/enums";
 import type { Therapist } from "@shared/types/therapists";
 

@@ -1,7 +1,7 @@
 import { Dialog } from "radix-ui";
 import type { ClientWithTherapist } from "@shared/types/clients";
-import { useReopenClient } from "@/hooks/useReopenClient";
-import { FormState } from "@/types/enums";
+import { useReopenClient } from "@/hooks/use-reopen-client";
+import { FormState } from "@/lib/types/enums";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";

@@ -2,22 +2,19 @@ import { useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Pagination } from "@/components/ui/pagination";
 import { RefreshButton } from "@/components/ui/refresh-button";
-import { queryKeys } from "@/lib/queryKeys";
+import { queryKeys } from "@/lib/query-keys";
 import { format } from "date-fns";
+import { formatDisplayDate } from "@/lib/utils/datetime";
 import { SessionProvider, useSessions } from "@/context/SessionsContext";
 import { SessionFilters } from "@/components/filters/SessionFilters";
 import { AlertCircle, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
-import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/lib/display";
+import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/lib/labels";
 import { DataTable } from "@/components/ui/data-table";
 import type { Column } from "@/components/ui/data-table";
 import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
 import type { ExpectedSession } from "@shared/types/sessions";
-
-function formatDate(d: Date): string {
-  return format(d, "dd MMM yyyy");
-}
 
 const expectedColumns: Column<ExpectedSession>[] = [
   {
@@ -34,7 +31,7 @@ const expectedColumns: Column<ExpectedSession>[] = [
     key: "scheduled_at",
     label: "Expected date",
     sortable: true,
-    render: (s) => format(s.scheduled_at, "dd MMM yyyy"),
+    render: (s) => formatDisplayDate(s.scheduled_at),
   },
   {
     key: "client.last_name",
@@ -70,7 +67,7 @@ const sessionColumns: Column<SessionWithClientAndTherapist>[] = [
     key: "scheduled_at",
     label: "Date",
     sortable: true,
-    render: (s) => formatDate(s.scheduled_at),
+    render: (s) => formatDisplayDate(s.scheduled_at),
   },
   {
     key: "client.last_name",
@@ -117,7 +114,7 @@ function SessionsPageContent() {
   const {
     displayedSessions,
     displayedExpectedSessions,
-    showExpectedSection,
+    showExpectedSessions,
     expectedOpen, setExpectedOpen,
     overlappingIds, unconfirmedIds,
     page, setPage,
@@ -169,7 +166,7 @@ function SessionsPageContent() {
         <SessionFilters />
       </PageHeader>
 
-      {showExpectedSection && (
+      {showExpectedSessions && (
         <div className="my-6 w-full rounded-md border px-4 py-3">
           <button
             className="flex w-full cursor-pointer items-center gap-2 text-sm font-semibold"

@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { z } from "zod";
-import { FormState } from "@/types/enums";
+import { FormState } from "@/lib/types/enums";
 export { FormState };
 
 export function useFormState<F extends Record<string, unknown>>(

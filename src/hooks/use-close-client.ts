@@ -5,11 +5,11 @@ import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
 import type { ClientWithTherapist } from "@shared/types/clients";
 import { Outcome } from "@shared/types/enums";
-import { FormState } from "@/types/enums";
-import { closeClientSchema } from "@/schemas/forms";
-import { useFormState } from "@/hooks/useFormState";
+import { FormState } from "@/lib/types/enums";
+import { closeClientSchema } from "@/lib/schemas/forms";
+import { useFormState } from "@/hooks/use-form-state";
 import { useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/queryKeys";
+import { queryKeys } from "@/lib/query-keys";
 
 export type FormFields = z.input<typeof closeClientSchema>;
 
