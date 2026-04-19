@@ -2,29 +2,30 @@ import { z } from "zod";
 import { therapistSchema } from "@shared/schemas/therapists";
 import { clientSchema, clientWithTherapistSchema } from "@shared/schemas/clients";
 import { sessionSchema, sessionWithClientAndTherapistSchema, expectedSessionSchema } from "@shared/schemas/sessions";
-import type { Therapist, CreateTherapist, UpdateTherapist } from "@shared/types/therapists";
-import type { Client, ClientWithTherapist, CreateClient, UpdateClient, CloseClient, ReopenClient } from "@shared/types/clients";
+import type { Therapist, CreateTherapist, UpdateTherapist, DeactivateTherapist, ReactivateTherapist } from "@shared/types/therapists";
+import type { Client, ClientWithTherapist, CreateClient, UpdateClient, CloseClient, ReopenClient, ClientListAllParams } from "@shared/types/clients";
 import type { Session, SessionWithClientAndTherapist, CreateSession, UpdateSession } from "@shared/types/sessions";
-import type { SortDir } from "@shared/types/enums";
+import type { SortDir, TherapistStatus } from "@shared/types/enums";
 import type {
   SessionListParams,
   SessionListRangeParams,
   ExpectedSession,
 } from "@shared/types/sessions";
 import type { PaginatedResult } from "@shared/types/common";
+import { IpcErrorCode } from "@shared/types/ipc";
 
 const ERROR_MESSAGES: Record<string, string> = {
-  UNIQUE_CONSTRAINT: "A record with this value already exists.",
-  NOT_FOUND: "The requested record was not found.",
-  FOREIGN_KEY: "A related record could not be found.",
-  VALIDATION: "The provided data is invalid.",
-  CONFLICT: "This record was modified by someone else.",
-  UNKNOWN: "An unexpected error occurred.",
+  [IpcErrorCode.UniqueConstraint]: "A record with this value already exists.",
+  [IpcErrorCode.NotFound]: "The requested record was not found.",
+  [IpcErrorCode.ForeignKey]: "A related record could not be found.",
+  [IpcErrorCode.Validation]: "The provided data is invalid.",
+  [IpcErrorCode.Conflict]: "This record was modified by someone else.",
+  [IpcErrorCode.Unknown]: "An unexpected error occurred.",
 };
 
 export class IpcError extends Error {
   constructor(
-    public readonly code: string,
+    public readonly code: IpcErrorCode,
     message: string,
   ) {
     super(message);
@@ -37,10 +38,10 @@ function unwrapResponse(response: unknown): unknown {
     throw new Error("Unexpected response from IPC handler.");
   }
 
-  const r = response as { success: boolean; data?: unknown; error?: { code: string; message: string } };
+  const r = response as { success: boolean; data?: unknown; error?: { code: IpcErrorCode; message: string } };
 
   if (!r.success) {
-    const code = r.error?.code ?? "UNKNOWN";
+    const code = r.error?.code ?? IpcErrorCode.Unknown;
     const message = ERROR_MESSAGES[code] ?? r.error?.message ?? "An unexpected error occurred.";
     throw new IpcError(code, message);
   }
@@ -149,14 +150,14 @@ export const ipc = {
 
   // ── Therapists ─────────────────────────────────────────────────────────
   async listTherapists(
-    params: { page: number; pageSize: number; sortKey: string; sortDir: SortDir },
+    params: { page: number; pageSize: number; sortKey: string; sortDir: SortDir; status?: TherapistStatus },
   ): Promise<PaginatedResult<Therapist>> {
     const response = await window.electronAPI.invoke("therapist:list", params);
     return paginatedResultSchema(therapistSchema).parse(unwrapResponse(response));
   },
 
-  async listAllTherapists(): Promise<Therapist[]> {
-    const response = await window.electronAPI.invoke("therapist:list-all");
+  async listAllTherapists(activeOnly = false): Promise<Therapist[]> {
+    const response = await window.electronAPI.invoke("therapist:list-all", { activeOnly });
     return z.array(therapistSchema).parse(unwrapResponse(response));
   },
 
@@ -175,6 +176,16 @@ export const ipc = {
     return therapistSchema.parse(unwrapResponse(response));
   },
 
+  async deactivateTherapist(id: number, data: DeactivateTherapist): Promise<Therapist> {
+    const response = await window.electronAPI.invoke("therapist:deactivate", { id, data });
+    return therapistSchema.parse(unwrapResponse(response));
+  },
+
+  async reactivateTherapist(id: number, data: ReactivateTherapist): Promise<Therapist> {
+    const response = await window.electronAPI.invoke("therapist:reactivate", { id, data });
+    return therapistSchema.parse(unwrapResponse(response));
+  },
+
   // ── Clients ────────────────────────────────────────────────────────────
   async listClients(params: {
     page: number;
@@ -189,8 +200,8 @@ export const ipc = {
     return paginatedResultSchema(clientWithTherapistSchema).parse(unwrapResponse(response));
   },
 
-  async listAllClients(): Promise<ClientWithTherapist[]> {
-    const response = await window.electronAPI.invoke("client:list-all");
+  async listAllClients(params: ClientListAllParams = {}): Promise<ClientWithTherapist[]> {
+    const response = await window.electronAPI.invoke("client:list-all", params);
     return z.array(clientWithTherapistSchema).parse(unwrapResponse(response));
   },
 

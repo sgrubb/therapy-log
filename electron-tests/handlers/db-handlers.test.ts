@@ -3,6 +3,7 @@ import type { PrismaClient } from "../../generated/prisma/client";
 import { registerDatabaseHandlers } from "../../electron/handlers/database-handlers";
 import type { IpcApi } from "../../electron/types/ipc";
 import { SortDir } from "@shared/types/enums";
+import { IpcErrorCode } from "@shared/types/ipc";
 import {
   createTestPrismaClient,
   cleanupTestDb,
@@ -73,7 +74,7 @@ describe("therapist:get", () => {
   it("returns NOT_FOUND error for nonexistent id", async () => {
     const result = await invoke("therapist:get", 9999);
     assert(!result.success);
-    expect(result.error.code).toBe("NOT_FOUND");
+    expect(result.error.code).toBe(IpcErrorCode.NotFound);
   });
 });
 
@@ -111,7 +112,7 @@ describe("therapist:update", () => {
       data: { last_name: "Stale", updated_at: new Date("2020-01-01T00:00:00.000Z") },
     });
     assert(!result.success);
-    expect(result.error.code).toBe("CONFLICT");
+    expect(result.error.code).toBe(IpcErrorCode.Conflict);
   });
 
   it("returns failure for nonexistent id", async () => {
@@ -157,7 +158,7 @@ describe("client:get", () => {
   it("returns NOT_FOUND error for nonexistent id", async () => {
     const result = await invoke("client:get", 9999);
     assert(!result.success);
-    expect(result.error.code).toBe("NOT_FOUND");
+    expect(result.error.code).toBe(IpcErrorCode.NotFound);
   });
 });
 
@@ -188,7 +189,7 @@ describe("client:create", () => {
       start_date: new Date("2025-03-01T00:00:00"),
     });
     assert(!result.success);
-    expect(result.error.code).toBe("UNIQUE_CONSTRAINT");
+    expect(result.error.code).toBe(IpcErrorCode.UniqueConstraint);
   });
 });
 
@@ -210,7 +211,7 @@ describe("client:update", () => {
       data: { phone: "000", updated_at: new Date("2020-01-01T00:00:00.000Z") },
     });
     assert(!result.success);
-    expect(result.error.code).toBe("CONFLICT");
+    expect(result.error.code).toBe(IpcErrorCode.Conflict);
   });
 
   it("returns failure for nonexistent id", async () => {
@@ -450,7 +451,7 @@ describe("session:get", () => {
   it("returns NOT_FOUND error for nonexistent id", async () => {
     const result = await invoke("session:get", 9999);
     assert(!result.success);
-    expect(result.error.code).toBe("NOT_FOUND");
+    expect(result.error.code).toBe(IpcErrorCode.NotFound);
   });
 });
 
@@ -493,7 +494,7 @@ describe("session:update", () => {
       data: { notes: "Stale", updated_at: new Date("2020-01-01T00:00:00.000Z") },
     });
     assert(!result.success);
-    expect(result.error.code).toBe("CONFLICT");
+    expect(result.error.code).toBe(IpcErrorCode.Conflict);
   });
 
   it("returns failure for nonexistent id", async () => {

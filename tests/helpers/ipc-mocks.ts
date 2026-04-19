@@ -1,3 +1,5 @@
+import { IpcErrorCode } from "@shared/types/ipc";
+
 // ── Response helpers ────────────────────────────────────────────────────────
 
 export function wrapped<T>(data: T) {
@@ -11,19 +13,19 @@ export function wrappedPaginated<T>(data: T[], total?: number, page = 1, pageSiz
 export const errorResponse = {
   notFound: {
     success: false,
-    error: { code: "NOT_FOUND", message: "The requested record was not found." },
+    error: { code: IpcErrorCode.NotFound, message: "The requested record was not found." },
   },
   uniqueConstraint: {
     success: false,
-    error: { code: "UNIQUE_CONSTRAINT", message: "A record with this value already exists." },
+    error: { code: IpcErrorCode.UniqueConstraint, message: "A record with this value already exists." },
   },
   conflict: {
     success: false,
-    error: { code: "CONFLICT", message: "This record was modified by someone else." },
+    error: { code: IpcErrorCode.Conflict, message: "This record was modified by someone else." },
   },
   unknown: {
     success: false,
-    error: { code: "UNKNOWN", message: "An unexpected error occurred." },
+    error: { code: IpcErrorCode.Unknown, message: "An unexpected error occurred." },
   },
 };
 

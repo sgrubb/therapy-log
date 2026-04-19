@@ -2,29 +2,34 @@ import { ZodError } from "zod";
 import { Prisma } from "../../generated/prisma/client";
 import log from "./logger";
 import type { IpcError, IpcResponse } from "../types/ipc";
+import { IpcErrorCode } from "@shared/types/ipc";
 
 function classifyError(err: unknown): IpcError {
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === "P2002") {
-      return { code: "UNIQUE_CONSTRAINT", message: "A record with this value already exists." };
+      return { code: IpcErrorCode.UniqueConstraint, message: "A record with this value already exists." };
     }
     if (err.code === "P2003") {
-      return { code: "FOREIGN_KEY", message: "A related record could not be found." };
+      return { code: IpcErrorCode.ForeignKey, message: "A related record could not be found." };
     }
     if (err.code === "P2025") {
-      return { code: "NOT_FOUND", message: "The requested record was not found." };
+      return { code: IpcErrorCode.NotFound, message: "The requested record was not found." };
     }
   }
 
   if (err instanceof ZodError) {
-    return { code: "VALIDATION", message: "The provided data is invalid." };
+    return { code: IpcErrorCode.Validation, message: "The provided data is invalid." };
   }
 
-  if (err instanceof Error && err.message === "CONFLICT") {
-    return { code: "CONFLICT", message: "This record was modified by someone else." };
+  if (err instanceof Error && err.message === IpcErrorCode.Validation) {
+    return { code: IpcErrorCode.Validation, message: "The provided data is invalid." };
   }
 
-  return { code: "UNKNOWN", message: "An unexpected error occurred." };
+  if (err instanceof Error && err.message === IpcErrorCode.Conflict) {
+    return { code: IpcErrorCode.Conflict, message: "This record was modified by someone else." };
+  }
+
+  return { code: IpcErrorCode.Unknown, message: "An unexpected error occurred." };
 }
 
 export async function withErrorHandler<T>(

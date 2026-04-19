@@ -3,6 +3,7 @@ import { initializeDatabase, validateDatabase, CURRENT_SCHEMA_VERSION } from "..
 import { writeConfig } from "../db-path";
 import log from "../lib/logger";
 import type { IpcResponse } from "../types/ipc";
+import { IpcErrorCode } from "@shared/types/ipc";
 
 export function registerSetupHandlers(
   ipcMain: IpcMain,
@@ -23,7 +24,7 @@ export function registerSetupHandlers(
       return { success: true, data: result.filePath };
     } catch (error) {
       log.error("setup:open-save-dialog failed:", error);
-      return { success: false, error: { code: "UNKNOWN", message: "Failed to open save dialog." } };
+      return { success: false, error: { code: IpcErrorCode.Unknown, message: "Failed to open save dialog." } };
     }
   });
 
@@ -40,7 +41,7 @@ export function registerSetupHandlers(
       return { success: true, data: result.filePaths[0] ?? null };
     } catch (error) {
       log.error("setup:open-file-dialog failed:", error);
-      return { success: false, error: { code: "UNKNOWN", message: "Failed to open file dialog." } };
+      return { success: false, error: { code: IpcErrorCode.Unknown, message: "Failed to open file dialog." } };
     }
   });
 
@@ -53,7 +54,7 @@ export function registerSetupHandlers(
       return {
         success: false,
         error: {
-          code: "UNKNOWN",
+          code: IpcErrorCode.Unknown,
           message: error instanceof Error ? error.message : "Failed to create database.",
         },
       };
@@ -69,7 +70,7 @@ export function registerSetupHandlers(
           return {
             success: false,
             error: {
-              code: "VALIDATION",
+              code: IpcErrorCode.Validation,
               message: result.error ?? "This database is incompatible or corrupted.",
             },
           };
@@ -80,7 +81,7 @@ export function registerSetupHandlers(
         log.error("setup:validate-existing-database failed:", error);
         return {
           success: false,
-          error: { code: "UNKNOWN", message: "Failed to validate database." },
+          error: { code: IpcErrorCode.Unknown, message: "Failed to validate database." },
         };
       }
     },
@@ -96,7 +97,7 @@ export function registerSetupHandlers(
         log.error("setup:save-config failed:", error);
         return {
           success: false,
-          error: { code: "UNKNOWN", message: "Failed to save configuration." },
+          error: { code: IpcErrorCode.Unknown, message: "Failed to save configuration." },
         };
       }
     },
@@ -109,7 +110,7 @@ export function registerSetupHandlers(
       return { success: true, data: null };
     } catch (error) {
       log.error("setup:complete failed:", error);
-      return { success: false, error: { code: "UNKNOWN", message: "Failed to complete setup." } };
+      return { success: false, error: { code: IpcErrorCode.Unknown, message: "Failed to complete setup." } };
     }
   });
 }

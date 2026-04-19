@@ -19,6 +19,7 @@ function EditFormSpy() {
 import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import ClientDetailPage from "@/pages/ClientDetailPage";
 import { wrapped, wrappedPaginated, mockTherapists, mockClient, mockSession, mockSessions, errorResponse } from "../helpers/ipc-mocks";
+import { IpcErrorCode } from "@shared/types/ipc";
 import { createTestQueryClient } from "../helpers/query-client";
 
 vi.mock("@/components/ui/select");
@@ -909,7 +910,7 @@ describe("ClientDetailPage — reopen client", () => {
         return Promise.resolve(wrapped(mockSessions));
       }
       if (channel === "client:reopen") {
-        return Promise.resolve({ success: false, error: { code: "UNKNOWN", message: "Unexpected error." } });
+        return Promise.resolve({ success: false, error: { code: IpcErrorCode.Unknown, message: "Unexpected error." } });
       }
       return Promise.resolve(wrapped(null));
     });

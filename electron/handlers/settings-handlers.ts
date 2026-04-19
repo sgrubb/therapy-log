@@ -2,6 +2,7 @@ import type { IpcMain, App, Dialog } from "electron";
 import { getConfiguredDbPath, writeConfig } from "../db-path";
 import log from "../lib/logger";
 import type { IpcResponse } from "../types/ipc";
+import { IpcErrorCode } from "@shared/types/ipc";
 
 export function registerSettingsHandlers(
   ipcMain: IpcMain,
@@ -13,7 +14,7 @@ export function registerSettingsHandlers(
       return { success: true, data: getConfiguredDbPath() };
     } catch (error) {
       log.error("settings:get-db-path failed:", error);
-      return { success: false, error: { code: "UNKNOWN", message: "Failed to retrieve database path." } };
+      return { success: false, error: { code: IpcErrorCode.Unknown, message: "Failed to retrieve database path." } };
     }
   });
 
@@ -23,7 +24,7 @@ export function registerSettingsHandlers(
       return { success: true, data: null };
     } catch (error) {
       log.error("settings:set-db-path failed:", error);
-      return { success: false, error: { code: "UNKNOWN", message: "Failed to save database path." } };
+      return { success: false, error: { code: IpcErrorCode.Unknown, message: "Failed to save database path." } };
     }
   });
 
@@ -40,7 +41,7 @@ export function registerSettingsHandlers(
       return { success: true, data: result.filePaths[0] ?? null };
     } catch (error) {
       log.error("settings:open-file-dialog failed:", error);
-      return { success: false, error: { code: "UNKNOWN", message: "Failed to open file dialog." } };
+      return { success: false, error: { code: IpcErrorCode.Unknown, message: "Failed to open file dialog." } };
     }
   });
 }

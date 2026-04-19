@@ -75,7 +75,10 @@ export function DataTable<T>({
           ))}
           {data.length === 0 && (
             <tr>
-              <td colSpan={columns.length} className="text-muted-foreground py-6 text-center">
+              <td
+                colSpan={columns.length}
+                className="text-muted-foreground py-6 text-center"
+              >
                 {emptyMessage}
               </td>
             </tr>

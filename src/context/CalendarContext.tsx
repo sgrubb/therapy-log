@@ -187,6 +187,8 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     ...(selectedTherapistIds.length > 0
       ? { therapistIds: selectedTherapistIds.map(Number) }
       : {}),
+    sortKey: "scheduled_at",
+    sortDir: SortDir.Asc,
   }), [rangeStart, rangeEnd, selectedTherapistIds]);
 
   const { data: rangeSessions } = useSuspenseQuery({

@@ -95,6 +95,11 @@ export const clientReopenSchema = z.object({
   notes: z.string().nullable().optional(),
 });
 
+export const clientListAllParamsSchema = z.object({
+  therapistId: z.number().int().positive().optional(),
+  openOnly: z.boolean().optional(),
+});
+
 export const clientListParamsSchema = z.object({
   page: z.number().int().min(1),
   pageSize: z.number().int().min(1).max(500),

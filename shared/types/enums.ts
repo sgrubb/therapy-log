@@ -69,3 +69,10 @@ export const ClientStatus = {
   All: "all",
 } as const;
 export type ClientStatus = (typeof ClientStatus)[keyof typeof ClientStatus];
+
+export const TherapistStatus = {
+  Active: "active",
+  Inactive: "inactive",
+  All: "all",
+} as const;
+export type TherapistStatus = (typeof TherapistStatus)[keyof typeof TherapistStatus];

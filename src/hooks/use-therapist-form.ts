@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { z } from "zod";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
+import { IpcErrorCode } from "@shared/types/ipc";
 import { queryKeys } from "@/lib/query-keys";
 import { therapistFormSchema } from "@/lib/schemas/forms";
 import { useFormState } from "@/hooks/use-form-state";
@@ -95,7 +96,7 @@ export function useTherapistForm(therapistId?: number) {
       }
       navigate("/therapists");
     } catch (err) {
-      if (err instanceof IpcError && err.code === "CONFLICT" && therapistId !== undefined) {
+      if (err instanceof IpcError && err.code === IpcErrorCode.Conflict && therapistId !== undefined) {
         await handleConflict(async () => {
           const fresh = await ipc.getTherapist(therapistId);
           return { form: mapTherapistToFormFields(fresh), updated_at: fresh.updated_at };

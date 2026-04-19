@@ -91,7 +91,7 @@ export const sessionFiltersSchema = z.object({
   to: z.coerce.date().optional(),
   therapistIds: z.array(z.number().int().positive()).optional(),
   clientId: z.number().int().positive().optional(),
-  status: z.string().optional(),
+  status: z.enum(Object.values(SessionStatus) as [SessionStatus, ...SessionStatus[]]).optional(),
 });
 
 export const sessionListParamsSchema = sessionFiltersSchema.extend({
@@ -102,8 +102,8 @@ export const sessionListParamsSchema = sessionFiltersSchema.extend({
 });
 
 export const sessionListRangeParamsSchema = sessionFiltersSchema.extend({
-  sortKey: z.string().optional(),
-  sortDir: z.enum([SortDir.Asc, SortDir.Desc] as const).optional(),
+  sortKey: z.string(),
+  sortDir: z.enum([SortDir.Asc, SortDir.Desc] as const),
 });
 
 export const sessionListExpectedParamsSchema = z.object({

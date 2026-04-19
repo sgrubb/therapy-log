@@ -9,7 +9,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { minutesToMilliseconds } from "date-fns";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/query-keys";
-import { SortDir } from "@shared/types/enums";
+import { SortDir, TherapistStatus } from "@shared/types/enums";
 import type { Therapist } from "@shared/types/therapists";
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -23,6 +23,8 @@ interface TherapistContextValue {
   sortKey: string;
   sortDir: SortDir;
   setSort: (key: string) => void;
+  status: TherapistStatus;
+  setStatus: (status: TherapistStatus) => void;
 }
 
 const TherapistCtx = createContext<TherapistContextValue | null>(null);
@@ -31,8 +33,9 @@ export function TherapistProvider({ children }: { children: ReactNode }) {
   const [page, setPageState] = useState(1);
   const [sortKey, setSortKey] = useState("last_name");
   const [sortDir, setSortDir] = useState<SortDir>(SortDir.Asc);
+  const [status, setStatusState] = useState<TherapistStatus>(TherapistStatus.Active);
 
-  const params = { page, pageSize: DEFAULT_PAGE_SIZE, sortKey, sortDir };
+  const params = { page, pageSize: DEFAULT_PAGE_SIZE, sortKey, sortDir, status };
 
   const { data: result } = useSuspenseQuery({
     queryKey: queryKeys.therapists.list(params),
@@ -56,6 +59,13 @@ export function TherapistProvider({ children }: { children: ReactNode }) {
     });
   }
 
+  function setStatus(newStatus: TherapistStatus) {
+    startTransition(() => {
+      setStatusState(newStatus);
+      setPageState(1);
+    });
+  }
+
   return (
     <TherapistCtx.Provider
       value={{
@@ -67,6 +77,8 @@ export function TherapistProvider({ children }: { children: ReactNode }) {
         sortKey,
         sortDir,
         setSort,
+        status,
+        setStatus,
       }}
     >
       {children}

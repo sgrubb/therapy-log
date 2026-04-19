@@ -61,13 +61,14 @@ enum MissedReason {
 }
 
 model Therapist {
-  id         Int       @id @default(autoincrement())
-  first_name String
-  last_name  String
-  is_admin   Boolean   @default(false)
-  updated_at DateTime  @updatedAt
-  clients    Client[]
-  sessions   Session[]
+  id               Int       @id @default(autoincrement())
+  first_name       String
+  last_name        String
+  is_admin         Boolean   @default(false)
+  deactivated_date DateTime?
+  updated_at       DateTime  @updatedAt
+  clients          Client[]
+  sessions         Session[]
 }
 
 model Client {

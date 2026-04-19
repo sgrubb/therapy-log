@@ -3,6 +3,7 @@ import { app } from "electron";
 import { applyMigrations, CURRENT_SCHEMA_VERSION } from "../lib/migrations";
 import log from "../lib/logger";
 import type { IpcResponse } from "../types/ipc";
+import { IpcErrorCode } from "@shared/types/ipc";
 
 interface MigrationInfo {
   dbPath: string;
@@ -40,7 +41,7 @@ export function registerMigrationHandlers(
       return {
         success: false,
         error: {
-          code: "UNKNOWN",
+          code: IpcErrorCode.Unknown,
           message: error instanceof Error ? error.message : "Failed to apply migrations.",
         },
       };
@@ -56,7 +57,7 @@ export function registerMigrationHandlers(
       log.error("migration:complete failed:", error);
       return {
         success: false,
-        error: { code: "UNKNOWN", message: "Failed to open the application after migration." },
+        error: { code: IpcErrorCode.Unknown, message: "Failed to open the application after migration." },
       };
     }
   });

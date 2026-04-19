@@ -4,6 +4,7 @@ import { format, parse } from "date-fns";
 import type { z } from "zod";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
+import { IpcErrorCode } from "@shared/types/ipc";
 import { queryKeys } from "@/lib/query-keys";
 import { clientFormSchema } from "@/lib/schemas/forms";
 import { SessionDay, Outcome } from "@shared/types/enums";
@@ -152,12 +153,12 @@ export function useClientForm(clientId?: number) {
         navigate(`/clients/${created.id}`);
       }
     } catch (err) {
-      if (err instanceof IpcError && err.code === "CONFLICT" && clientId !== undefined) {
+      if (err instanceof IpcError && err.code === IpcErrorCode.Conflict && clientId !== undefined) {
         await handleConflict(async () => {
           const fresh = await ipc.getClient(clientId);
           return { form: mapClientToFormFields(fresh), updated_at: fresh.updated_at };
         });
-      } else if (err instanceof IpcError && err.code === "UNIQUE_CONSTRAINT") {
+      } else if (err instanceof IpcError && err.code === IpcErrorCode.UniqueConstraint) {
         setSaveError("A client with this hospital number already exists.");
       } else {
         setSaveError("Failed to save client. Please try again.");

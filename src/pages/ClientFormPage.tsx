@@ -24,7 +24,7 @@ export default function ClientFormPage() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { therapists } = useSelectedTherapist();
+  const { activeTherapists: therapists } = useSelectedTherapist();
 
   const cancelTarget = (location.state as { from?: string } | null)?.from ?? "/clients";
 

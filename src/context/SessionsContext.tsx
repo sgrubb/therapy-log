@@ -197,11 +197,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }), [dateFromFilter, dateToFilter, therapistFilter, clientFilter, statusFilter]);
 
   // Range filters without status — used for overlap and unconfirmed computation
-  const rangeParams: SessionFilters = useMemo(() => ({
+  const rangeParams = useMemo(() => ({
     ...(dateFromFilter ? { from: parse(dateFromFilter, "yyyy-MM-dd", new Date()) } : {}),
     ...(dateToFilter ? { to: endOfDay(parse(dateToFilter, "yyyy-MM-dd", new Date())) } : {}),
     ...(therapistFilter !== "all" ? { therapistIds: [Number(therapistFilter)] } : {}),
     ...(clientFilter !== "all" ? { clientId: Number(clientFilter) } : {}),
+    sortKey: "scheduled_at",
+    sortDir: SortDir.Asc,
   }), [dateFromFilter, dateToFilter, therapistFilter, clientFilter]);
 
   const listParams: SessionListParams = useMemo(() => ({

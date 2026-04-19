@@ -4,7 +4,10 @@ import { addDays, eachWeekOfInterval, endOfWeek, format, set, startOfWeek } from
 import {
   therapistCreateSchema,
   therapistUpdateSchema,
+  therapistDeactivateSchema,
+  therapistReactivateSchema,
   therapistListParamsSchema,
+  therapistListAllParamsSchema,
 } from "@shared/schemas/therapists";
 import {
   clientCreateSchema,
@@ -12,6 +15,7 @@ import {
   clientCloseSchema,
   clientReopenSchema,
   clientListParamsSchema,
+  clientListAllParamsSchema,
 } from "@shared/schemas/clients";
 import {
   sessionCreateSchema,
@@ -22,8 +26,9 @@ import {
 } from "@shared/schemas/sessions";
 import type { IpcApi } from "../types/ipc";
 import { withErrorHandler } from "../lib/error-handler";
+import { IpcErrorCode } from "@shared/types/ipc";
 import type { ExpectedSession } from "@shared/types/sessions";
-import { SortDir } from "@shared/types/enums";
+import { SortDir, TherapistStatus, ClientStatus, SessionStatus } from "@shared/types/enums";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -51,7 +56,7 @@ function buildSessionWhere(filters: {
   to?: Date;
   therapistIds?: number[];
   clientId?: number;
-  status?: string;
+  status?: SessionStatus;
 }) {
   return {
     ...(filters.from || filters.to
@@ -64,7 +69,7 @@ function buildSessionWhere(filters: {
       : {}),
     ...(filters.therapistIds?.length ? { therapist_id: { in: filters.therapistIds } } : {}),
     ...(filters.clientId ? { client_id: filters.clientId } : {}),
-    ...(filters.status ? { status: filters.status as never } : {}),
+    ...(filters.status ? { status: filters.status } : {}),
   };
 }
 
@@ -76,10 +81,15 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
     "therapist:list",
     (_e, rawParams: unknown): Promise<IpcApi["therapist:list"]["result"]> =>
       withErrorHandler("therapist:list", async () => {
-        const { page, pageSize, sortKey, sortDir } = therapistListParamsSchema.parse(rawParams);
-        const total = await prisma.therapist.count();
+        const { page, pageSize, sortKey, sortDir, status } = therapistListParamsSchema.parse(rawParams);
+        const where = {
+          ...(status === TherapistStatus.Active ? { deactivated_date: null } : {}),
+          ...(status === TherapistStatus.Inactive ? { deactivated_date: { not: null } } : {}),
+        };
+        const total = await prisma.therapist.count({ where });
         const orderBy = buildOrderBy(sortKey, sortDir);
         const data = await prisma.therapist.findMany({
+          where,
           orderBy,
           skip: (page - 1) * pageSize,
           take: pageSize,
@@ -90,10 +100,14 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
 
   ipcMain.handle(
     "therapist:list-all",
-    (): Promise<IpcApi["therapist:list-all"]["result"]> =>
-      withErrorHandler("therapist:list-all", () =>
-        prisma.therapist.findMany({ orderBy: { last_name: SortDir.Asc } }),
-      ),
+    (_e, rawParams: unknown): Promise<IpcApi["therapist:list-all"]["result"]> =>
+      withErrorHandler("therapist:list-all", () => {
+        const { activeOnly } = therapistListAllParamsSchema.parse(rawParams ?? {});
+        return prisma.therapist.findMany({
+          ...(activeOnly ? { where: { deactivated_date: null } } : {}),
+          orderBy: { last_name: SortDir.Asc },
+        });
+      }),
   );
 
   ipcMain.handle(
@@ -118,13 +132,58 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
     (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["therapist:update"]["result"]> =>
       withErrorHandler("therapist:update", async () => {
         const { id, data: rawData } = rawInput;
-        const { updated_at: clientUpdatedAt, ...updateData } = therapistUpdateSchema.parse(rawData);
+        const { updated_at: therapistUpdatedAt, ...updateData } = therapistUpdateSchema.parse(rawData);
         return prisma.$transaction(async (tx) => {
           const existing = await tx.therapist.findUniqueOrThrow({ where: { id } });
-          if (existing.updated_at.getTime() !== clientUpdatedAt.getTime()) {
-            throw new Error("CONFLICT");
+          if (existing.updated_at.getTime() !== therapistUpdatedAt.getTime()) {
+            throw new Error(IpcErrorCode.Conflict);
           }
           return tx.therapist.update({ where: { id }, data: updateData });
+        });
+      }),
+  );
+
+  ipcMain.handle(
+    "therapist:deactivate",
+    (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["therapist:deactivate"]["result"]> =>
+      withErrorHandler("therapist:deactivate", async () => {
+        const { id, data: rawData } = rawInput;
+        const { updated_at: therapistUpdatedAt, client_reassignments } = therapistDeactivateSchema.parse(rawData);
+        return prisma.$transaction(async (tx) => {
+          const existing = await tx.therapist.findUniqueOrThrow({ where: { id } });
+          if (existing.updated_at.getTime() !== therapistUpdatedAt.getTime()) {
+            throw new Error(IpcErrorCode.Conflict);
+          }
+          const openClients = await tx.client.findMany({
+            where: { therapist_id: id, closed_date: null },
+            select: { id: true },
+          });
+          const reassignmentMap = new Map(client_reassignments.map((r) => [r.client_id, r.new_therapist_id]));
+          if (openClients.some((c) => !reassignmentMap.has(c.id))) {
+            throw new Error(IpcErrorCode.Validation);
+          }
+          await Promise.all(
+            client_reassignments.map((r) =>
+              tx.client.update({ where: { id: r.client_id }, data: { therapist_id: r.new_therapist_id } }),
+            ),
+          );
+          return tx.therapist.update({ where: { id }, data: { deactivated_date: new Date() } });
+        });
+      }),
+  );
+
+  ipcMain.handle(
+    "therapist:reactivate",
+    (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["therapist:reactivate"]["result"]> =>
+      withErrorHandler("therapist:reactivate", async () => {
+        const { id, data: rawData } = rawInput;
+        const { updated_at: therapistUpdatedAt } = therapistReactivateSchema.parse(rawData);
+        return prisma.$transaction(async (tx) => {
+          const existing = await tx.therapist.findUniqueOrThrow({ where: { id } });
+          if (existing.updated_at.getTime() !== therapistUpdatedAt.getTime()) {
+            throw new Error(IpcErrorCode.Conflict);
+          }
+          return tx.therapist.update({ where: { id }, data: { deactivated_date: null } });
         });
       }),
   );
@@ -144,8 +203,8 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
           sortDir,
         } = clientListParamsSchema.parse(rawParams);
         const where = {
-          ...(status === "open" ? { closed_date: null } : {}),
-          ...(status === "closed" ? { closed_date: { not: null } } : {}),
+          ...(status === ClientStatus.Open ? { closed_date: null } : {}),
+          ...(status === ClientStatus.Closed ? { closed_date: { not: null } } : {}),
           ...(therapistId != null ? { therapist_id: therapistId } : {}),
           ...(search
             ? {
@@ -172,13 +231,18 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
 
   ipcMain.handle(
     "client:list-all",
-    (): Promise<IpcApi["client:list-all"]["result"]> =>
-      withErrorHandler("client:list-all", () =>
-        prisma.client.findMany({
+    (_e, rawParams: unknown): Promise<IpcApi["client:list-all"]["result"]> =>
+      withErrorHandler("client:list-all", () => {
+        const { therapistId, openOnly } = clientListAllParamsSchema.parse(rawParams ?? {});
+        return prisma.client.findMany({
+          where: {
+            ...(therapistId != null ? { therapist_id: therapistId } : {}),
+            ...((openOnly ?? false) ? { closed_date: null } : {}),
+          },
           include: { therapist: true },
           orderBy: { last_name: SortDir.Asc },
-        }),
-      ),
+        });
+      }),
   );
 
   ipcMain.handle(
@@ -207,7 +271,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
         return prisma.$transaction(async (tx) => {
           const existing = await tx.client.findUniqueOrThrow({ where: { id } });
           if (existing.updated_at.getTime() !== clientUpdatedAt.getTime()) {
-            throw new Error("CONFLICT");
+            throw new Error(IpcErrorCode.Conflict);
           }
           return tx.client.update({ where: { id }, data: updateData, include: { therapist: true } });
         });
@@ -267,8 +331,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
     "session:list-range",
     (_e, rawFilters: unknown): Promise<IpcApi["session:list-range"]["result"]> =>
       withErrorHandler("session:list-range", async () => {
-        const { sortKey = "scheduled_at", sortDir = SortDir.Asc, ...filters } =
-          sessionListRangeParamsSchema.parse(rawFilters);
+        const { sortKey, sortDir, ...filters } = sessionListRangeParamsSchema.parse(rawFilters);
         return prisma.session.findMany({
           where: buildSessionWhere(filters),
           include: { client: true, therapist: true },
@@ -406,11 +469,11 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
     (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["session:update"]["result"]> =>
       withErrorHandler("session:update", async () => {
         const { id, data: rawData } = rawInput;
-        const { updated_at: clientUpdatedAt, ...updateData } = sessionUpdateSchema.parse(rawData);
+        const { updated_at: sessionUpdatedAt, ...updateData } = sessionUpdateSchema.parse(rawData);
         return prisma.$transaction(async (tx) => {
           const existing = await tx.session.findUniqueOrThrow({ where: { id } });
-          if (existing.updated_at.getTime() !== clientUpdatedAt.getTime()) {
-            throw new Error("CONFLICT");
+          if (existing.updated_at.getTime() !== sessionUpdatedAt.getTime()) {
+            throw new Error(IpcErrorCode.Conflict);
           }
           return tx.session.update({ where: { id }, data: updateData });
         });

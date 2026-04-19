@@ -1,8 +1,9 @@
 import type { IpcResponse } from "@shared/types/ipc";
 import type { PaginatedResult } from "@shared/types/common";
 import type { ExpectedSession, SessionWithClientAndTherapist, Session } from "@shared/types/sessions";
-import type { Therapist, CreateTherapist, UpdateTherapist } from "@shared/types/therapists";
-import type { Client, ClientWithTherapist, CreateClient, UpdateClient } from "@shared/types/clients";
+import type { SessionListParams, SessionListRangeParams, SessionListExpectedParams } from "@shared/types/sessions";
+import type { Therapist, CreateTherapist, UpdateTherapist, DeactivateTherapist, ReactivateTherapist, TherapistListParams, TherapistListAllParams } from "@shared/types/therapists";
+import type { Client, ClientWithTherapist, CreateClient, UpdateClient, CloseClient, ReopenClient, ClientListParams, ClientListAllParams } from "@shared/types/clients";
 import type { CreateSession, UpdateSession } from "@shared/types/sessions";
 
 export type { IpcErrorCode, IpcError, IpcResponse } from "@shared/types/ipc";
@@ -43,11 +44,11 @@ export type IpcApi = {
 
   // Therapists
   "therapist:list": {
-    args: unknown;
+    args: TherapistListParams;
     result: IpcResponse<PaginatedResult<Therapist>>;
   };
   "therapist:list-all": {
-    args: void;
+    args: TherapistListAllParams;
     result: IpcResponse<Therapist[]>;
   };
   "therapist:get": { args: number; result: IpcResponse<Therapist> };
@@ -59,14 +60,22 @@ export type IpcApi = {
     args: { id: number; data: UpdateTherapist };
     result: IpcResponse<Therapist>;
   };
+  "therapist:deactivate": {
+    args: { id: number; data: DeactivateTherapist };
+    result: IpcResponse<Therapist>;
+  };
+  "therapist:reactivate": {
+    args: { id: number; data: ReactivateTherapist };
+    result: IpcResponse<Therapist>;
+  };
 
   // Clients
   "client:list": {
-    args: unknown;
+    args: ClientListParams;
     result: IpcResponse<PaginatedResult<ClientWithTherapist>>;
   };
   "client:list-all": {
-    args: void;
+    args: ClientListAllParams;
     result: IpcResponse<ClientWithTherapist[]>;
   };
   "client:get": {
@@ -82,25 +91,25 @@ export type IpcApi = {
     result: IpcResponse<Client>;
   };
   "client:close": {
-    args: { id: number; data: unknown };
+    args: { id: number; data: CloseClient };
     result: IpcResponse<ClientWithTherapist>;
   };
   "client:reopen": {
-    args: { id: number; data: unknown };
+    args: { id: number; data: ReopenClient };
     result: IpcResponse<ClientWithTherapist>;
   };
 
   // Sessions
   "session:list": {
-    args: unknown;
+    args: SessionListParams;
     result: IpcResponse<PaginatedResult<SessionWithClientAndTherapist>>;
   };
   "session:list-range": {
-    args: unknown;
+    args: SessionListRangeParams;
     result: IpcResponse<SessionWithClientAndTherapist[]>;
   };
   "session:list-expected": {
-    args: unknown;
+    args: SessionListExpectedParams;
     result: IpcResponse<ExpectedSession[]>;
   };
   "session:get": {

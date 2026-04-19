@@ -4,6 +4,7 @@ import { format, parse } from "date-fns";
 import type { z } from "zod";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
+import { IpcErrorCode } from "@shared/types/ipc";
 import { queryKeys } from "@/lib/query-keys";
 import { sessionFormSchema } from "@/lib/schemas/forms";
 import { SessionStatus } from "@shared/types/enums";
@@ -176,7 +177,7 @@ export function useSessionForm(sessionId?: number, defaults?: SessionFormDefault
         navigate(`/sessions/${created.id}`);
       }
     } catch (err) {
-      if (err instanceof IpcError && err.code === "CONFLICT" && sessionId !== undefined) {
+      if (err instanceof IpcError && err.code === IpcErrorCode.Conflict && sessionId !== undefined) {
         await handleConflict(async () => {
           const fresh = await ipc.getSession(sessionId);
           return { form: mapSessionToFormFields(fresh), updated_at: fresh.updated_at };

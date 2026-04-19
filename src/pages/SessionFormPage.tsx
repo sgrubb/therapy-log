@@ -31,7 +31,7 @@ export default function SessionFormPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { therapists } = useSelectedTherapist();
+  const { activeTherapists: therapists } = useSelectedTherapist();
 
   const cancelTarget = (location.state as { from?: string } | null)?.from ?? "/sessions";
 
