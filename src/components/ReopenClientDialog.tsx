@@ -31,7 +31,7 @@ export function ReopenClientDialog({ clientId, client }: Props) {
   return (
     <Dialog.Root open={showReopenDialog} onOpenChange={(open) => { if (!open) { dismissReopenDialog(); } }}>
       <Dialog.Trigger asChild>
-        <Button onClick={openReopenDialog}>Reopen Client</Button>
+        <Button onClick={openReopenDialog}>Reopen</Button>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />

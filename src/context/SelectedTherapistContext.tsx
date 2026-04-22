@@ -26,7 +26,7 @@ const STORAGE_KEY = "selectedTherapistId";
 export function SelectedTherapistProvider({ children }: { children: ReactNode }) {
   const { data: therapists } = useSuspenseQuery({
     queryKey: queryKeys.therapists.all,
-    queryFn: () => ipc.listAllTherapists(false),
+    queryFn: () => ipc.listAllTherapists(),
     refetchInterval: minutesToMilliseconds(1),
   });
 

@@ -8,6 +8,7 @@ export const therapistSchema = z.object({
   first_name: z.string(),
   last_name: z.string(),
   is_admin: z.boolean(),
+  start_date: z.date(),
   deactivated_date: z.date().nullable(),
   updated_at: z.date(),
 });
@@ -18,6 +19,7 @@ export const therapistCreateSchema = z.object({
   first_name: z.string().min(1),
   last_name: z.string().min(1),
   is_admin: z.boolean().optional(),
+  start_date: z.coerce.date(),
 });
 
 export const therapistUpdateSchema = z.object({
@@ -25,6 +27,7 @@ export const therapistUpdateSchema = z.object({
   first_name: z.string().min(1).optional(),
   last_name: z.string().min(1).optional(),
   is_admin: z.boolean().optional(),
+  start_date: z.coerce.date().optional(),
 });
 
 export const therapistDeactivateSchema = z.object({

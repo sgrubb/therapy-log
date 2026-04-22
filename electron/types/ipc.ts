@@ -1,5 +1,7 @@
 import type { IpcResponse } from "@shared/types/ipc";
 import type { PaginatedResult } from "@shared/types/common";
+import type { SetupSaveConfigParams, ValidateDatabaseResult } from "@shared/types/setup";
+import type { MigrationInfo } from "@shared/types/migrations";
 import type { ExpectedSession, SessionWithClientAndTherapist, Session } from "@shared/types/sessions";
 import type { SessionListParams, SessionListRangeParams, SessionListExpectedParams } from "@shared/types/sessions";
 import type { Therapist, CreateTherapist, UpdateTherapist, DeactivateTherapist, ReactivateTherapist, TherapistListParams, TherapistListAllParams } from "@shared/types/therapists";
@@ -20,10 +22,10 @@ export type IpcApi = {
   "setup:create-database": { args: string; result: IpcResponse<null> };
   "setup:validate-existing-database": {
     args: string;
-    result: IpcResponse<{ valid: boolean; version: number }>;
+    result: IpcResponse<ValidateDatabaseResult>;
   };
   "setup:save-config": {
-    args: { dbPath: string; createdByApp: boolean };
+    args: SetupSaveConfigParams;
     result: IpcResponse<null>;
   };
   "setup:complete": { args: void; result: IpcResponse<null> };
@@ -31,7 +33,7 @@ export type IpcApi = {
   // Migration
   "migration:get-info": {
     args: void;
-    result: IpcResponse<{ currentVersion: number; requiredVersion: number; createdByApp: boolean }>;
+    result: IpcResponse<MigrationInfo>;
   };
   "migration:apply": { args: void; result: IpcResponse<null> };
   "migration:complete": { args: void; result: IpcResponse<null> };

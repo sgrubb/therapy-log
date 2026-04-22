@@ -2,15 +2,11 @@ import { z } from "zod";
 import { therapistSchema } from "@shared/schemas/therapists";
 import { clientSchema, clientWithTherapistSchema } from "@shared/schemas/clients";
 import { sessionSchema, sessionWithClientAndTherapistSchema, expectedSessionSchema } from "@shared/schemas/sessions";
-import type { Therapist, CreateTherapist, UpdateTherapist, DeactivateTherapist, ReactivateTherapist } from "@shared/types/therapists";
-import type { Client, ClientWithTherapist, CreateClient, UpdateClient, CloseClient, ReopenClient, ClientListAllParams } from "@shared/types/clients";
-import type { Session, SessionWithClientAndTherapist, CreateSession, UpdateSession } from "@shared/types/sessions";
-import type { SortDir, TherapistStatus } from "@shared/types/enums";
-import type {
-  SessionListParams,
-  SessionListRangeParams,
-  ExpectedSession,
-} from "@shared/types/sessions";
+import type { SetupSaveConfigParams, ValidateDatabaseResult } from "@shared/types/setup";
+import type { MigrationInfo } from "@shared/types/migrations";
+import type { Therapist, CreateTherapist, UpdateTherapist, DeactivateTherapist, ReactivateTherapist, TherapistListParams, TherapistListAllParams } from "@shared/types/therapists";
+import type { Client, ClientWithTherapist, CreateClient, UpdateClient, CloseClient, ReopenClient, ClientListParams, ClientListAllParams } from "@shared/types/clients";
+import type { Session, SessionWithClientAndTherapist, CreateSession, UpdateSession, SessionListParams, SessionListRangeParams, SessionListExpectedParams, ExpectedSession } from "@shared/types/sessions";
 import type { PaginatedResult } from "@shared/types/common";
 import { IpcErrorCode } from "@shared/types/ipc";
 
@@ -80,9 +76,7 @@ export const ipc = {
     unwrapResponse(response);
   },
 
-  async setupValidateExistingDatabase(
-    filePath: string,
-  ): Promise<{ valid: boolean; version: number }> {
+  async setupValidateExistingDatabase(filePath: string): Promise<ValidateDatabaseResult> {
     const response = await window.electronAPI.invoke(
       "setup:validate-existing-database",
       filePath,
@@ -92,7 +86,7 @@ export const ipc = {
       .parse(unwrapResponse(response));
   },
 
-  async setupSaveConfig(config: { dbPath: string; createdByApp: boolean }): Promise<void> {
+  async setupSaveConfig(config: SetupSaveConfigParams): Promise<void> {
     const response = await window.electronAPI.invoke("setup:save-config", config);
     unwrapResponse(response);
   },
@@ -103,11 +97,7 @@ export const ipc = {
   },
 
   // ── Migration ──────────────────────────────────────────────────────────
-  async migrationGetInfo(): Promise<{
-    currentVersion: number;
-    requiredVersion: number;
-    createdByApp: boolean;
-  }> {
+  async migrationGetInfo(): Promise<MigrationInfo> {
     const response = await window.electronAPI.invoke("migration:get-info");
     return z
       .object({
@@ -149,15 +139,13 @@ export const ipc = {
   },
 
   // ── Therapists ─────────────────────────────────────────────────────────
-  async listTherapists(
-    params: { page: number; pageSize: number; sortKey: string; sortDir: SortDir; status?: TherapistStatus },
-  ): Promise<PaginatedResult<Therapist>> {
+  async listTherapists(params: TherapistListParams): Promise<PaginatedResult<Therapist>> {
     const response = await window.electronAPI.invoke("therapist:list", params);
     return paginatedResultSchema(therapistSchema).parse(unwrapResponse(response));
   },
 
-  async listAllTherapists(activeOnly = false): Promise<Therapist[]> {
-    const response = await window.electronAPI.invoke("therapist:list-all", { activeOnly });
+  async listAllTherapists(params: TherapistListAllParams = {}): Promise<Therapist[]> {
+    const response = await window.electronAPI.invoke("therapist:list-all", params);
     return z.array(therapistSchema).parse(unwrapResponse(response));
   },
 
@@ -187,15 +175,7 @@ export const ipc = {
   },
 
   // ── Clients ────────────────────────────────────────────────────────────
-  async listClients(params: {
-    page: number;
-    pageSize: number;
-    status?: string;
-    therapistId?: number | null;
-    search?: string;
-    sortKey: string;
-    sortDir: SortDir;
-  }): Promise<PaginatedResult<ClientWithTherapist>> {
+  async listClients(params: ClientListParams): Promise<PaginatedResult<ClientWithTherapist>> {
     const response = await window.electronAPI.invoke("client:list", params);
     return paginatedResultSchema(clientWithTherapistSchema).parse(unwrapResponse(response));
   },
@@ -247,16 +227,7 @@ export const ipc = {
     return z.array(sessionWithClientAndTherapistSchema).parse(unwrapResponse(response));
   },
 
-  async listExpectedSessions(
-    params: {
-      from: Date;
-      to: Date;
-      therapistIds?: number[];
-      clientId?: number;
-      sortKey: string;
-      sortDir: SortDir;
-    },
-  ): Promise<ExpectedSession[]> {
+  async listExpectedSessions(params: SessionListExpectedParams): Promise<ExpectedSession[]> {
     const response = await window.electronAPI.invoke("session:list-expected", params);
     return z.array(expectedSessionSchema).parse(unwrapResponse(response));
   },

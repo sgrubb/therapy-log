@@ -32,7 +32,7 @@ export function DeactivateTherapistDialog({ therapist }: Props) {
   return (
     <Dialog.Root open={showDialog} onOpenChange={(open) => { if (!open) { dismissDialog(); } }}>
       <Dialog.Trigger asChild>
-        <Button variant="outline" size="sm" onClick={openDialog}>Deactivate</Button>
+        <Button onClick={openDialog}>Deactivate</Button>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
@@ -83,7 +83,7 @@ function DeactivateDialogBody({
 
   const { data: activeTherapists } = useSuspenseQuery({
     queryKey: [...queryKeys.therapists.all, { activeOnly: true }],
-    queryFn: () => ipc.listAllTherapists(true),
+    queryFn: () => ipc.listAllTherapists({ activeOnly: true }),
   });
 
   const replacementOptions = useMemo(
@@ -99,7 +99,7 @@ function DeactivateDialogBody({
   return (
     <>
       {openClients.length > 0 ? (
-        <div className="space-y-3">
+        <div className="space-y-5">
           {openClients.map((client) => (
             <Field
               key={client.id}

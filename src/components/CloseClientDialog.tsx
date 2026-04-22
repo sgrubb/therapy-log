@@ -40,7 +40,7 @@ export function CloseClientDialog({ clientId, client }: Props) {
   return (
     <Dialog.Root open={showCloseDialog} onOpenChange={(open) => { if (!open) { dismissCloseDialog(); } }}>
       <Dialog.Trigger asChild>
-        <Button onClick={openCloseDialog}>Close Client</Button>
+        <Button onClick={openCloseDialog}>Close</Button>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />

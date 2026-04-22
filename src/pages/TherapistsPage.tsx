@@ -2,22 +2,13 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Check } from "lucide-react";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { TherapistProvider, useTherapists } from "@/context/TherapistContext";
-import { DeactivateTherapistDialog } from "@/components/DeactivateTherapistDialog";
-import { ReactivateTherapistDialog } from "@/components/ReactivateTherapistDialog";
+import { TherapistFilters } from "@/components/filters/TherapistFilters";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { Pagination } from "@/components/ui/pagination";
 import { buttonVariants } from "@/components/ui/button";
 import { RefreshButton } from "@/components/ui/refresh-button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { queryKeys } from "@/lib/query-keys";
-import { TherapistStatus } from "@shared/types/enums";
 import type { Column } from "@/components/ui/data-table";
 import type { Therapist } from "@shared/types/therapists";
 
@@ -37,17 +28,6 @@ function buildColumns(isAdmin: boolean): Column<Therapist>[] {
           t.is_admin
             ? <div className="flex"><Check size={14} /></div>
             : null
-        ),
-      },
-      {
-        key: "actions",
-        label: "",
-        render: (t: Therapist) => (
-          <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
-            {t.deactivated_date
-              ? <ReactivateTherapistDialog therapist={t} />
-              : <DeactivateTherapistDialog therapist={t} />}
-          </div>
         ),
       },
     ] : []),
@@ -75,15 +55,12 @@ function TherapistsPageContent() {
     sortKey,
     sortDir,
     setSort,
-    status,
-    setStatus,
   } = useTherapists();
 
   const pageError = (location.state as { error?: string } | null)?.error ?? null;
 
   const selectedTherapist = allTherapists.find((t) => t.id === selectedTherapistId);
   const isAdmin = selectedTherapist?.is_admin ?? false;
-  const isInactive = status === TherapistStatus.Inactive;
 
   const columns = buildColumns(isAdmin);
 
@@ -95,24 +72,13 @@ function TherapistsPageContent() {
             <h1 className="text-2xl font-semibold">Therapists</h1>
             <RefreshButton queryKey={queryKeys.therapists.root} />
           </div>
-          <div className="flex items-center gap-2">
-            <Select value={status} onValueChange={(v) => setStatus(v as TherapistStatus)}>
-              <SelectTrigger className="w-32" aria-label="Status filter">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={TherapistStatus.Active}>Active</SelectItem>
-                <SelectItem value={TherapistStatus.Inactive}>Inactive</SelectItem>
-                <SelectItem value={TherapistStatus.All}>All</SelectItem>
-              </SelectContent>
-            </Select>
-            {isAdmin && !isInactive && (
-              <Link to="/therapists/new" className={buttonVariants()}>
-                Add Therapist
-              </Link>
-            )}
-          </div>
+          {isAdmin && (
+            <Link to="/therapists/new" className={buttonVariants()}>
+              Add Therapist
+            </Link>
+          )}
         </div>
+        {isAdmin && <TherapistFilters />}
       </PageHeader>
 
       {pageError && (
@@ -131,7 +97,7 @@ function TherapistsPageContent() {
         sortKey={sortKey}
         sortDir={sortDir}
         onSort={setSort}
-        onRowClick={isAdmin && !isInactive ? (t) => navigate(`/therapists/${t.id}/edit`) : undefined}
+        onRowClick={isAdmin ? (t) => navigate(`/therapists/${t.id}`) : undefined}
         emptyMessage="No therapists found."
       />
 

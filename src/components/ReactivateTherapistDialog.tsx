@@ -24,7 +24,7 @@ export function ReactivateTherapistDialog({ therapist }: Props) {
   return (
     <Dialog.Root open={showDialog} onOpenChange={(open) => { if (!open) { dismissDialog(); } }}>
       <Dialog.Trigger asChild>
-        <Button variant="outline" size="sm" onClick={openDialog}>Reactivate</Button>
+        <Button onClick={openDialog}>Reactivate</Button>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />

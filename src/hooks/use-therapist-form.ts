@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { format, parse } from "date-fns";
 import type { z } from "zod";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
@@ -16,6 +17,7 @@ const EMPTY: FormFields = {
   first_name: "",
   last_name: "",
   is_admin: false,
+  start_date: format(new Date(), "yyyy-MM-dd"),
 };
 
 function mapTherapistToFormFields(therapist: Therapist): FormFields {
@@ -23,6 +25,7 @@ function mapTherapistToFormFields(therapist: Therapist): FormFields {
     first_name: therapist.first_name,
     last_name: therapist.last_name,
     is_admin: therapist.is_admin,
+    start_date: format(therapist.start_date, "yyyy-MM-dd"),
   };
 }
 
@@ -31,6 +34,7 @@ function buildPayload(form: FormFields) {
     first_name: form.first_name.trim(),
     last_name: form.last_name.trim(),
     is_admin: form.is_admin,
+    start_date: parse(form.start_date, "yyyy-MM-dd", new Date()),
   };
 }
 
@@ -90,11 +94,12 @@ export function useTherapistForm(therapistId?: number) {
         await ipc.updateTherapist(therapistId, { ...payload, updated_at: updatedAt! });
         await queryClient.invalidateQueries({ queryKey: queryKeys.therapists.root });
         await queryClient.invalidateQueries({ queryKey: queryKeys.therapists.detail(therapistId) });
+        navigate(`/therapists/${therapistId}`);
       } else {
-        await ipc.createTherapist(payload);
+        const created = await ipc.createTherapist(payload);
         await queryClient.invalidateQueries({ queryKey: queryKeys.therapists.root });
+        navigate(`/therapists/${created.id}`);
       }
-      navigate("/therapists");
     } catch (err) {
       if (err instanceof IpcError && err.code === IpcErrorCode.Conflict && therapistId !== undefined) {
         await handleConflict(async () => {

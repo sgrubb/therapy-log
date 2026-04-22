@@ -10,6 +10,7 @@ import SessionFormPage from "@/pages/SessionFormPage";
 import SessionDetailPage from "@/pages/SessionDetailPage";
 import TherapistsPage from "@/pages/TherapistsPage";
 import TherapistFormPage from "@/pages/TherapistFormPage";
+import TherapistDetailPage from "@/pages/TherapistDetailPage";
 import SettingsPage from "@/pages/SettingsPage";
 import CalendarPage from "@/pages/CalendarPage";
 import SetupPage from "@/pages/SetupPage";
@@ -55,6 +56,7 @@ export default function App() {
               <Route index element={<TherapistsPage />} />
               <Route path="new" element={<TherapistFormPage />} />
               <Route path=":id/edit" element={<TherapistFormPage />} />
+              <Route path=":id" element={<TherapistDetailPage />} />
             </Route>
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/settings" element={<SettingsPage />} />

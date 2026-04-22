@@ -106,6 +106,7 @@ export const therapistFormSchema = z.object({
   first_name: z.string().min(1, "First name is required."),
   last_name: z.string().min(1, "Last name is required."),
   is_admin: z.boolean(),
+  start_date: z.string().min(1, "Start date is required."),
 });
 
 export const closeClientSchema = z.object({
