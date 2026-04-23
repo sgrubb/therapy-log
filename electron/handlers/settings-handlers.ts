@@ -1,14 +1,10 @@
-import type { IpcMain, App, Dialog } from "electron";
+import type { IpcMain, Dialog } from "electron";
 import { getConfiguredDbPath, writeConfig } from "../db-path";
 import log from "../lib/logger";
 import type { IpcResponse } from "../types/ipc";
 import { IpcErrorCode } from "@shared/types/ipc";
 
-export function registerSettingsHandlers(
-  ipcMain: IpcMain,
-  _app: App,
-  dialog: Dialog,
-): void {
+export function registerSettingsHandlers(ipcMain: IpcMain, dialog: Dialog): void {
   ipcMain.handle("settings:get-db-path", (): IpcResponse<string | null> => {
     try {
       return { success: true, data: getConfiguredDbPath() };

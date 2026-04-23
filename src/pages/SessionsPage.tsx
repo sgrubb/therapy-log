@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Pagination } from "@/components/ui/pagination";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { queryKeys } from "@/lib/query-keys";
@@ -7,14 +8,32 @@ import { format } from "date-fns";
 import { formatDisplayDate } from "@/lib/utils/datetime";
 import { SessionProvider, useSessions } from "@/context/SessionsContext";
 import { SessionFilters } from "@/components/filters/SessionFilters";
+import { CsvImportDialog } from "@/components/CsvImportDialog";
+import { ipc } from "@/lib/ipc";
 import { AlertCircle, Clock, ChevronDown, ChevronUp } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/lib/labels";
 import { DataTable } from "@/components/ui/data-table";
+import { SESSION_CSV_HEADERS, SESSION_REQUIRED_HEADERS } from "@shared/types/csv";
 import type { Column } from "@/components/ui/data-table";
 import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
 import type { ExpectedSession } from "@shared/types/sessions";
+
+const SESSION_COLUMNS = [
+  { name: "client_first_name", required: true, description: "Client first name" },
+  { name: "client_last_name", required: true, description: "Client last name" },
+  { name: "therapist_first_name", required: true, description: "Therapist first name" },
+  { name: "therapist_last_name", required: true, description: "Therapist last name" },
+  { name: "scheduled_at", required: true, description: "Scheduled date/time (YYYY-MM-DD or ISO 8601)" },
+  { name: "duration_minutes", required: true, description: "Duration in minutes (positive integer)" },
+  { name: "status", required: true, description: "Scheduled / Attended / Missed / Cancelled" },
+  { name: "session_type", required: true, description: "Individual / Group / Assessment / Review" },
+  { name: "delivery_method", required: true, description: "InPerson / Video / Phone" },
+  { name: "occurred_at", required: false, description: "Actual date/time the session occurred (ISO 8601)" },
+  { name: "missed_reason", required: false, description: "ClientCancelled / TherapistCancelled / NoShow / Other / ..." },
+  { name: "notes", required: false, description: "Free-text notes" },
+];
 
 const expectedColumns: Column<ExpectedSession>[] = [
   {
@@ -111,6 +130,7 @@ export default function SessionsPage() {
 
 function SessionsPageContent() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const {
     displayedSessions,
     displayedExpectedSessions,
@@ -122,7 +142,19 @@ function SessionsPageContent() {
     unconfirmedOnly, overlappingOnly, overdueOnly,
     sortKey, sortDir, setSort,
     expectedSortKey, expectedSortDir, setExpectedSort,
+    baseFilters,
   } = useSessions();
+
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      await ipc.exportSessionsCsv(baseFilters);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   const showPagination = !unconfirmedOnly && !overlappingOnly && !overdueOnly;
   const showMainTable = !overdueOnly;
@@ -161,7 +193,25 @@ function SessionsPageContent() {
             <h1 className="text-2xl font-semibold">Sessions</h1>
             <RefreshButton queryKey={queryKeys.sessions.root} />
           </div>
-          <Link to="/sessions/new" className={buttonVariants()}>Log Session</Link>
+          <div className="flex gap-2">
+            <CsvImportDialog
+              title="Import Sessions"
+              columns={SESSION_COLUMNS}
+              requiredHeaders={SESSION_REQUIRED_HEADERS}
+              onImport={() => ipc.importSessionsCsv()}
+              onSuccess={() => queryClient.invalidateQueries({ queryKey: queryKeys.sessions.root })}
+              templateHeaders={SESSION_CSV_HEADERS}
+            />
+            <Button
+              variant="outline"
+              onClick={handleExport}
+              disabled={exporting}
+              title={`Export ${totalSessions} session${totalSessions === 1 ? "" : "s"}`}
+            >
+              {exporting ? "Exporting…" : "Export"}
+            </Button>
+            <Link to="/sessions/new" className={buttonVariants()}>Log Session</Link>
+          </div>
         </div>
         <SessionFilters />
       </PageHeader>

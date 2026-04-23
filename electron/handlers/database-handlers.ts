@@ -28,7 +28,8 @@ import type { IpcApi } from "../types/ipc";
 import { withErrorHandler } from "../lib/error-handler";
 import { IpcErrorCode } from "@shared/types/ipc";
 import type { ExpectedSession } from "@shared/types/sessions";
-import { SortDir, TherapistStatus, ClientStatus, SessionStatus } from "@shared/types/enums";
+import { SortDir } from "@shared/types/enums";
+import { buildTherapistWhere, buildClientWhere, buildSessionWhere } from "../lib/where-builders";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -51,28 +52,6 @@ const SESSION_DAY_OFFSET: Record<string, number> = {
 
 const WEEK_STARTS_ON = 1 as const; // Monday
 
-function buildSessionWhere(filters: {
-  from?: Date;
-  to?: Date;
-  therapistIds?: number[];
-  clientId?: number;
-  status?: SessionStatus;
-}) {
-  return {
-    ...(filters.from || filters.to
-      ? {
-          scheduled_at: {
-            ...(filters.from ? { gte: filters.from } : {}),
-            ...(filters.to ? { lte: filters.to } : {}),
-          },
-        }
-      : {}),
-    ...(filters.therapistIds?.length ? { therapist_id: { in: filters.therapistIds } } : {}),
-    ...(filters.clientId ? { client_id: filters.clientId } : {}),
-    ...(filters.status ? { status: filters.status } : {}),
-  };
-}
-
 // ── Handler registration ─────────────────────────────────────────────────────
 
 export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient) {
@@ -82,10 +61,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
     (_e, rawParams: unknown): Promise<IpcApi["therapist:list"]["result"]> =>
       withErrorHandler("therapist:list", async () => {
         const { page, pageSize, sortKey, sortDir, status } = therapistListParamsSchema.parse(rawParams);
-        const where = {
-          ...(status === TherapistStatus.Active ? { deactivated_date: null } : {}),
-          ...(status === TherapistStatus.Inactive ? { deactivated_date: { not: null } } : {}),
-        };
+        const where = buildTherapistWhere(status);
         const total = await prisma.therapist.count({ where });
         const orderBy = buildOrderBy(sortKey, sortDir);
         const data = await prisma.therapist.findMany({
@@ -202,20 +178,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
           sortKey,
           sortDir,
         } = clientListParamsSchema.parse(rawParams);
-        const where = {
-          ...(status === ClientStatus.Open ? { closed_date: null } : {}),
-          ...(status === ClientStatus.Closed ? { closed_date: { not: null } } : {}),
-          ...(therapistId != null ? { therapist_id: therapistId } : {}),
-          ...(search
-            ? {
-                OR: [
-                  { first_name: { contains: search } },
-                  { last_name: { contains: search } },
-                  { hospital_number: { contains: search } },
-                ],
-              }
-            : {}),
-        };
+        const where = buildClientWhere({ status, therapistId, search });
         const total = await prisma.client.count({ where });
         const orderBy = buildOrderBy(sortKey, sortDir);
         const data = await prisma.client.findMany({

@@ -81,6 +81,7 @@ interface SessionContextValue {
   expectedSortKey: string;
   expectedSortDir: SortDir;
   setExpectedSort: (key: string) => void;
+  baseFilters: SessionFilters;
   reset: () => void;
 }
 
@@ -374,6 +375,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         displayedExpectedSessions,
         showExpectedSessions,
         overlappingIds, unconfirmedIds, overdueIds,
+        baseFilters,
         showMine,
         allClients,
         sortKey,

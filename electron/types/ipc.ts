@@ -7,6 +7,7 @@ import type { SessionListParams, SessionListRangeParams, SessionListExpectedPara
 import type { Therapist, CreateTherapist, UpdateTherapist, DeactivateTherapist, ReactivateTherapist, TherapistListParams, TherapistListAllParams } from "@shared/types/therapists";
 import type { Client, ClientWithTherapist, CreateClient, UpdateClient, CloseClient, ReopenClient, ClientListParams, ClientListAllParams } from "@shared/types/clients";
 import type { CreateSession, UpdateSession } from "@shared/types/sessions";
+import type { ImportResult, TherapistExportParams, ClientExportParams, SessionExportParams } from "@shared/types/csv";
 
 export type { IpcErrorCode, IpcError, IpcResponse } from "@shared/types/ipc";
 
@@ -125,6 +126,32 @@ export type IpcApi = {
   "session:update": {
     args: { id: number; data: UpdateSession };
     result: IpcResponse<Session>;
+  };
+
+  // CSV
+  "therapist:export-csv": {
+    args: TherapistExportParams;
+    result: IpcResponse<{ path: string } | null>;
+  };
+  "therapist:import-csv": {
+    args: void;
+    result: IpcResponse<ImportResult | null>;
+  };
+  "client:export-csv": {
+    args: ClientExportParams;
+    result: IpcResponse<{ path: string } | null>;
+  };
+  "client:import-csv": {
+    args: void;
+    result: IpcResponse<ImportResult | null>;
+  };
+  "session:export-csv": {
+    args: SessionExportParams;
+    result: IpcResponse<{ path: string } | null>;
+  };
+  "session:import-csv": {
+    args: void;
+    result: IpcResponse<ImportResult | null>;
   };
 };
 

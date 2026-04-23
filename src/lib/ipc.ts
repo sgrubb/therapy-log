@@ -9,6 +9,11 @@ import type { Client, ClientWithTherapist, CreateClient, UpdateClient, CloseClie
 import type { Session, SessionWithClientAndTherapist, CreateSession, UpdateSession, SessionListParams, SessionListRangeParams, SessionListExpectedParams, ExpectedSession } from "@shared/types/sessions";
 import type { PaginatedResult } from "@shared/types/common";
 import { IpcErrorCode } from "@shared/types/ipc";
+import type { ImportResult, TherapistExportParams, ClientExportParams, SessionExportParams } from "@shared/types/csv";
+import { importResultSchema, csvExportResultSchema } from "@shared/schemas/csv";
+import { paginatedResultSchema } from "@shared/schemas/common";
+import { validateDatabaseResultSchema } from "@shared/schemas/setup";
+import { migrationInfoSchema } from "@shared/schemas/migrations";
 
 const ERROR_MESSAGES: Record<string, string> = {
   [IpcErrorCode.UniqueConstraint]: "A record with this value already exists.",
@@ -45,14 +50,6 @@ function unwrapResponse(response: unknown): unknown {
   return r.data;
 }
 
-const paginatedResultSchema = <T>(itemSchema: z.ZodType<T>) =>
-  z.object({
-    data: z.array(itemSchema),
-    total: z.number(),
-    page: z.number(),
-    pageSize: z.number(),
-  });
-
 export const ipc = {
   // ── App ────────────────────────────────────────────────────────────────
   async getVersion(): Promise<string> {
@@ -81,9 +78,7 @@ export const ipc = {
       "setup:validate-existing-database",
       filePath,
     );
-    return z
-      .object({ valid: z.boolean(), version: z.number() })
-      .parse(unwrapResponse(response));
+    return validateDatabaseResultSchema.parse(unwrapResponse(response));
   },
 
   async setupSaveConfig(config: SetupSaveConfigParams): Promise<void> {
@@ -99,13 +94,7 @@ export const ipc = {
   // ── Migration ──────────────────────────────────────────────────────────
   async migrationGetInfo(): Promise<MigrationInfo> {
     const response = await window.electronAPI.invoke("migration:get-info");
-    return z
-      .object({
-        currentVersion: z.number(),
-        requiredVersion: z.number(),
-        createdByApp: z.boolean(),
-      })
-      .parse(unwrapResponse(response));
+    return migrationInfoSchema.parse(unwrapResponse(response));
   },
 
   async migrationApply(): Promise<void> {
@@ -213,13 +202,7 @@ export const ipc = {
   // ── Sessions ───────────────────────────────────────────────────────────
   async listSessions(params: SessionListParams): Promise<PaginatedResult<SessionWithClientAndTherapist>> {
     const response = await window.electronAPI.invoke("session:list", params);
-    const raw = unwrapResponse(response) as { data: unknown[]; total: number; page: number; pageSize: number };
-    return {
-      data: z.array(sessionWithClientAndTherapistSchema).parse(raw.data),
-      total: raw.total,
-      page: raw.page,
-      pageSize: raw.pageSize,
-    };
+    return paginatedResultSchema(sessionWithClientAndTherapistSchema).parse(unwrapResponse(response));
   },
 
   async listSessionsRange(params: SessionListRangeParams): Promise<SessionWithClientAndTherapist[]> {
@@ -245,5 +228,36 @@ export const ipc = {
   async updateSession(id: number, data: UpdateSession): Promise<Session> {
     const response = await window.electronAPI.invoke("session:update", { id, data });
     return sessionSchema.parse(unwrapResponse(response));
+  },
+
+  // ── CSV ────────────────────────────────────────────────────────────────
+  async exportTherapistsCsv(params: TherapistExportParams): Promise<{ path: string } | null> {
+    const response = await window.electronAPI.invoke("therapist:export-csv", params);
+    return csvExportResultSchema.nullable().parse(unwrapResponse(response));
+  },
+
+  async importTherapistsCsv(): Promise<ImportResult | null> {
+    const response = await window.electronAPI.invoke("therapist:import-csv");
+    return importResultSchema.nullable().parse(unwrapResponse(response));
+  },
+
+  async exportClientsCsv(params: ClientExportParams): Promise<{ path: string } | null> {
+    const response = await window.electronAPI.invoke("client:export-csv", params);
+    return csvExportResultSchema.nullable().parse(unwrapResponse(response));
+  },
+
+  async importClientsCsv(): Promise<ImportResult | null> {
+    const response = await window.electronAPI.invoke("client:import-csv");
+    return importResultSchema.nullable().parse(unwrapResponse(response));
+  },
+
+  async exportSessionsCsv(params: SessionExportParams): Promise<{ path: string } | null> {
+    const response = await window.electronAPI.invoke("session:export-csv", params);
+    return csvExportResultSchema.nullable().parse(unwrapResponse(response));
+  },
+
+  async importSessionsCsv(): Promise<ImportResult | null> {
+    const response = await window.electronAPI.invoke("session:import-csv");
+    return importResultSchema.nullable().parse(unwrapResponse(response));
   },
 };

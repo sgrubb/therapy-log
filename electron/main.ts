@@ -7,6 +7,7 @@ import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import dotenv from "dotenv";
 import { registerAppHandlers } from "./handlers/app-handlers";
 import { registerDatabaseHandlers } from "./handlers/database-handlers";
+import { registerCsvHandlers } from "./handlers/csv-handlers";
 import { registerSettingsHandlers } from "./handlers/settings-handlers";
 import { registerSetupHandlers } from "./handlers/setup-handlers";
 import { registerMigrationHandlers } from "./handlers/migration-handlers";
@@ -80,7 +81,8 @@ async function openMainWindow(): Promise<void> {
   }
 
   registerDatabaseHandlers(ipcMain, prisma);
-  registerSettingsHandlers(ipcMain, app, dialog);
+  registerCsvHandlers(ipcMain, prisma, dialog);
+  registerSettingsHandlers(ipcMain, dialog);
   log.info("Database handlers registered");
   
   globalShortcut.register("CommandOrControl+N", () => {
