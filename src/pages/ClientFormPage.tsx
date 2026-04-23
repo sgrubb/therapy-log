@@ -167,7 +167,7 @@ export default function ClientFormPage() {
               />
             </Field>
             {isEdit && isClosed && (
-              <Field label="Close Date" error={getError("closed_date")} conflictError={getConflictError("closed_date")}>
+              <Field label="Closed Date" error={getError("closed_date")} conflictError={getConflictError("closed_date")}>
                 <Input
                   type="date"
                   aria-label="Close date"

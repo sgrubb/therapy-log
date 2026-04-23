@@ -2,7 +2,7 @@ import type { IpcMain, BrowserWindow } from "electron";
 import { app } from "electron";
 import { applyMigrations, CURRENT_SCHEMA_VERSION } from "../lib/migrations";
 import log from "../lib/logger";
-import type { IpcResponse } from "../types/ipc";
+import type { IpcResponse } from "../lib/types/ipc";
 import { IpcErrorCode } from "@shared/types/ipc";
 
 interface MigrationInfo {

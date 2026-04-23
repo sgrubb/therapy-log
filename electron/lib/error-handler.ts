@@ -1,7 +1,7 @@
 import { ZodError } from "zod";
 import { Prisma } from "../../generated/prisma/client";
 import log from "./logger";
-import type { IpcError, IpcResponse } from "../types/ipc";
+import type { IpcError, IpcResponse } from "./types/ipc";
 import { IpcErrorCode } from "@shared/types/ipc";
 
 function classifyError(err: unknown): IpcError {

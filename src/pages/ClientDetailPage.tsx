@@ -169,7 +169,7 @@ export default function ClientDetailPage() {
           <InfoRow label="Session Time" value={client.session_time ?? "—"} />
           <InfoRow label="Session Duration" value={durationLabel} />
           <InfoRow
-            label="Session Delivery"
+            label="Session Delivery Method"
             value={client.session_delivery_method != null
               ? DELIVERY_METHOD_NAMES[client.session_delivery_method]
               : "—"}

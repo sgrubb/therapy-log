@@ -2,7 +2,7 @@ import type { IpcMain, Dialog, BrowserWindow } from "electron";
 import { initializeDatabase, validateDatabase, CURRENT_SCHEMA_VERSION } from "../lib/migrations";
 import { writeConfig } from "../db-path";
 import log from "../lib/logger";
-import type { IpcResponse } from "../types/ipc";
+import type { IpcResponse } from "../lib/types/ipc";
 import { IpcErrorCode } from "@shared/types/ipc";
 
 export function registerSetupHandlers(

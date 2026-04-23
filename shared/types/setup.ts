@@ -1,9 +1,5 @@
-export interface SetupSaveConfigParams {
-  dbPath: string;
-  createdByApp: boolean;
-}
+import { z } from "zod";
+import { setupSaveConfigSchema, validateDatabaseResultSchema } from "@shared/schemas/setup";
 
-export interface ValidateDatabaseResult {
-  valid: boolean;
-  version: number;
-}
+export type SetupSaveConfigParams = z.infer<typeof setupSaveConfigSchema>;
+export type ValidateDatabaseResult = z.infer<typeof validateDatabaseResultSchema>;
