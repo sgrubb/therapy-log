@@ -57,8 +57,8 @@ export function SessionFilters() {
         <SearchableSelect
           className="w-52"
           aria-label="Client filter"
-          value={clientFilter}
-          onValueChange={setClientFilter}
+          value={clientFilter === "all" ? "all" : String(clientFilter)}
+          onValueChange={(v) => setClientFilter(v === "all" ? "all" : Number(v))}
           placeholder="All clients"
           options={[
             { value: "all", label: "All clients" },
@@ -78,7 +78,7 @@ export function SessionFilters() {
                 checked={showMine}
                 onChange={(e) =>
                   setTherapistFilter(
-                    e.target.checked ? String(selectedTherapistId) : "all",
+                    e.target.checked ? selectedTherapistId : "all",
                   )
                 }
               />
@@ -88,8 +88,8 @@ export function SessionFilters() {
         <SearchableSelect
           className="w-52"
           aria-label="Therapist filter"
-          value={therapistFilter}
-          onValueChange={setTherapistFilter}
+          value={therapistFilter === "all" ? "all" : String(therapistFilter)}
+          onValueChange={(v) => setTherapistFilter(v === "all" ? "all" : Number(v))}
           placeholder="All therapists"
           options={[
             { value: "all", label: "All therapists" },

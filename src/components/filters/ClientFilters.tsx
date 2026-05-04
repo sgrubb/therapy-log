@@ -70,7 +70,7 @@ export function ClientFilters() {
                 checked={showMine}
                 onChange={(e) =>
                   setTherapistFilter(
-                    e.target.checked ? String(selectedTherapistId) : "all",
+                    e.target.checked ? selectedTherapistId : "all",
                   )
                 }
               />
@@ -80,8 +80,8 @@ export function ClientFilters() {
         <SearchableSelect
           className="w-52"
           aria-label="Therapist filter"
-          value={therapistFilter}
-          onValueChange={setTherapistFilter}
+          value={therapistFilter === "all" ? "all" : String(therapistFilter)}
+          onValueChange={(v) => setTherapistFilter(v === "all" ? "all" : Number(v))}
           placeholder="All therapists"
           options={[
             { value: "all", label: "All therapists" },

@@ -26,8 +26,8 @@ interface ClientContextValue {
   setSearch: (value: string) => void;
   statusFilter: ClientStatus;
   setStatusFilter: (value: ClientStatus) => void;
-  therapistFilter: string;
-  setTherapistFilter: (value: string) => void;
+  therapistFilter: number | "all";
+  setTherapistFilter: (value: number | "all") => void;
   showMine: boolean;
   sortKey: string;
   sortDir: SortDir;
@@ -43,21 +43,21 @@ export function ClientProvider({ children }: { children: ReactNode }) {
   const [page, setPageState] = useState(1);
   const [search, setSearchState] = useState("");
   const [statusFilter, setStatusFilterState] = useState<ClientStatus>(ClientStatus.Open);
-  const [therapistFilter, setTherapistFilterState] = useState(
-    () => selectedTherapistId !== null ? String(selectedTherapistId) : "all",
+  const [therapistFilter, setTherapistFilterState] = useState<number | "all">(
+    () => selectedTherapistId ?? "all",
   );
   const [sortKey, setSortKey] = useState("last_name");
   const [sortDir, setSortDir] = useState<SortDir>(SortDir.Asc);
 
   useEffect(() => {
-    setTherapistFilterState(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
+    setTherapistFilterState(selectedTherapistId ?? "all");
   }, [selectedTherapistId]);
 
   const queryParams = {
     page,
     pageSize: DEFAULT_PAGE_SIZE,
     status: statusFilter,
-    therapistId: therapistFilter !== "all" ? Number(therapistFilter) : null,
+    therapistId: therapistFilter !== "all" ? therapistFilter : null,
     search: search.trim() || undefined,
     sortKey,
     sortDir,
@@ -69,7 +69,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     refetchInterval: minutesToMilliseconds(1),
   });
 
-  const showMine = selectedTherapistId !== null && therapistFilter === String(selectedTherapistId);
+  const showMine = selectedTherapistId !== null && therapistFilter === selectedTherapistId;
 
   function setPage(newPage: number) {
     startTransition(() => setPageState(newPage));
@@ -89,7 +89,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  function setTherapistFilter(value: string) {
+  function setTherapistFilter(value: number | "all") {
     startTransition(() => {
       setTherapistFilterState(value);
       setPageState(1);
@@ -112,7 +112,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     startTransition(() => {
       setSearchState("");
       setStatusFilterState(ClientStatus.Open);
-      setTherapistFilterState(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
+      setTherapistFilterState(selectedTherapistId ?? "all");
       setSortKey("last_name");
       setSortDir(SortDir.Asc);
       setPageState(1);

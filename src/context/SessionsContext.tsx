@@ -43,12 +43,12 @@ function getPresetRange(preset: DatePreset): { from: string; to: string } {
 }
 
 interface SessionContextValue {
-  clientFilter: string;
-  setClientFilter: (value: string) => void;
-  therapistFilter: string;
-  setTherapistFilter: (value: string) => void;
-  statusFilter: string;
-  setStatusFilter: (value: string) => void;
+  clientFilter: number | "all";
+  setClientFilter: (value: number | "all") => void;
+  therapistFilter: number | "all";
+  setTherapistFilter: (value: number | "all") => void;
+  statusFilter: SessionStatus | "all";
+  setStatusFilter: (value: SessionStatus | "all") => void;
   datePreset: DatePreset;
   setDatePreset: (preset: DatePreset) => void;
   dateFromFilter: string;
@@ -90,11 +90,11 @@ const SessionCtx = createContext<SessionContextValue | null>(null);
 export function SessionProvider({ children }: { children: ReactNode }) {
   const { selectedTherapistId } = useSelectedTherapist();
 
-  const [clientFilter, setClientFilterRaw] = useState("all");
-  const [therapistFilter, setTherapistFilterRaw] = useState(
-    () => selectedTherapistId !== null ? String(selectedTherapistId) : "all",
+  const [clientFilter, setClientFilterRaw] = useState<number | "all">("all");
+  const [therapistFilter, setTherapistFilterRaw] = useState<number | "all">(
+    () => selectedTherapistId ?? "all",
   );
-  const [statusFilter, setStatusFilterRaw] = useState("all");
+  const [statusFilter, setStatusFilterRaw] = useState<SessionStatus | "all">("all");
   const [datePreset, setDatePresetState] = useState<DatePreset>(DatePreset.ThisWeek);
   const initialRange = getPresetRange(DatePreset.ThisWeek);
   const [dateFromFilter, setDateFromFilterState] = useState(initialRange.from);
@@ -110,7 +110,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [expectedSortDir, setExpectedSortDir] = useState<SortDir>(SortDir.Asc);
 
   useEffect(() => {
-    setTherapistFilterRaw(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
+    setTherapistFilterRaw(selectedTherapistId ?? "all");
   }, [selectedTherapistId]);
 
   function handleOverdueOnly(checked: boolean) {
@@ -166,21 +166,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  function setClientFilter(value: string) {
+  function setClientFilter(value: number | "all") {
     startTransition(() => {
       setClientFilterRaw(value);
       setPage(1);
     });
   }
 
-  function setTherapistFilter(value: string) {
+  function setTherapistFilter(value: number | "all") {
     startTransition(() => {
       setTherapistFilterRaw(value);
       setPage(1);
     });
   }
 
-  function setStatusFilter(value: string) {
+  function setStatusFilter(value: SessionStatus | "all") {
     startTransition(() => {
       setStatusFilterRaw(value);
       setPage(1);
@@ -192,17 +192,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const baseFilters: SessionFilters = useMemo(() => ({
     ...(dateFromFilter ? { from: parse(dateFromFilter, "yyyy-MM-dd", new Date()) } : {}),
     ...(dateToFilter ? { to: endOfDay(parse(dateToFilter, "yyyy-MM-dd", new Date())) } : {}),
-    ...(therapistFilter !== "all" ? { therapistIds: [Number(therapistFilter)] } : {}),
-    ...(clientFilter !== "all" ? { clientId: Number(clientFilter) } : {}),
-    ...(statusFilter !== "all" ? { status: statusFilter as SessionStatus } : {}),
+    ...(therapistFilter !== "all" ? { therapistIds: [therapistFilter] } : {}),
+    ...(clientFilter !== "all" ? { clientId: clientFilter } : {}),
+    ...(statusFilter !== "all" ? { status: statusFilter } : {}),
   }), [dateFromFilter, dateToFilter, therapistFilter, clientFilter, statusFilter]);
 
   // Range filters without status — used for overlap and unconfirmed computation
   const rangeParams = useMemo(() => ({
     ...(dateFromFilter ? { from: parse(dateFromFilter, "yyyy-MM-dd", new Date()) } : {}),
     ...(dateToFilter ? { to: endOfDay(parse(dateToFilter, "yyyy-MM-dd", new Date())) } : {}),
-    ...(therapistFilter !== "all" ? { therapistIds: [Number(therapistFilter)] } : {}),
-    ...(clientFilter !== "all" ? { clientId: Number(clientFilter) } : {}),
+    ...(therapistFilter !== "all" ? { therapistIds: [therapistFilter] } : {}),
+    ...(clientFilter !== "all" ? { clientId: clientFilter } : {}),
     sortKey: "scheduled_at",
     sortDir: SortDir.Asc,
   }), [dateFromFilter, dateToFilter, therapistFilter, clientFilter]);
@@ -233,8 +233,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       ? {
           from: parse(dateFromFilter, "yyyy-MM-dd", new Date()),
           to: endOfDay(parse(dateToFilter, "yyyy-MM-dd", new Date())),
-          ...(therapistFilter !== "all" ? { therapistIds: [Number(therapistFilter)] } : {}),
-          ...(clientFilter !== "all" ? { clientId: Number(clientFilter) } : {}),
+          ...(therapistFilter !== "all" ? { therapistIds: [therapistFilter] } : {}),
+          ...(clientFilter !== "all" ? { clientId: clientFilter } : {}),
           sortKey: expectedSortKey,
           sortDir: expectedSortDir,
         }
@@ -311,7 +311,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     && !unconfirmedOnly
     && !overlappingOnly;
 
-  const showMine = selectedTherapistId !== null && therapistFilter === String(selectedTherapistId);
+  const showMine = selectedTherapistId !== null && therapistFilter === selectedTherapistId;
 
   function setSort(key: string) {
     startTransition(() => {
@@ -339,7 +339,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   function reset() {
     const range = getPresetRange(DatePreset.ThisWeek);
     setClientFilterRaw("all");
-    setTherapistFilterRaw(selectedTherapistId !== null ? String(selectedTherapistId) : "all");
+    setTherapistFilterRaw(selectedTherapistId ?? "all");
     setStatusFilterRaw("all");
     setDatePresetState(DatePreset.ThisWeek);
     setDateFromFilterState(range.from);
