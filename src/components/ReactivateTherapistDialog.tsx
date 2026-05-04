@@ -1,4 +1,5 @@
 import { Dialog } from "radix-ui";
+import { UserCheck, Check, Loader2 } from "lucide-react";
 import { useReactivateTherapist } from "@/hooks/use-reactivate-therapist";
 import { FormState } from "@/lib/types/enums";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,10 @@ export function ReactivateTherapistDialog({ therapist }: Props) {
   return (
     <Dialog.Root open={showDialog} onOpenChange={(open) => { if (!open) { dismissDialog(); } }}>
       <Dialog.Trigger asChild>
-        <Button onClick={openDialog}>Reactivate</Button>
+        <Button onClick={openDialog}>
+          <UserCheck className="size-4" />
+          Reactivate
+        </Button>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
@@ -38,7 +42,9 @@ export function ReactivateTherapistDialog({ therapist }: Props) {
 
           <div className="flex gap-3">
             <Button onClick={handleReactivate} disabled={saving}>
-              {saving ? "Reactivating…" : "Confirm Reactivate"}
+              {saving
+                ? <><Loader2 className="size-4 animate-spin" /> Reactivating…</>
+                : <><Check className="size-4" /> Confirm Reactivate</>}
             </Button>
             <Dialog.Close asChild>
               <Button variant="outline" disabled={saving} onClick={dismissDialog}>

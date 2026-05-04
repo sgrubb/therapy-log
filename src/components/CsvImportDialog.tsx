@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Dialog } from "radix-ui";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Upload, FolderOpen, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ImportResult } from "@shared/types/csv";
 
@@ -77,7 +77,10 @@ export function CsvImportDialog({
   return (
     <Dialog.Root open={open} onOpenChange={(o) => { if (!o) { handleDismiss(); } }}>
       <Dialog.Trigger asChild>
-        <Button variant="outline" onClick={handleOpen}>Import</Button>
+        <Button variant="outline" onClick={handleOpen}>
+          <Upload className="size-4" />
+          Import
+        </Button>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
@@ -145,10 +148,13 @@ export function CsvImportDialog({
           <div className="flex gap-3">
             {!succeeded && (
               <Button onClick={handleImport} disabled={importing}>
-                {importing ? "Importing…" : "Select File"}
+                {importing
+                  ? <><Loader2 className="size-4 animate-spin" /> Importing…</>
+                  : <><FolderOpen className="size-4" /> Select File</>}
               </Button>
             )}
             <Button variant="outline" onClick={downloadTemplate} disabled={importing}>
+              <Download className="size-4" />
               Download Template
             </Button>
             <Dialog.Close asChild>

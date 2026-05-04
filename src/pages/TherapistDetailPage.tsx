@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
+import { ArrowLeft, Pencil } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/query-keys";
@@ -95,7 +96,8 @@ export default function TherapistDetailPage() {
       <PageHeader>
         <div className="space-y-1">
           <Link to="/therapists" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-            ← Back to Therapists
+            <ArrowLeft className="size-4" />
+            Back to Therapists
           </Link>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -115,6 +117,7 @@ export default function TherapistDetailPage() {
                 state={{ from: `/therapists/${id}` }}
                 className={buttonVariants({ variant: "outline" })}
               >
+                <Pencil className="size-4" />
                 Edit
               </Link>
             </div>

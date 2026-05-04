@@ -1,4 +1,5 @@
 import { Dialog } from "radix-ui";
+import { UserX, Check, Loader2 } from "lucide-react";
 import { Outcome } from "@shared/types/enums";
 import { FormState } from "@/lib/types/enums";
 import type { ClientWithTherapist } from "@shared/types/clients";
@@ -40,7 +41,10 @@ export function CloseClientDialog({ clientId, client }: Props) {
   return (
     <Dialog.Root open={showCloseDialog} onOpenChange={(open) => { if (!open) { dismissCloseDialog(); } }}>
       <Dialog.Trigger asChild>
-        <Button onClick={openCloseDialog}>Close</Button>
+        <Button onClick={openCloseDialog}>
+          <UserX className="size-4" />
+          Close
+        </Button>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
@@ -113,7 +117,9 @@ export function CloseClientDialog({ clientId, client }: Props) {
 
           <div className="flex gap-3">
             <Button onClick={handleCloseClient} disabled={saving}>
-              {saving ? "Closing…" : "Confirm Close"}
+              {saving
+                ? <><Loader2 className="size-4 animate-spin" /> Closing…</>
+                : <><Check className="size-4" /> Confirm Close</>}
             </Button>
             <Dialog.Close asChild>
               <Button variant="outline" disabled={saving}>

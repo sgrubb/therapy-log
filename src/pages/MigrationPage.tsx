@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Database, LogOut } from "lucide-react";
 import { ipc, IpcError } from "@/lib/ipc";
 import { Button } from "@/components/ui/button";
 import log from "@/lib/logger";
@@ -76,6 +77,7 @@ export default function MigrationPage() {
             {step.message}
           </div>
           <Button variant="outline" onClick={() => ipc.migrationQuit()}>
+            <LogOut className="size-4" />
             Quit
           </Button>
         </div>
@@ -102,8 +104,12 @@ export default function MigrationPage() {
           )}
         </div>
         <div className="flex flex-col gap-2">
-          <Button onClick={handleMigrate}>Update Database</Button>
+          <Button onClick={handleMigrate}>
+            <Database className="size-4" />
+            Update Database
+          </Button>
           <Button variant="outline" onClick={() => ipc.migrationQuit()}>
+            <LogOut className="size-4" />
             Quit
           </Button>
         </div>

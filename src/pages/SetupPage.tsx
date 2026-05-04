@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { ArrowLeft, ArrowRight, RotateCcw, Database, FolderOpen } from "lucide-react";
 import { ipc, IpcError } from "@/lib/ipc";
 import { Button } from "@/components/ui/button";
 import log from "@/lib/logger";
@@ -90,7 +91,10 @@ export default function SetupPage() {
         <div className="max-w-md space-y-4 text-center">
           <h1 className="text-xl font-semibold">Database Created</h1>
           <p className="text-sm text-muted-foreground break-all">{step.dbPath}</p>
-          <Button onClick={() => handleContinue(step.dbPath, true)}>Continue</Button>
+          <Button onClick={() => handleContinue(step.dbPath, true)}>
+            <ArrowRight className="size-4" />
+            Continue
+          </Button>
         </div>
       </div>
     );
@@ -102,7 +106,10 @@ export default function SetupPage() {
         <div className="max-w-md space-y-4 text-center">
           <h1 className="text-xl font-semibold">Database Ready</h1>
           <p className="text-sm text-muted-foreground break-all">{step.dbPath}</p>
-          <Button onClick={() => handleContinue(step.dbPath, false)}>Continue</Button>
+          <Button onClick={() => handleContinue(step.dbPath, false)}>
+            <ArrowRight className="size-4" />
+            Continue
+          </Button>
         </div>
       </div>
     );
@@ -122,6 +129,7 @@ export default function SetupPage() {
             different file or create a new database.
           </p>
           <Button variant="outline" onClick={() => setStep({ type: "idle" })}>
+            <ArrowLeft className="size-4" />
             Go Back
           </Button>
         </div>
@@ -141,6 +149,7 @@ export default function SetupPage() {
             {step.message}
           </div>
           <Button variant="outline" onClick={() => setStep({ type: "idle" })}>
+            <RotateCcw className="size-4" />
             Try Again
           </Button>
         </div>
@@ -176,6 +185,7 @@ export default function SetupPage() {
               </p>
             </div>
             <Button onClick={handleCreateNew} className="w-full">
+              <Database className="size-4" />
               Create New Database
             </Button>
           </div>
@@ -188,6 +198,7 @@ export default function SetupPage() {
               </p>
             </div>
             <Button variant="outline" onClick={handleUseExisting} className="w-full">
+              <FolderOpen className="size-4" />
               Select Database File
             </Button>
           </div>

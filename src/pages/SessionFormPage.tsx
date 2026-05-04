@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { CalendarPlus, Save, Loader2 } from "lucide-react";
 import { parse } from "date-fns";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
@@ -294,10 +295,10 @@ export default function SessionFormPage() {
         <div className="flex gap-3">
           <Button type="submit" disabled={formState === FormState.Saving}>
             {formState === FormState.Saving
-              ? "Saving…"
+              ? <><Loader2 className="size-4 animate-spin" /> Saving…</>
               : isEdit
-                ? "Save Changes"
-                : "Log Session"}
+                ? <><Save className="size-4" /> Save Changes</>
+                : <><CalendarPlus className="size-4" /> Log Session</>}
           </Button>
           <Button
             type="button"

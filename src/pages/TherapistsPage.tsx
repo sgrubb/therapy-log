@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check } from "lucide-react";
+import { Check, UserPlus, Download, Loader2 } from "lucide-react";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { TherapistProvider, useTherapists } from "@/context/TherapistContext";
 import { TherapistFilters } from "@/components/filters/TherapistFilters";
@@ -113,9 +113,12 @@ function TherapistsPageContent() {
                 disabled={exporting}
                 title={`Export ${totalTherapists} therapist${totalTherapists === 1 ? "" : "s"}`}
               >
-                {exporting ? "Exporting…" : "Export"}
+                {exporting
+                  ? <><Loader2 className="size-4 animate-spin" /> Exporting…</>
+                  : <><Download className="size-4" /> Export</>}
               </Button>
               <Link to="/therapists/new" className={buttonVariants()}>
+                <UserPlus className="size-4" />
                 Add Therapist
               </Link>
             </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { UserPlus, Download, Loader2 } from "lucide-react";
 import { ClientProvider, useClients } from "@/context/ClientsContext";
 import { ClientFilters } from "@/components/filters/ClientFilters";
 import { CsvImportDialog } from "@/components/CsvImportDialog";
@@ -138,9 +139,14 @@ function ClientsPageContent() {
               disabled={exporting}
               title={`Export ${totalClients} client${totalClients === 1 ? "" : "s"}`}
             >
-              {exporting ? "Exporting…" : "Export"}
+              {exporting
+                ? <><Loader2 className="size-4 animate-spin" /> Exporting…</>
+                : <><Download className="size-4" /> Export</>}
             </Button>
-            <Link to="/clients/new" className={buttonVariants()}>Add Client</Link>
+            <Link to="/clients/new" className={buttonVariants()}>
+              <UserPlus className="size-4" />
+              Add Client
+            </Link>
           </div>
         </div>
         <ClientFilters />

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, startTransition, type ReactNode } from "react";
-import { SortDir } from "@shared/types/enums";
+import { SortDir, SessionStatus } from "@shared/types/enums";
 import { format, parse, startOfMonth, endOfMonth, endOfDay, minutesToMilliseconds } from "date-fns";
 import { startOfWeekMon, endOfWeekMon } from "@/lib/utils/datetime";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
@@ -194,7 +194,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     ...(dateToFilter ? { to: endOfDay(parse(dateToFilter, "yyyy-MM-dd", new Date())) } : {}),
     ...(therapistFilter !== "all" ? { therapistIds: [Number(therapistFilter)] } : {}),
     ...(clientFilter !== "all" ? { clientId: Number(clientFilter) } : {}),
-    ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+    ...(statusFilter !== "all" ? { status: statusFilter as SessionStatus } : {}),
   }), [dateFromFilter, dateToFilter, therapistFilter, clientFilter, statusFilter]);
 
   // Range filters without status — used for overlap and unconfirmed computation

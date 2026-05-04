@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
+import { FolderOpen } from "lucide-react";
 import { ipc, IpcError } from "@/lib/ipc";
 import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ export default function SettingsPage() {
             <span className="font-mono">{dbPath ?? "Not configured"}</span>
           </p>
           <Button variant="outline" size="default" onClick={handleChangePath}>
+            <FolderOpen className="size-4" />
             Change Database Location
           </Button>
         </div>

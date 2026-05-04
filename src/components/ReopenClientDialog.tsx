@@ -1,4 +1,5 @@
 import { Dialog } from "radix-ui";
+import { UserCheck, Check, Loader2 } from "lucide-react";
 import type { ClientWithTherapist } from "@shared/types/clients";
 import { useReopenClient } from "@/hooks/use-reopen-client";
 import { FormState } from "@/lib/types/enums";
@@ -31,7 +32,10 @@ export function ReopenClientDialog({ clientId, client }: Props) {
   return (
     <Dialog.Root open={showReopenDialog} onOpenChange={(open) => { if (!open) { dismissReopenDialog(); } }}>
       <Dialog.Trigger asChild>
-        <Button onClick={openReopenDialog}>Reopen</Button>
+        <Button onClick={openReopenDialog}>
+          <UserCheck className="size-4" />
+          Reopen
+        </Button>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
@@ -60,7 +64,9 @@ export function ReopenClientDialog({ clientId, client }: Props) {
 
           <div className="flex gap-3">
             <Button onClick={handleReopenClient} disabled={saving}>
-              {saving ? "Reopening…" : "Confirm Reopen"}
+              {saving
+                ? <><Loader2 className="size-4 animate-spin" /> Reopening…</>
+                : <><Check className="size-4" /> Confirm Reopen</>}
             </Button>
             <Dialog.Close asChild>
               <Button variant="outline" disabled={saving}>

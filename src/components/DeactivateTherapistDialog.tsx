@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Dialog } from "radix-ui";
+import { UserX, Check, Loader2 } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/query-keys";
@@ -32,7 +33,10 @@ export function DeactivateTherapistDialog({ therapist }: Props) {
   return (
     <Dialog.Root open={showDialog} onOpenChange={(open) => { if (!open) { dismissDialog(); } }}>
       <Dialog.Trigger asChild>
-        <Button onClick={openDialog}>Deactivate</Button>
+        <Button onClick={openDialog}>
+          <UserX className="size-4" />
+          Deactivate
+        </Button>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
@@ -122,7 +126,9 @@ function DeactivateDialogBody({
 
       <div className="flex gap-3">
         <Button onClick={onConfirm} disabled={!canConfirm} variant="destructive">
-          {saving ? "Deactivating…" : "Confirm Deactivate"}
+          {saving
+            ? <><Loader2 className="size-4 animate-spin" /> Deactivating…</>
+            : <><Check className="size-4" /> Confirm Deactivate</>}
         </Button>
         <Dialog.Close asChild>
           <Button variant="outline" disabled={saving} onClick={onCancel}>

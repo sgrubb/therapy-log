@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { UserPlus, Save, Loader2 } from "lucide-react";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { useTherapistForm } from "@/hooks/use-therapist-form";
 import { Button } from "@/components/ui/button";
@@ -115,10 +116,10 @@ export default function TherapistFormPage() {
         <div className="flex gap-3">
           <Button type="submit" disabled={formState === FormState.Saving}>
             {formState === FormState.Saving
-              ? "Saving…"
+              ? <><Loader2 className="size-4 animate-spin" /> Saving…</>
               : isEdit
-                ? "Save Changes"
-                : "Add Therapist"}
+                ? <><Save className="size-4" /> Save Changes</>
+                : <><UserPlus className="size-4" /> Add Therapist</>}
           </Button>
           <Button
             type="button"

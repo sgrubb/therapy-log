@@ -1,6 +1,7 @@
 import { formatDisplayDate } from "@/lib/utils/datetime";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Pencil, CalendarPlus } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/query-keys";
@@ -96,7 +97,8 @@ export default function ClientDetailPage() {
       <PageHeader>
         <div className="space-y-1">
           <Link to="/clients" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-            ← Back to Clients
+            <ArrowLeft className="size-4" />
+            Back to Clients
           </Link>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -120,6 +122,7 @@ export default function ClientDetailPage() {
                 state={{ from: `/clients/${id}` }}
                 className={buttonVariants({ variant: "outline" })}
               >
+                <Pencil className="size-4" />
                 Edit
               </Link>
             </div>
@@ -193,6 +196,7 @@ export default function ClientDetailPage() {
             state={{ from: `/clients/${clientId}` }}
             className={buttonVariants({ variant: "outline" })}
           >
+            <CalendarPlus className="size-4" />
             Add Session
           </Link>
         </div>

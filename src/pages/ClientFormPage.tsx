@@ -1,4 +1,5 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { UserPlus, Save, Loader2 } from "lucide-react";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { useClientForm } from "@/hooks/use-client-form";
@@ -299,10 +300,10 @@ export default function ClientFormPage() {
         <div className="flex gap-3">
           <Button type="submit" disabled={formState === FormState.Saving}>
             {formState === FormState.Saving
-              ? "Saving…"
+              ? <><Loader2 className="size-4 animate-spin" /> Saving…</>
               : isEdit
-                ? "Save Changes"
-                : "Add Client"}
+                ? <><Save className="size-4" /> Save Changes</>
+                : <><UserPlus className="size-4" /> Add Client</>}
           </Button>
           <Button
             type="button"

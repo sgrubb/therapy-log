@@ -10,7 +10,7 @@ import { SessionProvider, useSessions } from "@/context/SessionsContext";
 import { SessionFilters } from "@/components/filters/SessionFilters";
 import { CsvImportDialog } from "@/components/CsvImportDialog";
 import { ipc } from "@/lib/ipc";
-import { AlertCircle, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { AlertCircle, Clock, ChevronDown, ChevronUp, CalendarPlus, Download, Loader2 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/lib/labels";
@@ -74,6 +74,7 @@ const expectedColumns: Column<ExpectedSession>[] = [
           state={{ from: "/sessions" }}
           className={buttonVariants({ variant: "outline", size: "sm" })}
         >
+          <CalendarPlus className="size-4" />
           Log
         </Link>
       </div>
@@ -208,9 +209,14 @@ function SessionsPageContent() {
               disabled={exporting}
               title={`Export ${totalSessions} session${totalSessions === 1 ? "" : "s"}`}
             >
-              {exporting ? "Exporting…" : "Export"}
+              {exporting
+                ? <><Loader2 className="size-4 animate-spin" /> Exporting…</>
+                : <><Download className="size-4" /> Export</>}
             </Button>
-            <Link to="/sessions/new" className={buttonVariants()}>Log Session</Link>
+            <Link to="/sessions/new" className={buttonVariants()}>
+              <CalendarPlus className="size-4" />
+              Log Session
+            </Link>
           </div>
         </div>
         <SessionFilters />

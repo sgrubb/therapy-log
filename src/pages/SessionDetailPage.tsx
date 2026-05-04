@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { formatDisplayDate } from "@/lib/utils/datetime";
 import { useParams, useLocation, Link } from "react-router-dom";
+import { ArrowLeft, Pencil } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/query-keys";
@@ -35,7 +36,8 @@ export default function SessionDetailPage() {
       <PageHeader>
         <div className="space-y-1">
           <Link to={backTo} className={buttonVariants({ variant: "ghost", size: "sm" })}>
-            ← {backLabel}
+            <ArrowLeft className="size-4" />
+            {backLabel}
           </Link>
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-semibold">
@@ -52,6 +54,7 @@ export default function SessionDetailPage() {
               state={{ from: `/sessions/${id}` }}
               className={buttonVariants({ variant: "outline" })}
             >
+              <Pencil className="size-4" />
               Edit
             </Link>
           </div>
