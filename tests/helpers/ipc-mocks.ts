@@ -46,8 +46,24 @@ export const MOCK_SESSION_DATE_OLDER = setHours(olderDay, 14);   // 14:00
 // ── Therapists ───────────────────────────────────────────────────────────────
 
 export const mockTherapists = [
-  { id: 1, first_name: "Alice", last_name: "Morgan", is_admin: true, updated_at: MOCK_UPDATED_AT },
-  { id: 2, first_name: "Bob", last_name: "Chen", is_admin: false, updated_at: MOCK_UPDATED_AT },
+  {
+    id: 1,
+    first_name: "Alice",
+    last_name: "Morgan",
+    is_admin: true,
+    start_date: new Date("2024-01-01T00:00:00.000Z"),
+    deactivated_date: null,
+    updated_at: MOCK_UPDATED_AT,
+  },
+  {
+    id: 2,
+    first_name: "Bob",
+    last_name: "Chen",
+    is_admin: false,
+    start_date: new Date("2024-06-01T00:00:00.000Z"),
+    deactivated_date: null,
+    updated_at: MOCK_UPDATED_AT,
+  },
 ];
 
 export const mockTherapist = mockTherapists[0]!;

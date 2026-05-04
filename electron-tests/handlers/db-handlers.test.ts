@@ -51,7 +51,7 @@ async function invoke<C extends keyof IpcApi>(
 
 describe("therapist:list", () => {
   it("returns paginated therapists", async () => {
-    const result = await invoke("therapist:list", { page: 1, pageSize: 25, sortKey: "last_name", sortDir: "asc" });
+    const result = await invoke("therapist:list", { page: 1, pageSize: 25, sortKey: "last_name", sortDir: "asc", status: "all" });
     assert(result.success);
     expect(result.data.data).toHaveLength(2);
     expect(result.data.page).toBe(1);
@@ -83,6 +83,7 @@ describe("therapist:create", () => {
     const result = await invoke("therapist:create", {
       first_name: "Carol",
       last_name: "Smith",
+      start_date: new Date("2024-01-01T00:00:00"),
     });
     assert(result.success);
     expect(result.data).toMatchObject({
@@ -320,6 +321,8 @@ describe("session:list-range", () => {
     const result = await invoke("session:list-range", {
       from: new Date("2026-02-01T00:00:00"),
       to: new Date("2026-02-28T23:59:59"),
+      sortKey: "scheduled_at",
+      sortDir: "asc",
     });
     assert(result.success);
     expect(result.data.some((s) => s.id === ids.sessionId)).toBe(true);
@@ -329,6 +332,8 @@ describe("session:list-range", () => {
     const result = await invoke("session:list-range", {
       from: new Date("2020-01-01T00:00:00"),
       to: new Date("2020-01-31T23:59:59"),
+      sortKey: "scheduled_at",
+      sortDir: "asc",
     });
     assert(result.success);
     expect(result.data).toHaveLength(0);
@@ -339,6 +344,8 @@ describe("session:list-range", () => {
       from: new Date("2026-01-01T00:00:00"),
       to: new Date("2026-12-31T23:59:59"),
       therapistIds: [ids.therapistBob],
+      sortKey: "scheduled_at",
+      sortDir: "asc",
     });
     assert(result.success);
     expect(result.data.every((s) => s.therapist_id === ids.therapistBob)).toBe(true);
@@ -369,6 +376,7 @@ describe("session:list-expected", () => {
       client_id: ids.clientCharlie,
       therapist_id: ids.therapistAlice,
       scheduled_at: new Date("2030-06-04T10:00:00"),
+      occurred_at: new Date("2030-06-04T10:00:00"),
       duration: 60,
       status: "Attended",
       session_type: "Child",
@@ -418,6 +426,7 @@ describe("session:list-expected", () => {
       client_id: ids.clientCharlie,
       therapist_id: ids.therapistAlice,
       scheduled_at: new Date("2031-07-08T10:00:00"),
+      occurred_at: new Date("2031-07-08T10:00:00"),
       duration: 60,
       status: "Attended",
       session_type: "Child",
@@ -462,13 +471,12 @@ describe("session:create", () => {
       therapist_id: ids.therapistAlice,
       scheduled_at: new Date("2026-03-01T10:00:00"),
       duration: 60,
-      status: "Scheduled",
       session_type: "Child",
       delivery_method: "Online",
     });
     assert(result.success);
     expect(result.data).toMatchObject({
-      status: "Scheduled",
+      status: null,
       session_type: "Child",
       delivery_method: "Online",
     });

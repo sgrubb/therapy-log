@@ -71,10 +71,10 @@ describe("SessionProvider", () => {
     await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
 
     await act(async () => { result.current.setPage(3); });
-    await act(async () => { result.current.setClientFilter("1"); });
+    await act(async () => { result.current.setClientFilter(1); });
 
     await waitFor(() => {
-      expect(result.current.clientFilter).toBe("1");
+      expect(result.current.clientFilter).toBe(1);
       expect(result.current.page).toBe(1);
     });
   });
@@ -84,10 +84,10 @@ describe("SessionProvider", () => {
     await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
 
     await act(async () => { result.current.setPage(2); });
-    await act(async () => { result.current.setTherapistFilter("2"); });
+    await act(async () => { result.current.setTherapistFilter(2); });
 
     await waitFor(() => {
-      expect(result.current.therapistFilter).toBe("2");
+      expect(result.current.therapistFilter).toBe(2);
       expect(result.current.page).toBe(1);
     });
   });
@@ -121,8 +121,8 @@ describe("SessionProvider", () => {
     await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
 
     act(() => {
-      result.current.setClientFilter("1");
-      result.current.setTherapistFilter("2");
+      result.current.setClientFilter(1);
+      result.current.setTherapistFilter(2);
       result.current.setStatusFilter("DNA");
       result.current.setDateFromFilter("2026-01-01");
       result.current.setPage(3);
@@ -159,7 +159,7 @@ describe("SessionProvider", () => {
 
   it("shows unconfirmed sessions computed from range sessions", async () => {
     const past = new Date("2020-01-01T10:00:00");
-    const unconfirmedSession = { ...mockSessions[0]!, id: 10, status: "Scheduled" as const, scheduled_at: past };
+    const unconfirmedSession = { ...mockSessions[0]!, id: 10, status: null, scheduled_at: past };
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "session:list") return Promise.resolve(wrappedPaginated(mockSessions));
@@ -239,7 +239,7 @@ it("defaults therapist filter to selected therapist", async () => {
     const { result } = renderSessionsHook();
     await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
 
-    expect(result.current.therapistFilter).toBe("1");
+    expect(result.current.therapistFilter).toBe(1);
     expect(result.current.showMine).toBe(true);
   });
 

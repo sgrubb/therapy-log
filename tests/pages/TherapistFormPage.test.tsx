@@ -41,6 +41,7 @@ function renderNewForm() {
               <Routes>
                 <Route path="/therapists">
                   <Route path="new" element={<TherapistFormPage />} />
+                  <Route path=":id" element={<div data-testid="therapists-list" />} />
                   <Route index element={<div data-testid="therapists-list" />} />
                 </Route>
               </Routes>
@@ -75,6 +76,7 @@ function renderEditForm() {
               <Routes>
                 <Route path="/therapists">
                   <Route path=":id/edit" element={<TherapistFormPage />} />
+                  <Route path=":id" element={<div data-testid="therapists-list" />} />
                   <Route index element={<div data-testid="therapists-list" />} />
                 </Route>
               </Routes>
@@ -139,6 +141,7 @@ describe("TherapistFormPage — new therapist", () => {
 
     await user.type(screen.getByLabelText(/first name/i), "Alice");
     await user.type(screen.getByLabelText(/last name/i), "Morgan");
+    fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: "2024-01-01" } });
 
     fireEvent.click(screen.getByRole("button", { name: /add therapist/i }));
 

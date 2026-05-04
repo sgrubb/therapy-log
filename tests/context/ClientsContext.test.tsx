@@ -97,7 +97,7 @@ describe("ClientProvider", () => {
 
     act(() => {
       result.current.setStatusFilter("all");
-      result.current.setTherapistFilter("2");
+      result.current.setTherapistFilter(2);
     });
 
     await waitFor(() => {
@@ -143,7 +143,7 @@ describe("ClientProvider", () => {
     act(() => {
       result.current.setStatusFilter("all");
       result.current.setSearch("jane");
-      result.current.setTherapistFilter("1");
+      result.current.setTherapistFilter(1);
     });
 
     act(() => { result.current.reset(); });
@@ -158,7 +158,7 @@ describe("ClientProvider", () => {
     const { result } = renderClientsHook();
     await waitFor(() => expect(result.current.clients.length).toBeGreaterThan(0));
 
-    expect(result.current.therapistFilter).toBe("1");
+    expect(result.current.therapistFilter).toBe(1);
     expect(result.current.showMine).toBe(true);
   });
 

@@ -5,7 +5,7 @@ import {
   toDuration,
   fromDuration,
 } from "@/lib/utils/sessions";
-import { MOCK_UPDATED_AT, mockTherapists, mockClients } from "../helpers/ipc-mocks";
+import { MOCK_UPDATED_AT, mockTherapists, mockClients } from "../../helpers/ipc-mocks";
 import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
 
 // ── Shared fixtures ───────────────────────────────────────────────────────────

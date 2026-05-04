@@ -375,7 +375,7 @@ describe("ClientDetailPage — close client", () => {
     localStorage.setItem("selectedTherapistId", "1"); // Alice Morgan, therapist_id: 1
     renderDetailPage(); // mockClient.therapist_id === 1
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /close client/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^close$/i })).toBeInTheDocument();
     });
   });
 
@@ -383,7 +383,7 @@ describe("ClientDetailPage — close client", () => {
     localStorage.setItem("selectedTherapistId", "1"); // Alice Morgan, is_admin: true
     renderDetailPage({ therapist_id: 2 }); // different therapist, but admin can still close
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /close client/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^close$/i })).toBeInTheDocument();
     });
   });
 
@@ -391,29 +391,29 @@ describe("ClientDetailPage — close client", () => {
     localStorage.setItem("selectedTherapistId", "2"); // Bob Chen, is_admin: false
     renderDetailPage({ therapist_id: 1 }); // client belongs to Alice, not Bob
     await waitFor(() => screen.getByText("Jane Smith"));
-    expect(screen.queryByRole("button", { name: /close client/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^close$/i })).not.toBeInTheDocument();
   });
 
   it("hides Close Client button when client is already closed", async () => {
     localStorage.setItem("selectedTherapistId", "1");
     renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z") });
     await waitFor(() => screen.getByText("Jane Smith"));
-    expect(screen.queryByRole("button", { name: /close client/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^close$/i })).not.toBeInTheDocument();
   });
 
   it("hides Close Client button when no therapist is selected", async () => {
     // no localStorage entry → selectedTherapistId null
     renderDetailPage();
     await waitFor(() => screen.getByText("Jane Smith"));
-    expect(screen.queryByRole("button", { name: /close client/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^close$/i })).not.toBeInTheDocument();
   });
 
   it("opens the close client dialog when button is clicked", async () => {
     localStorage.setItem("selectedTherapistId", "1");
     renderDetailPage();
-    await waitFor(() => screen.getByRole("button", { name: /close client/i }));
+    await waitFor(() => screen.getByRole("button", { name: /^close$/i }));
 
-    fireEvent.click(screen.getByRole("button", { name: /close client/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /close client/i })).toBeInTheDocument();
@@ -423,9 +423,9 @@ describe("ClientDetailPage — close client", () => {
   it("shows outcome validation error when submitted without outcome", async () => {
     localStorage.setItem("selectedTherapistId", "1");
     renderDetailPage();
-    await waitFor(() => screen.getByRole("button", { name: /close client/i }));
+    await waitFor(() => screen.getByRole("button", { name: /^close$/i }));
 
-    fireEvent.click(screen.getByRole("button", { name: /close client/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
     await waitFor(() => screen.getByRole("heading", { name: /close client/i }));
 
     fireEvent.click(screen.getByRole("button", { name: /confirm close/i }));
@@ -473,8 +473,8 @@ describe("ClientDetailPage — close client", () => {
       </QueryClientProvider>,
     );
 
-    await waitFor(() => screen.getByRole("button", { name: /close client/i }));
-    fireEvent.click(screen.getByRole("button", { name: /close client/i }));
+    await waitFor(() => screen.getByRole("button", { name: /^close$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
     await waitFor(() => screen.getByRole("heading", { name: /close client/i }));
 
     // select outcome
@@ -556,8 +556,8 @@ describe("ClientDetailPage — close client", () => {
       </QueryClientProvider>,
     );
 
-    await waitFor(() => screen.getByRole("button", { name: /close client/i }));
-    fireEvent.click(screen.getByRole("button", { name: /close client/i }));
+    await waitFor(() => screen.getByRole("button", { name: /^close$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
     await waitFor(() => screen.getByRole("heading", { name: /close client/i }));
 
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "Improved" } });
@@ -613,8 +613,8 @@ describe("ClientDetailPage — close client", () => {
       </QueryClientProvider>,
     );
 
-    await waitFor(() => screen.getByRole("button", { name: /close client/i }));
-    fireEvent.click(screen.getByRole("button", { name: /close client/i }));
+    await waitFor(() => screen.getByRole("button", { name: /^close$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
     await waitFor(() => screen.getByRole("heading", { name: /close client/i }));
 
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "Improved" } });
@@ -629,8 +629,8 @@ describe("ClientDetailPage — close client", () => {
     localStorage.setItem("selectedTherapistId", "1");
     renderDetailPage();
 
-    await waitFor(() => screen.getByRole("button", { name: /close client/i }));
-    fireEvent.click(screen.getByRole("button", { name: /close client/i }));
+    await waitFor(() => screen.getByRole("button", { name: /^close$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
     await waitFor(() => screen.getByRole("heading", { name: /close client/i }));
 
     fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
@@ -645,8 +645,8 @@ describe("ClientDetailPage — close client", () => {
     localStorage.setItem("selectedTherapistId", "1");
     renderDetailPage();
 
-    await waitFor(() => screen.getByRole("button", { name: /close client/i }));
-    fireEvent.click(screen.getByRole("button", { name: /close client/i }));
+    await waitFor(() => screen.getByRole("button", { name: /^close$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
     await waitFor(() => screen.getByRole("heading", { name: /close client/i }));
 
     const today = format(new Date(), "yyyy-MM-dd");
@@ -683,8 +683,8 @@ describe("ClientDetailPage — close client", () => {
       </QueryClientProvider>,
     );
 
-    await waitFor(() => screen.getByRole("button", { name: /close client/i }));
-    fireEvent.click(screen.getByRole("button", { name: /close client/i }));
+    await waitFor(() => screen.getByRole("button", { name: /^close$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
     await waitFor(() => screen.getByRole("heading", { name: /close client/i }));
 
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "Improved" } });
@@ -718,7 +718,7 @@ describe("ClientDetailPage — reopen client", () => {
     localStorage.setItem("selectedTherapistId", "1");
     renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z") });
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /reopen client/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^reopen$/i })).toBeInTheDocument();
     });
   });
 
@@ -726,7 +726,7 @@ describe("ClientDetailPage — reopen client", () => {
     localStorage.setItem("selectedTherapistId", "1"); // Alice, is_admin: true
     renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z"), therapist_id: 2 });
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /reopen client/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^reopen$/i })).toBeInTheDocument();
     });
   });
 
@@ -734,28 +734,28 @@ describe("ClientDetailPage — reopen client", () => {
     localStorage.setItem("selectedTherapistId", "2"); // Bob, is_admin: false
     renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z"), therapist_id: 1 }); // client belongs to Alice
     await waitFor(() => screen.getByText("Jane Smith"));
-    expect(screen.queryByRole("button", { name: /reopen client/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^reopen$/i })).not.toBeInTheDocument();
   });
 
   it("hides Reopen Client button when client is open", async () => {
     localStorage.setItem("selectedTherapistId", "1");
     renderDetailPage({ closed_date: null });
     await waitFor(() => screen.getByText("Jane Smith"));
-    expect(screen.queryByRole("button", { name: /reopen client/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^reopen$/i })).not.toBeInTheDocument();
   });
 
   it("hides Reopen Client button when no therapist is selected", async () => {
     renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z") });
     await waitFor(() => screen.getByText("Jane Smith"));
-    expect(screen.queryByRole("button", { name: /reopen client/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^reopen$/i })).not.toBeInTheDocument();
   });
 
   it("opens the reopen client dialog when button is clicked", async () => {
     localStorage.setItem("selectedTherapistId", "1");
     renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z") });
-    await waitFor(() => screen.getByRole("button", { name: /reopen client/i }));
+    await waitFor(() => screen.getByRole("button", { name: /^reopen$/i }));
 
-    fireEvent.click(screen.getByRole("button", { name: /reopen client/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^reopen$/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /reopen client/i })).toBeInTheDocument();
@@ -800,8 +800,8 @@ describe("ClientDetailPage — reopen client", () => {
       </QueryClientProvider>,
     );
 
-    await waitFor(() => screen.getByRole("button", { name: /reopen client/i }));
-    fireEvent.click(screen.getByRole("button", { name: /reopen client/i }));
+    await waitFor(() => screen.getByRole("button", { name: /^reopen$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^reopen$/i }));
     await waitFor(() => screen.getByRole("heading", { name: /reopen client/i }));
 
     mockInvoke.mockImplementation((channel: string) => {
@@ -874,8 +874,8 @@ describe("ClientDetailPage — reopen client", () => {
       </QueryClientProvider>,
     );
 
-    await waitFor(() => screen.getByRole("button", { name: /reopen client/i }));
-    fireEvent.click(screen.getByRole("button", { name: /reopen client/i }));
+    await waitFor(() => screen.getByRole("button", { name: /^reopen$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^reopen$/i }));
     await waitFor(() => screen.getByRole("heading", { name: /reopen client/i }));
 
     await user.type(screen.getByLabelText(/reopen notes/i), "Returning for further support.");
@@ -932,8 +932,8 @@ describe("ClientDetailPage — reopen client", () => {
       </QueryClientProvider>,
     );
 
-    await waitFor(() => screen.getByRole("button", { name: /reopen client/i }));
-    fireEvent.click(screen.getByRole("button", { name: /reopen client/i }));
+    await waitFor(() => screen.getByRole("button", { name: /^reopen$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^reopen$/i }));
     await waitFor(() => screen.getByRole("heading", { name: /reopen client/i }));
 
     fireEvent.click(screen.getByRole("button", { name: /confirm reopen/i }));
@@ -947,8 +947,8 @@ describe("ClientDetailPage — reopen client", () => {
     localStorage.setItem("selectedTherapistId", "1");
     renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z") });
 
-    await waitFor(() => screen.getByRole("button", { name: /reopen client/i }));
-    fireEvent.click(screen.getByRole("button", { name: /reopen client/i }));
+    await waitFor(() => screen.getByRole("button", { name: /^reopen$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^reopen$/i }));
     await waitFor(() => screen.getByRole("heading", { name: /reopen client/i }));
 
     fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));

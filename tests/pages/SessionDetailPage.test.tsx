@@ -10,6 +10,8 @@ import SessionDetailPage from "@/pages/SessionDetailPage";
 import { wrapped, wrappedPaginated, mockTherapists, mockSession, errorResponse } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
 
+vi.mock("@/components/ui/select");
+
 function EditFormSpy() {
   const location = useLocation();
   return (
@@ -238,5 +240,164 @@ describe("SessionDetailPage", () => {
     });
 
     spy.mockRestore();
+  });
+});
+
+// ── Confirm session dialog ──────────────────────────────────────────────────
+
+describe("SessionDetailPage — confirm session", () => {
+  it("shows the Confirm button when session status is null", async () => {
+    renderDetailPage({ status: null });
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^confirm$/i })).toBeInTheDocument();
+    });
+  });
+
+  it("hides the Confirm button when session is already confirmed", async () => {
+    renderDetailPage({ status: "Attended" });
+    await waitFor(() => screen.getByRole("heading", { name: /Jane Smith/ }));
+    expect(screen.queryByRole("button", { name: /^confirm$/i })).not.toBeInTheDocument();
+  });
+
+  it("renders status as 'Unconfirmed' when status is null", async () => {
+    renderDetailPage({ status: null });
+    await waitFor(() => {
+      expect(screen.getByText("Unconfirmed")).toBeInTheDocument();
+    });
+  });
+
+  it("opens the Confirm dialog with scheduled date and time prefilled", async () => {
+    renderDetailPage({ status: null });
+    await waitFor(() => screen.getByRole("button", { name: /^confirm$/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /confirm session/i })).toBeInTheDocument();
+      const dateInput = screen.getByLabelText(/occurred date/i) as HTMLInputElement;
+      const timeInput = screen.getByLabelText(/occurred time/i) as HTMLInputElement;
+      expect(dateInput.value).toBe(format(mockSession.scheduled_at, "yyyy-MM-dd"));
+      expect(timeInput.value).toBe(format(mockSession.scheduled_at, "HH:mm"));
+    });
+  });
+
+  it("requires a status before submitting", async () => {
+    renderDetailPage({ status: null });
+    await waitFor(() => screen.getByRole("button", { name: /^confirm$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+    await waitFor(() => screen.getByRole("heading", { name: /confirm session/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /confirm session/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/status is required/i)).toBeInTheDocument();
+    });
+    expect(mockInvoke).not.toHaveBeenCalledWith("session:confirm", expect.anything());
+  });
+
+  it("requires a missed_reason when status is DNA", async () => {
+    renderDetailPage({ status: null });
+    await waitFor(() => screen.getByRole("button", { name: /^confirm$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+    await waitFor(() => screen.getByRole("heading", { name: /confirm session/i }));
+
+    // First combobox in the dialog is the Status select.
+    const statusSelect = screen.getAllByRole("combobox")[0]!;
+    fireEvent.change(statusSelect, { target: { value: "DNA" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /confirm session/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/reason is required/i)).toBeInTheDocument();
+    });
+    expect(mockInvoke).not.toHaveBeenCalledWith("session:confirm", expect.anything());
+  });
+
+  it("calls session:confirm with the right payload on valid submit", async () => {
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "therapist:list-all") {
+        return Promise.resolve(wrapped(mockTherapists));
+      }
+      if (channel === "session:get") {
+        return Promise.resolve(wrapped({ ...mockSession, status: null, occurred_at: null }));
+      }
+      if (channel === "session:confirm") {
+        return Promise.resolve(wrapped({ ...mockSession, status: "Attended" }));
+      }
+      return Promise.resolve(wrapped(null));
+    });
+
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <Suspense fallback={<div>Loading...</div>}>
+            <SelectedTherapistProvider>
+              <MemoryRouter initialEntries={["/sessions/1"]}>
+                <Routes>
+                  <Route path="/sessions/:id" element={<SessionDetailPage />} />
+                </Routes>
+              </MemoryRouter>
+            </SelectedTherapistProvider>
+          </Suspense>
+        </ErrorBoundary>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => screen.getByRole("button", { name: /^confirm$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+    await waitFor(() => screen.getByRole("heading", { name: /confirm session/i }));
+
+    const statusSelect = screen.getAllByRole("combobox")[0]!;
+    fireEvent.change(statusSelect, { target: { value: "Attended" } });
+    fireEvent.click(screen.getByRole("button", { name: /confirm session/i }));
+
+    await waitFor(() => {
+      expect(mockInvoke).toHaveBeenCalledWith(
+        "session:confirm",
+        expect.objectContaining({
+          id: 1,
+          data: expect.objectContaining({
+            status: "Attended",
+            occurred_at: expect.any(Date),
+          }),
+        }),
+      );
+    });
+  });
+
+  it("dismisses the dialog without submitting when Cancel is clicked", async () => {
+    renderDetailPage({ status: null });
+    await waitFor(() => screen.getByRole("button", { name: /^confirm$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+    await waitFor(() => screen.getByRole("heading", { name: /confirm session/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: /confirm session/i })).not.toBeInTheDocument();
+    });
+    expect(mockInvoke).not.toHaveBeenCalledWith("session:confirm", expect.anything());
+  });
+});
+
+// ── Occurred-at display ─────────────────────────────────────────────────────
+
+describe("SessionDetailPage — occurred fields", () => {
+  it("renders occurred date and time when set", async () => {
+    const occurred = new Date("2026-02-04T14:30:00");
+    renderDetailPage({ status: "Attended", occurred_at: occurred });
+    await waitFor(() => {
+      expect(screen.getByText("Occurred Date")).toBeInTheDocument();
+      expect(screen.getByText("Occurred Time")).toBeInTheDocument();
+      expect(screen.getByText("14:30")).toBeInTheDocument();
+    });
+  });
+
+  it("does not render occurred fields when occurred_at is null", async () => {
+    renderDetailPage({ status: null, occurred_at: null });
+    await waitFor(() => screen.getByRole("heading", { name: /Jane Smith/ }));
+    expect(screen.queryByText("Occurred Date")).not.toBeInTheDocument();
+    expect(screen.queryByText("Occurred Time")).not.toBeInTheDocument();
   });
 });

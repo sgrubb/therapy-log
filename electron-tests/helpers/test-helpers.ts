@@ -53,11 +53,21 @@ interface SeedIds {
 
 export async function seedTestData(prisma: PrismaClient): Promise<SeedIds> {
   const alice = await prisma.therapist.create({
-    data: { first_name: "Alice", last_name: "Morgan", is_admin: true },
+    data: {
+      first_name: "Alice",
+      last_name: "Morgan",
+      is_admin: true,
+      start_date: new Date("2024-01-01T00:00:00"),
+    },
   });
 
   const bob = await prisma.therapist.create({
-    data: { first_name: "Bob", last_name: "Chen", is_admin: false },
+    data: {
+      first_name: "Bob",
+      last_name: "Chen",
+      is_admin: false,
+      start_date: new Date("2024-06-01T00:00:00"),
+    },
   });
 
   const charlie = await prisma.client.create({

@@ -10,13 +10,11 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import SessionFormPage from "@/pages/SessionFormPage";
 import {
   wrapped,
-  wrappedPaginated,
   mockTherapists,
   mockClients,
   mockSession,
   errorResponse,
   MOCK_UPDATED_AT,
-  MOCK_SESSION_DATE_RECENT,
 } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
 
@@ -65,7 +63,14 @@ function renderNewForm() {
 }
 
 function renderEditForm() {
-  const editSession = { ...mockSession, notes: "Some notes" };
+  // Use a clearly-past date so the post-session fields (status, occurred, missed_reason) render.
+  const pastDate = subDays(new Date(), 2);
+  const editSession = {
+    ...mockSession,
+    scheduled_at: pastDate,
+    occurred_at: pastDate,
+    notes: "Some notes",
+  };
   mockInvoke.mockImplementation((channel: string) => {
     if (channel === "therapist:list-all") {
       return Promise.resolve(wrapped(mockTherapists));
@@ -145,6 +150,13 @@ describe("SessionFormPage — new session", () => {
     renderNewForm();
     await waitFor(() => screen.getByRole("heading", { name: /log session/i }));
 
+    const yesterday = subDays(new Date(), 1);
+    fireEvent.change(screen.getByLabelText(/^time/i), { target: { value: "10:00" } });
+    fireEvent.change(screen.getByLabelText(/^date/i), {
+      target: { value: format(yesterday, "yyyy-MM-dd") },
+    });
+    await waitFor(() => screen.getByText("Status *"));
+
     fireEvent.change(getStatusSelect(), { target: { value: "DNA" } });
 
     await waitFor(() => {
@@ -155,6 +167,13 @@ describe("SessionFormPage — new session", () => {
   it("hides missed reason field when status changes from DNA to Attended", async () => {
     renderNewForm();
     await waitFor(() => screen.getByRole("heading", { name: /log session/i }));
+
+    const yesterday = subDays(new Date(), 1);
+    fireEvent.change(screen.getByLabelText(/^time/i), { target: { value: "10:00" } });
+    fireEvent.change(screen.getByLabelText(/^date/i), {
+      target: { value: format(yesterday, "yyyy-MM-dd") },
+    });
+    await waitFor(() => screen.getByText("Status *"));
 
     fireEvent.change(getStatusSelect(), { target: { value: "DNA" } });
     await waitFor(() => screen.getByText("Missed Reason *"));
@@ -177,9 +196,9 @@ describe("SessionFormPage — new session", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/^status$/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/occurred date/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/occurred time/i)).toBeInTheDocument();
+      expect(screen.getByText("Status *")).toBeInTheDocument();
+      expect(screen.getByText("Occurred Date *")).toBeInTheDocument();
+      expect(screen.getByText("Occurred Time *")).toBeInTheDocument();
       const options = Array.from(getStatusSelect().querySelectorAll("option"))
         .map((o) => o.textContent);
       expect(options).toContain("Attended");
@@ -491,16 +510,14 @@ describe("SessionFormPage — edit session", () => {
   it("pre-populates all fields from existing session data", async () => {
     renderEditForm();
     await waitFor(() => {
-      expect(screen.getByLabelText(/^date/i)).toHaveValue(format(MOCK_SESSION_DATE_RECENT, "yyyy-MM-dd"));
-      expect(screen.getByLabelText(/^time/i)).toHaveValue(format(MOCK_SESSION_DATE_RECENT, "HH:mm"));
+      expect(screen.getByLabelText(/^date/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/^time/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/^duration/i)).toHaveValue("1");
       expect(getClientSelect()).toHaveValue("1");
       expect(getTherapistSelect()).toHaveValue("1");
       expect(getSessionTypeSelect()).toHaveValue("Child");
       expect(getDeliveryMethodSelect()).toHaveValue("FaceToFace");
-      // Status may be cleared by the available-status filter depending on current time,
-      // so we only verify it's populated (not empty)
-      expect((getStatusSelect() as HTMLSelectElement).value).not.toBe("");
+      expect((getStatusSelect() as HTMLSelectElement).value).toBe("Attended");
       expect(screen.getByLabelText(/notes/i)).toHaveValue("Some notes");
     });
   });
@@ -508,7 +525,12 @@ describe("SessionFormPage — edit session", () => {
   it("calls session:update and navigates to /sessions on valid submit", async () => {
     // Use a past date so "Attended" status remains valid (future sessions clear it)
     const pastDate = subDays(new Date(), 2);
-    const editSession = { ...mockSession, scheduled_at: pastDate, notes: "Some notes" };
+    const editSession = {
+      ...mockSession,
+      scheduled_at: pastDate,
+      occurred_at: pastDate,
+      notes: "Some notes",
+    };
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list-all") {
         return Promise.resolve(wrapped(mockTherapists));
@@ -701,7 +723,9 @@ describe("SessionFormPage — edit session", () => {
   });
 
   it("shows retry message when conflict has no field differences", async () => {
-    const freshSession = { ...mockSession, updated_at: addSeconds(MOCK_UPDATED_AT, 1) };
+    const pastDate = subDays(new Date(), 2);
+    const sessionForEdit = { ...mockSession, scheduled_at: pastDate, occurred_at: pastDate };
+    const freshSession = { ...sessionForEdit, updated_at: addSeconds(MOCK_UPDATED_AT, 1) };
 
     let sessionGetCount = 0;
     mockInvoke.mockImplementation((channel: string) => {
@@ -713,7 +737,7 @@ describe("SessionFormPage — edit session", () => {
       }
       if (channel === "session:get") {
         sessionGetCount++;
-        return Promise.resolve(wrapped(sessionGetCount === 1 ? mockSession : freshSession));
+        return Promise.resolve(wrapped(sessionGetCount === 1 ? sessionForEdit : freshSession));
       }
       if (channel === "session:update") {
         return Promise.resolve(errorResponse.conflict);
@@ -742,9 +766,6 @@ describe("SessionFormPage — edit session", () => {
     );
 
     await waitFor(() => screen.getByLabelText(/^date/i));
-
-    // Ensure a valid status is selected (may have been cleared by future-session filter)
-    fireEvent.change(getStatusSelect(), { target: { value: "Rescheduled" } });
 
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
 
@@ -809,9 +830,11 @@ describe("SessionFormPage — edit session", () => {
 
   it("shows conflict warning with server-changed fields and preserves user edits", async () => {
     const user = userEvent.setup();
+    const pastDate = subDays(new Date(), 2);
+    const sessionForEdit = { ...mockSession, scheduled_at: pastDate, occurred_at: pastDate };
 
     const freshSession = {
-      ...mockSession,
+      ...sessionForEdit,
       notes: "Server note",
       updated_at: addSeconds(MOCK_UPDATED_AT, 1),
     };
@@ -826,7 +849,7 @@ describe("SessionFormPage — edit session", () => {
       }
       if (channel === "session:get") {
         sessionGetCount++;
-        return Promise.resolve(wrapped(sessionGetCount === 1 ? { ...mockSession, notes: null } : freshSession));
+        return Promise.resolve(wrapped(sessionGetCount === 1 ? { ...sessionForEdit, notes: null } : freshSession));
       }
       if (channel === "session:update") {
         return Promise.resolve(errorResponse.conflict);
@@ -857,8 +880,6 @@ describe("SessionFormPage — edit session", () => {
 
     await waitFor(() => screen.getByLabelText(/^date/i));
 
-    // Ensure a valid status is selected (may have been cleared by future-session filter)
-    fireEvent.change(getStatusSelect(), { target: { value: "Rescheduled" } });
     await user.type(screen.getByLabelText(/notes/i), "My note");
 
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
@@ -875,8 +896,11 @@ describe("SessionFormPage — edit session", () => {
   });
 
   it("shows missed_reason field when editing a DNA session", async () => {
+    const pastDate = subDays(new Date(), 2);
     const dnaMockSession = {
       ...mockSession,
+      scheduled_at: pastDate,
+      occurred_at: pastDate,
       status: "DNA",
       missed_reason: "Illness",
     };

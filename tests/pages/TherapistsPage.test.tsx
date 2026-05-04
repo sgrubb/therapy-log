@@ -37,6 +37,7 @@ function renderPage() {
               <Route path="/therapists">
                 <Route index element={<TherapistsPage />} />
                 <Route path="new" element={<div data-testid="therapist-new-form" />} />
+                <Route path=":id" element={<div data-testid="therapist-detail" />} />
                 <Route path=":id/edit" element={<div data-testid="therapist-edit-form" />} />
               </Route>
             </Routes>
@@ -120,7 +121,7 @@ describe("TherapistsPage", () => {
     });
   });
 
-  it("navigates to edit page when an admin clicks a row", async () => {
+  it("navigates to detail page when an admin clicks a row", async () => {
     localStorage.setItem("selectedTherapistId", "1"); // Alice Morgan, is_admin: true
     renderPage();
     await waitFor(() => screen.getByText("Alice Morgan"));
@@ -128,7 +129,7 @@ describe("TherapistsPage", () => {
     fireEvent.click(screen.getByText("Alice Morgan"));
 
     await waitFor(() => {
-      expect(screen.getByTestId("therapist-edit-form")).toBeInTheDocument();
+      expect(screen.getByTestId("therapist-detail")).toBeInTheDocument();
     });
   });
 
