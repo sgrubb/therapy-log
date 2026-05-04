@@ -6,7 +6,7 @@ import type { SetupSaveConfigParams, ValidateDatabaseResult } from "@shared/type
 import type { MigrationInfo } from "@shared/types/migrations";
 import type { Therapist, CreateTherapist, UpdateTherapist, DeactivateTherapist, ReactivateTherapist, TherapistListParams, TherapistListAllParams } from "@shared/types/therapists";
 import type { Client, ClientWithTherapist, CreateClient, UpdateClient, CloseClient, ReopenClient, ClientListParams, ClientListAllParams } from "@shared/types/clients";
-import type { Session, SessionWithClientAndTherapist, CreateSession, UpdateSession, SessionListParams, SessionListRangeParams, SessionListExpectedParams, ExpectedSession } from "@shared/types/sessions";
+import type { Session, SessionWithClientAndTherapist, CreateSession, UpdateSession, ConfirmSession, SessionListParams, SessionListRangeParams, SessionListExpectedParams, ExpectedSession } from "@shared/types/sessions";
 import type { PaginatedResult } from "@shared/types/common";
 import { IpcErrorCode } from "@shared/types/ipc";
 import type { ImportResult, TherapistExportParams, ClientExportParams, SessionExportParams } from "@shared/types/csv";
@@ -227,6 +227,11 @@ export const ipc = {
 
   async updateSession(id: number, data: UpdateSession): Promise<Session> {
     const response = await window.electronAPI.invoke("session:update", { id, data });
+    return sessionSchema.parse(unwrapResponse(response));
+  },
+
+  async confirmSession(id: number, data: ConfirmSession): Promise<Session> {
+    const response = await window.electronAPI.invoke("session:confirm", { id, data });
     return sessionSchema.parse(unwrapResponse(response));
   },
 

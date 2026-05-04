@@ -71,7 +71,7 @@ export function computeOverlappingIds(sessions: SessionWithClientAndTherapist[])
 export function computeUnconfirmedIds(sessions: SessionWithClientAndTherapist[], now: Date): Set<number> {
   return new Set(
     sessions
-      .filter((s) => s.status === "Scheduled" && s.scheduled_at < now)
+      .filter((s) => s.status === null && s.scheduled_at < now)
       .map((s) => s.id),
   );
 }

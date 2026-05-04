@@ -24,7 +24,6 @@ export const Outcome = {
 export type Outcome = (typeof Outcome)[keyof typeof Outcome];
 
 export const SessionStatus = {
-  Scheduled: "Scheduled",
   Attended: "Attended",
   DNA: "DNA",
   Cancelled: "Cancelled",

@@ -37,13 +37,13 @@ export const SESSION_CSV_HEADERS = [
   "client_first_name", "client_last_name",
   "therapist_first_name", "therapist_last_name",
   "scheduled_date", "scheduled_time", "duration",
-  "status", "session_type", "delivery_method",
-  "missed_reason", "notes",
+  "session_type", "delivery_method",
+  "status", "occurred_date", "occurred_time", "missed_reason", "notes",
 ] as const;
 
 export const SESSION_REQUIRED_HEADERS = [
   "client_first_name", "client_last_name",
   "therapist_first_name", "therapist_last_name",
   "scheduled_date", "scheduled_time", "duration",
-  "status", "session_type", "delivery_method",
+  "session_type", "delivery_method",
 ] as const;

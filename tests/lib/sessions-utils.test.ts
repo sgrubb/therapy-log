@@ -127,29 +127,29 @@ describe("computeUnconfirmedIds", () => {
     expect(computeUnconfirmedIds([], now)).toEqual(new Set());
   });
 
-  it("includes Scheduled sessions whose scheduled_at is in the past", () => {
+  it("includes unconfirmed sessions whose scheduled_at is in the past", () => {
     const past = makeSession({
       id: 1,
       therapist_id: 1,
       scheduled_at: new Date("2026-06-01T10:00:00"),
       duration: 60,
-      status: "Scheduled",
+      status: null,
     });
     expect(computeUnconfirmedIds([past], now)).toEqual(new Set([1]));
   });
 
-  it("excludes Scheduled sessions in the future", () => {
+  it("excludes unconfirmed sessions in the future", () => {
     const future = makeSession({
       id: 2,
       therapist_id: 1,
       scheduled_at: new Date("2026-12-01T10:00:00"),
       duration: 60,
-      status: "Scheduled",
+      status: null,
     });
     expect(computeUnconfirmedIds([future], now)).toEqual(new Set());
   });
 
-  it("excludes sessions with non-Scheduled status even if in the past", () => {
+  it("excludes sessions with a confirmed status even if in the past", () => {
     const attended = makeSession({
       id: 3,
       therapist_id: 1,
@@ -167,20 +167,20 @@ describe("computeUnconfirmedIds", () => {
     expect(computeUnconfirmedIds([attended, dna], now)).toEqual(new Set());
   });
 
-  it("handles a mix of past-Scheduled, future-Scheduled, and Attended", () => {
-    const pastScheduled = makeSession({
+  it("handles a mix of past-unconfirmed, future-unconfirmed, and Attended", () => {
+    const pastUnconfirmed = makeSession({
       id: 1,
       therapist_id: 1,
       scheduled_at: new Date("2026-06-01T10:00:00"),
       duration: 60,
-      status: "Scheduled",
+      status: null,
     });
-    const futureScheduled = makeSession({
+    const futureUnconfirmed = makeSession({
       id: 2,
       therapist_id: 1,
       scheduled_at: new Date("2026-12-01T10:00:00"),
       duration: 60,
-      status: "Scheduled",
+      status: null,
     });
     const attended = makeSession({
       id: 3,
@@ -189,7 +189,7 @@ describe("computeUnconfirmedIds", () => {
       duration: 60,
       status: "Attended",
     });
-    expect(computeUnconfirmedIds([pastScheduled, futureScheduled, attended], now)).toEqual(new Set([1]));
+    expect(computeUnconfirmedIds([pastUnconfirmed, futureUnconfirmed, attended], now)).toEqual(new Set([1]));
   });
 });
 

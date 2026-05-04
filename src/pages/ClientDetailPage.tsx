@@ -1,4 +1,5 @@
 import { formatDisplayDate } from "@/lib/utils/datetime";
+import { toDuration } from "@/lib/utils/sessions";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Pencil, CalendarPlus } from "lucide-react";
@@ -87,9 +88,8 @@ export default function ClientDetailPage() {
   const canCloseOrReopen = isAdmin || selectedTherapistId === client.therapist_id;
   const isClosed = client.closed_date !== null;
 
-  const durationLabel = client.session_duration != null
-    ? `${Math.floor(client.session_duration / 60)}h ${String(client.session_duration % 60).padStart(2, "0")}m`
-    : "—";
+  const duration = client.session_duration != null ? toDuration(client.session_duration) : null;
+  const durationLabel = duration ? `${duration.hours}h ${duration.minutes}m` : "—";
 
   return (
     <div className="max-w-3xl space-y-6">

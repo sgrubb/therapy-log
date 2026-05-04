@@ -20,6 +20,7 @@ import {
 import {
   sessionCreateSchema,
   sessionUpdateSchema,
+  sessionConfirmSchema,
   sessionListParamsSchema,
   sessionListRangeParamsSchema,
   sessionListExpectedParamsSchema,
@@ -439,6 +440,22 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
             throw new Error(IpcErrorCode.Conflict);
           }
           return tx.session.update({ where: { id }, data: updateData });
+        });
+      }),
+  );
+
+  ipcMain.handle(
+    "session:confirm",
+    (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["session:confirm"]["result"]> =>
+      withErrorHandler("session:confirm", async () => {
+        const { id, data: rawData } = rawInput;
+        const { updated_at: sessionUpdatedAt, ...confirmData } = sessionConfirmSchema.parse(rawData);
+        return prisma.$transaction(async (tx) => {
+          const existing = await tx.session.findUniqueOrThrow({ where: { id } });
+          if (existing.updated_at.getTime() !== sessionUpdatedAt.getTime()) {
+            throw new Error(IpcErrorCode.Conflict);
+          }
+          return tx.session.update({ where: { id }, data: confirmData });
         });
       }),
   );

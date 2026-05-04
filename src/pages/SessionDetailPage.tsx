@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { formatDisplayDate } from "@/lib/utils/datetime";
+import { toDuration } from "@/lib/utils/sessions";
 import { useParams, useLocation, Link } from "react-router-dom";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -10,6 +11,7 @@ import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES, MISSED_REASON_NAMES } from "
 import { buttonVariants } from "@/components/ui/button";
 import { InfoRow } from "@/components/ui/info-row";
 import { PageHeader } from "@/components/ui/page-header";
+import { ConfirmSessionDialog } from "@/components/ConfirmSessionDialog";
 
 export default function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,9 +29,13 @@ export default function SessionDetailPage() {
 
   const date = formatDisplayDate(session.scheduled_at);
   const time = format(session.scheduled_at, "HH:mm");
-  const durationLabel = `${Math.floor(session.duration / 60)}h ${String(session.duration % 60).padStart(2, "0")}m`;
+  const duration = toDuration(session.duration);
+  const durationLabel = `${duration.hours}h ${duration.minutes}m`;
+  const isUnconfirmed = session.status === null;
+  const showOccurredAt = session.occurred_at !== null;
   const showMissedReason =
-    session.status !== SessionStatus.Attended && !!session.missed_reason;
+    (session.status === SessionStatus.DNA || session.status === SessionStatus.Cancelled)
+    && !!session.missed_reason;
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -49,14 +55,17 @@ export default function SessionDetailPage() {
               </Link>
               {" "}— {date}
             </h1>
-            <Link
-              to={`/sessions/${id}/edit`}
-              state={{ from: `/sessions/${id}` }}
-              className={buttonVariants({ variant: "outline" })}
-            >
-              <Pencil className="size-4" />
-              Edit
-            </Link>
+            <div className="flex gap-2">
+              {isUnconfirmed && <ConfirmSessionDialog session={session} />}
+              <Link
+                to={`/sessions/${id}/edit`}
+                state={{ from: `/sessions/${id}` }}
+                className={buttonVariants({ variant: "outline" })}
+              >
+                <Pencil className="size-4" />
+                Edit
+              </Link>
+            </div>
           </div>
         </div>
       </PageHeader>
@@ -88,7 +97,13 @@ export default function SessionDetailPage() {
           label="Delivery Method"
           value={DELIVERY_METHOD_NAMES[session.delivery_method]}
         />
-        <InfoRow label="Status" value={session.status} />
+        <InfoRow label="Status" value={session.status ?? "Unconfirmed"} />
+        {showOccurredAt && (
+          <>
+            <InfoRow label="Occurred Date" value={formatDisplayDate(session.occurred_at!)} />
+            <InfoRow label="Occurred Time" value={format(session.occurred_at!, "HH:mm")} />
+          </>
+        )}
         {showMissedReason && (
           <InfoRow
             label="Missed Reason"

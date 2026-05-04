@@ -6,7 +6,7 @@ import type { ExpectedSession, SessionWithClientAndTherapist, Session } from "@s
 import type { SessionListParams, SessionListRangeParams, SessionListExpectedParams } from "@shared/types/sessions";
 import type { Therapist, CreateTherapist, UpdateTherapist, DeactivateTherapist, ReactivateTherapist, TherapistListParams, TherapistListAllParams } from "@shared/types/therapists";
 import type { Client, ClientWithTherapist, CreateClient, UpdateClient, CloseClient, ReopenClient, ClientListParams, ClientListAllParams } from "@shared/types/clients";
-import type { CreateSession, UpdateSession } from "@shared/types/sessions";
+import type { CreateSession, UpdateSession, ConfirmSession } from "@shared/types/sessions";
 import type { ImportResult, TherapistExportParams, ClientExportParams, SessionExportParams } from "@shared/types/csv";
 
 export type { IpcErrorCode, IpcError, IpcResponse } from "@shared/types/ipc";
@@ -125,6 +125,10 @@ export type IpcApi = {
   };
   "session:update": {
     args: { id: number; data: UpdateSession };
+    result: IpcResponse<Session>;
+  };
+  "session:confirm": {
+    args: { id: number; data: ConfirmSession };
     result: IpcResponse<Session>;
   };
 

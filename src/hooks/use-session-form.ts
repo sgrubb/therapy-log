@@ -29,6 +29,8 @@ const EMPTY: FormFields = {
   session_type: "" as SessionType,
   delivery_method: "" as DeliveryMethod,
   status: "" as SessionStatus,
+  occurred_date: "",
+  occurred_time: "",
   missed_reason: "",
   notes: "",
 };
@@ -42,23 +44,34 @@ function mapSessionToFormFields(session: SessionWithClientAndTherapist): FormFie
     duration: toDuration(session.duration),
     session_type: session.session_type,
     delivery_method: session.delivery_method,
-    status: session.status,
+    status: session.status ?? "",
+    occurred_date: session.occurred_at !== null ? format(session.occurred_at, "yyyy-MM-dd") : "",
+    occurred_time: session.occurred_at !== null ? format(session.occurred_at, "HH:mm") : "",
     missed_reason: session.missed_reason ?? "",
     notes: session.notes ?? "",
   };
 }
 
+// buildPayload drops any post-session fields when the scheduled date/time is in
+// the future. The form hides those fields in that case, but values can linger
+// in state if the user toggles the date back and forth.
 function buildPayload(form: FormFields) {
+  const scheduled_at = parse(`${form.date} ${form.time}`, "yyyy-MM-dd HH:mm", new Date());
+  const isPast = scheduled_at < new Date();
+  const occurred_at = isPast && form.occurred_date && form.occurred_time
+    ? parse(`${form.occurred_date} ${form.occurred_time}`, "yyyy-MM-dd HH:mm", new Date())
+    : null;
   return {
     client_id: Number(form.client_id),
     therapist_id: Number(form.therapist_id),
-    scheduled_at: parse(`${form.date} ${form.time}`, "yyyy-MM-dd HH:mm", new Date()),
+    scheduled_at,
     duration: fromDuration(form.duration),
-    status: form.status as SessionStatus,
+    status: isPast && form.status ? (form.status as SessionStatus) : null,
     session_type: form.session_type as SessionType,
     delivery_method: form.delivery_method as DeliveryMethod,
-    missed_reason: (form.missed_reason || undefined) as MissedReason | undefined,
-    notes: (form.notes ?? "").trim() || undefined,
+    occurred_at,
+    missed_reason: isPast && form.missed_reason ? (form.missed_reason as MissedReason) : null,
+    notes: form.notes?.trim() || null,
   };
 }
 
@@ -127,8 +140,17 @@ export function useSessionForm(sessionId?: number, defaults?: SessionFormDefault
   const set = <K extends keyof FormFields>(field: K, value: FormFields[K]) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
-      if (field === "status" && value === SessionStatus.Attended) {
-        next.missed_reason = "";
+      if (field === "status") {
+        // Attended or unconfirmed have no missed_reason.
+        if (value === SessionStatus.Attended || value === "") {
+          next.missed_reason = "";
+        }
+        // When the user first picks a status, default the occurred date/time to
+        // the scheduled values — assumes the session ran when planned, easy to edit.
+        if (value && value !== "" && !prev.occurred_date && !prev.occurred_time) {
+          next.occurred_date = prev.date;
+          next.occurred_time = prev.time;
+        }
       }
       return next;
     });

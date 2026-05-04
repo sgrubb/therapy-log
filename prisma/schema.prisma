@@ -25,7 +25,6 @@ enum Outcome {
 }
 
 enum SessionStatus {
-  Scheduled
   Attended
   DNA
   Cancelled
@@ -106,7 +105,7 @@ model Session {
   scheduled_at    DateTime
   occurred_at     DateTime?
   duration        Int
-  status          SessionStatus
+  status          SessionStatus?
   session_type    SessionType
   delivery_method DeliveryMethod
   missed_reason   MissedReason?

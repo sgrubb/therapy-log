@@ -5,6 +5,7 @@ import {
   expectedSessionSchema,
   sessionCreateSchema,
   sessionUpdateSchema,
+  sessionConfirmSchema,
   sessionFiltersSchema,
   sessionListParamsSchema,
   sessionListRangeParamsSchema,
@@ -17,6 +18,7 @@ export type ExpectedSession = z.infer<typeof expectedSessionSchema>;
 
 export type CreateSession = z.infer<typeof sessionCreateSchema>;
 export type UpdateSession = z.infer<typeof sessionUpdateSchema>;
+export type ConfirmSession = z.infer<typeof sessionConfirmSchema>;
 
 export type SessionFilters = z.infer<typeof sessionFiltersSchema>;
 export type SessionListParams = z.infer<typeof sessionListParamsSchema>;

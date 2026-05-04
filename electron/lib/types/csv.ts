@@ -17,8 +17,11 @@ export type SessionPayload =
     | "therapist_last_name"
     | "scheduled_date"
     | "scheduled_time"
+    | "occurred_date"
+    | "occurred_time"
   > & {
     client_id: number;
     therapist_id: number;
     scheduled_at: Date;
+    occurred_at: Date | null;
   };

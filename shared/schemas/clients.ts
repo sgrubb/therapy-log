@@ -41,6 +41,57 @@ export const clientWithTherapistSchema = clientBaseSchema.extend({
 
 // ── Request schemas ─────────────────────────────────────────────────────────
 
+// Cross-field rules shared by create + update. Callers (forms, CSV import)
+// always send these as a coherent set; partial updates that omit the relevant
+// fields skip the corresponding checks.
+function validateClientFields(
+  data: {
+    phone?: string | null;
+    email?: string | null;
+    closed_date?: Date | null;
+    outcome?: Outcome | null;
+    post_score?: number | null;
+  },
+  ctx: z.RefinementCtx,
+): void {
+  if ("phone" in data || "email" in data) {
+    const phone = (data.phone ?? "").trim();
+    const email = (data.email ?? "").trim();
+    if (!phone && !email) {
+      ctx.addIssue({
+        code: "custom",
+        message: "At least one of phone or email is required.",
+        path: ["email"],
+      });
+    }
+  }
+  if (data.closed_date === undefined) {
+    return;
+  }
+  if (data.closed_date === null) {
+    if (data.outcome != null) {
+      ctx.addIssue({
+        code: "custom",
+        message: "outcome must not be set when client is open.",
+        path: ["outcome"],
+      });
+    }
+    if (data.post_score != null) {
+      ctx.addIssue({
+        code: "custom",
+        message: "post_score must not be set when client is open.",
+        path: ["post_score"],
+      });
+    }
+  } else if (data.outcome == null) {
+    ctx.addIssue({
+      code: "custom",
+      message: "outcome is required when client is closed.",
+      path: ["outcome"],
+    });
+  }
+}
+
 export const clientCreateSchema = z.object({
   hospital_number: z.string().min(1),
   first_name: z.string().min(1),
@@ -60,7 +111,7 @@ export const clientCreateSchema = z.object({
   post_score: z.number().nullable().optional(),
   outcome: z.enum(Object.values(Outcome) as [Outcome, ...Outcome[]]).nullable().optional(),
   notes: z.string().nullable().optional(),
-});
+}).superRefine(validateClientFields);
 
 export const clientUpdateSchema = z.object({
   updated_at: z.coerce.date(),
@@ -82,7 +133,7 @@ export const clientUpdateSchema = z.object({
   post_score: z.number().nullable().optional(),
   outcome: z.enum(Object.values(Outcome) as [Outcome, ...Outcome[]]).nullable().optional(),
   notes: z.string().nullable().optional(),
-});
+}).superRefine(validateClientFields);
 
 export const clientCloseSchema = z.object({
   post_score: z.number().nullable().optional(),

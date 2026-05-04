@@ -33,7 +33,7 @@ export function buildSessionWhere(filters: {
   to?: Date;
   therapistIds?: number[];
   clientId?: number;
-  status?: SessionStatus;
+  status?: SessionStatus | null;
 }) {
   return {
     ...(filters.from || filters.to
@@ -46,6 +46,6 @@ export function buildSessionWhere(filters: {
       : {}),
     ...(filters.therapistIds?.length ? { therapist_id: { in: filters.therapistIds } } : {}),
     ...(filters.clientId ? { client_id: filters.clientId } : {}),
-    ...(filters.status ? { status: filters.status } : {}),
+    ...(filters.status !== undefined ? { status: filters.status } : {}),
   };
 }

@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { CalendarPlus, Save, Loader2 } from "lucide-react";
 import { parse } from "date-fns";
+import { CalendarPlus, Save, Loader2 } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { useSessionForm } from "@/hooks/use-session-form";
@@ -89,32 +89,13 @@ export default function SessionFormPage() {
     return aName.localeCompare(bName);
   });
 
-  const isFutureSession = useMemo(() => {
+  const isPastSession = useMemo(() => {
     if (!form.date || !form.time) {
-      return null;
+      return false;
     }
-    const sessionDateTime = parse(`${form.date} ${form.time}`, "yyyy-MM-dd HH:mm", new Date());
-    return sessionDateTime > new Date();
+    const dt = parse(`${form.date} ${form.time}`, "yyyy-MM-dd HH:mm", new Date());
+    return !isNaN(dt.getTime()) && dt < new Date();
   }, [form.date, form.time]);
-
-  const availableStatuses = useMemo(() => {
-    const statuses = Object.values(SessionStatus)
-    if (isFutureSession === null) {
-      return statuses;
-    }
-    return statuses.filter(status => {
-      if (isFutureSession) {
-        return status !== SessionStatus.Attended && status !== SessionStatus.DNA;
-      }
-      return status !== SessionStatus.Scheduled;
-    });
-  }, [isFutureSession]);
-
-  useEffect(() => {
-    if (form.status && !availableStatuses.includes(form.status as SessionStatus)) {
-      set("status", "" as SessionStatus);
-    }
-  }, [availableStatuses]);
 
   const showMissedReason = form.status === SessionStatus.DNA || form.status === SessionStatus.Cancelled;
 
@@ -230,29 +211,63 @@ export default function SessionFormPage() {
             </Select>
           </Field>
 
-          <Field label="Status *" error={getError("status")} conflictError={getConflictError("status")}>
-            <Select
-              value={form.status}
-              onValueChange={(v) => set("status", v as SessionStatus)}
-            >
-              <SelectTrigger
-                aria-label="Status"
-                aria-invalid={!!getError("status")}
-                onBlur={() => markTouched("status")}
-              >
-                <SelectValue placeholder="Select status…" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableStatuses.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+          {isPastSession && (
+            <>
+              <Field label="Status *" error={getError("status")} conflictError={getConflictError("status")}>
+                <Select
+                  value={form.status}
+                  onValueChange={(v) => set("status", v as SessionStatus)}
+                >
+                  <SelectTrigger
+                    aria-label="Status"
+                    aria-invalid={!!getError("status")}
+                    onBlur={() => markTouched("status")}
+                  >
+                    <SelectValue placeholder="Select status…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(SessionStatus).map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
 
-          {showMissedReason && (
+              <Field
+                label="Occurred Date *"
+                error={getError("occurred_date")}
+                conflictError={getConflictError("occurred_date")}
+              >
+                <Input
+                  type="date"
+                  aria-label="Occurred date"
+                  value={form.occurred_date ?? ""}
+                  onChange={(e) => set("occurred_date", e.target.value)}
+                  onBlur={() => markTouched("occurred_date")}
+                  aria-invalid={!!getError("occurred_date")}
+                />
+              </Field>
+
+              <Field
+                label="Occurred Time *"
+                error={getError("occurred_time")}
+                conflictError={getConflictError("occurred_time")}
+              >
+                <Input
+                  type="time"
+                  aria-label="Occurred time"
+                  value={form.occurred_time ?? ""}
+                  onChange={(e) => set("occurred_time", e.target.value)}
+                  onBlur={() => markTouched("occurred_time")}
+                  aria-invalid={!!getError("occurred_time")}
+                />
+              </Field>
+            </>
+          )}
+
+          {isPastSession && showMissedReason && (
             <Field label="Missed Reason *" error={getError("missed_reason")} conflictError={getConflictError("missed_reason")}>
               <Select
                 value={form.missed_reason ?? ""}

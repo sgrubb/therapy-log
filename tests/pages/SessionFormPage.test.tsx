@@ -166,7 +166,7 @@ describe("SessionFormPage — new session", () => {
     });
   });
 
-  it("hides Scheduled status for past sessions", async () => {
+  it("shows status and occurred fields when date is in the past", async () => {
     renderNewForm();
     await waitFor(() => screen.getByRole("heading", { name: /log session/i }));
 
@@ -177,6 +177,9 @@ describe("SessionFormPage — new session", () => {
     });
 
     await waitFor(() => {
+      expect(screen.getByLabelText(/^status$/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/occurred date/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/occurred time/i)).toBeInTheDocument();
       const options = Array.from(getStatusSelect().querySelectorAll("option"))
         .map((o) => o.textContent);
       expect(options).toContain("Attended");
@@ -185,7 +188,7 @@ describe("SessionFormPage — new session", () => {
     });
   });
 
-  it("hides Attended and DNA statuses for future sessions", async () => {
+  it("hides status and occurred fields when date is in the future", async () => {
     renderNewForm();
     await waitFor(() => screen.getByRole("heading", { name: /log session/i }));
 
@@ -196,49 +199,19 @@ describe("SessionFormPage — new session", () => {
     });
 
     await waitFor(() => {
-      const options = Array.from(getStatusSelect().querySelectorAll("option"))
-        .map((o) => o.textContent);
-      expect(options).toContain("Scheduled");
-      expect(options).toContain("Cancelled");
-      expect(options).not.toContain("Attended");
-      expect(options).not.toContain("DNA");
+      expect(screen.queryByLabelText(/^status$/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/occurred date/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/occurred time/i)).not.toBeInTheDocument();
     });
   });
 
-  it("shows all statuses when date or time is not set", async () => {
+  it("hides status and occurred fields when date or time is not set", async () => {
     renderNewForm();
     await waitFor(() => screen.getByRole("heading", { name: /log session/i }));
 
-    const options = Array.from(getStatusSelect().querySelectorAll("option"))
-      .map((o) => o.textContent);
-    expect(options).toContain("Scheduled");
-    expect(options).toContain("Attended");
-    expect(options).toContain("DNA");
-  });
-
-  it("clears status when date change makes current status invalid", async () => {
-    renderNewForm();
-    await waitFor(() => screen.getByRole("heading", { name: /log session/i }));
-
-    const yesterday = subDays(new Date(), 1);
-    fireEvent.change(screen.getByLabelText(/^time/i), { target: { value: "10:00" } });
-    fireEvent.change(screen.getByLabelText(/^date/i), {
-      target: { value: format(yesterday, "yyyy-MM-dd") },
-    });
-    fireEvent.change(getStatusSelect(), { target: { value: "Attended" } });
-    expect(getStatusSelect()).toHaveValue("Attended");
-
-    const tomorrow = addDays(new Date(), 1);
-    fireEvent.change(screen.getByLabelText(/^date/i), {
-      target: { value: format(tomorrow, "yyyy-MM-dd") },
-    });
-
-    // Attended is not valid for future sessions — should be cleared by effect
-    await waitFor(() => {
-      const options = Array.from(getStatusSelect().querySelectorAll("option"))
-        .map((o) => o.textContent);
-      expect(options).not.toContain("Attended");
-    });
+    expect(screen.queryByLabelText(/^status$/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/occurred date/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/occurred time/i)).not.toBeInTheDocument();
   });
 
   it("auto-populates therapist when client is selected", async () => {

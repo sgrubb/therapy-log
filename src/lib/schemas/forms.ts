@@ -1,11 +1,15 @@
 import { z } from "zod";
-import { addYears } from "date-fns";
+import { addYears, parse } from "date-fns";
 import { SessionDay, Outcome, SessionType, DeliveryMethod, SessionStatus, MissedReason } from "@shared/types/enums";
+import { fromDuration } from "@/lib/utils/sessions";
 
 const durationSchema = z.object({
   hours: z.number().int().min(0),
   minutes: z.number().int().min(0),
 });
+
+const isValidDateStr = (v: string) => !isNaN(new Date(v).getTime());
+const isValidTimeStr = (v: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
 
 const sessionDayValues = Object.values(SessionDay) as [
   SessionDay,
@@ -51,7 +55,7 @@ export const clientFormSchema = z
     const email = data.email ?? "";
     if (!phone.trim() && !email.trim()) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "At least one of phone or email is required.",
         path: ["email"],
       });
@@ -69,12 +73,14 @@ export const sessionFormSchema = z
     date: z.string().min(1, "Date is required."),
     time: z.string().min(1, "Time is required."),
     duration: durationSchema.refine(
-      (d) => d.hours * 60 + d.minutes > 0,
+      (d) => fromDuration(d) > 0,
       "Duration is required.",
     ),
     session_type: z.enum(sessionTypeValues, "Session type is required."),
     delivery_method: z.enum(deliveryMethodValues, "Delivery method is required."),
-    status: z.enum(sessionStatusValues, "Status is required."),
+    status: z.enum(sessionStatusValues).optional().or(z.literal("")),
+    occurred_date: z.string().optional().or(z.literal("")),
+    occurred_time: z.string().optional().or(z.literal("")),
     missed_reason: z.enum(missedReasonValues).optional().or(z.literal("")),
     notes: z
       .string()
@@ -83,21 +89,67 @@ export const sessionFormSchema = z
       .or(z.literal("")),
   })
   .superRefine((data, ctx) => {
+    const dateValid = !!data.date && isValidDateStr(data.date);
+    const timeValid = !!data.time && isValidTimeStr(data.time);
+    const occurredDateValid = !data.occurred_date || isValidDateStr(data.occurred_date);
+    const occurredTimeValid = !data.occurred_time || isValidTimeStr(data.occurred_time);
+
+    if (data.date && !dateValid) {
+      ctx.addIssue({ code: "custom", message: "Invalid date.", path: ["date"] });
+    }
+    if (data.time && !timeValid) {
+      ctx.addIssue({ code: "custom", message: "Invalid time.", path: ["time"] });
+    }
+    if (!occurredDateValid) {
+      ctx.addIssue({ code: "custom", message: "Invalid date.", path: ["occurred_date"] });
+    }
+    if (!occurredTimeValid) {
+      ctx.addIssue({ code: "custom", message: "Invalid time.", path: ["occurred_time"] });
+    }
+
     if ((data.status === SessionStatus.DNA || data.status === SessionStatus.Cancelled) && !data.missed_reason) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "Reason is required when session is missed or cancelled.",
         path: ["missed_reason"],
       });
     }
-    if (data.date) {
+
+    if (dateValid) {
       const d = new Date(data.date);
-      if (!isNaN(d.getTime()) && d > addYears(new Date(), 1)) {
+      if (d > addYears(new Date(), 1)) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           message: "Date cannot be more than 1 year in the future.",
           path: ["date"],
         });
+      }
+    }
+
+    if (dateValid && timeValid) {
+      const scheduled = parse(`${data.date} ${data.time}`, "yyyy-MM-dd HH:mm", new Date());
+      if (scheduled < new Date()) {
+        if (!data.status) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Status is required for past sessions.",
+            path: ["status"],
+          });
+        }
+        if (!data.occurred_date) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Occurred date is required.",
+            path: ["occurred_date"],
+          });
+        }
+        if (!data.occurred_time) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Occurred time is required.",
+            path: ["occurred_time"],
+          });
+        }
       }
     }
   });
@@ -127,3 +179,23 @@ export const reopenClientSchema = z.object({
     .optional()
     .or(z.literal("")),
 });
+
+export const confirmSessionSchema = z
+  .object({
+    occurred_date: z.string().min(1, "Date is required."),
+    occurred_time: z.string().min(1, "Time is required."),
+    status: z.enum(sessionStatusValues, "Status is required."),
+    missed_reason: z.enum(missedReasonValues).optional().or(z.literal("")),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      (data.status === SessionStatus.DNA || data.status === SessionStatus.Cancelled)
+      && !data.missed_reason
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Reason is required when session is missed or cancelled.",
+        path: ["missed_reason"],
+      });
+    }
+  });

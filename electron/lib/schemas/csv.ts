@@ -144,9 +144,11 @@ export const sessionRowSchema = z.object({
   scheduled_date: reqStr("scheduled_date"),
   scheduled_time: reqStr("scheduled_time"),
   duration: reqPosIntField("duration"),
-  status: reqEnumField("status", Object.values(SessionStatus) as SessionStatus[]),
   session_type: reqEnumField("session_type", Object.values(SessionType) as SessionType[]),
   delivery_method: reqEnumField("delivery_method", Object.values(DeliveryMethod) as DeliveryMethod[]),
+  status: optEnumField("status", Object.values(SessionStatus) as SessionStatus[]),
+  occurred_date: optStr,
+  occurred_time: optStr,
   missed_reason: optEnumField("missed_reason", Object.values(MissedReason) as MissedReason[]),
   notes: optStr,
 });
