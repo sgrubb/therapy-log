@@ -11,6 +11,7 @@ import {
 import { startOfMonth, endOfMonth, minutesToMilliseconds } from "date-fns";
 import type { EventPropGetter } from "react-big-calendar";
 import { SortDir } from "@shared/types/enums";
+import { therapistId } from "@shared/types/brands";
 import { startOfWeekMon, endOfWeekMon } from "@/lib/utils/datetime";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
@@ -185,7 +186,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     from: rangeStart,
     to: rangeEnd,
     ...(selectedTherapistIds.length > 0
-      ? { therapistIds: selectedTherapistIds.map(Number) }
+      ? { therapistIds: selectedTherapistIds.map((id) => therapistId(Number(id))) }
       : {}),
     sortKey: "scheduled_at",
     sortDir: SortDir.Asc,
@@ -204,7 +205,7 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
     from: rangeStart,
     to: rangeEnd,
     ...(selectedTherapistIds.length > 0
-      ? { therapistIds: selectedTherapistIds.map(Number) }
+      ? { therapistIds: selectedTherapistIds.map((id) => therapistId(Number(id))) }
       : {}),
     sortKey: "scheduled_at",
     sortDir: SortDir.Asc,

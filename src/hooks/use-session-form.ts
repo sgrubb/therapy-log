@@ -12,6 +12,8 @@ import type { SessionType, DeliveryMethod, MissedReason } from "@shared/types/en
 import { FormState } from "@/lib/types/enums";
 import type { ClientWithTherapist } from "@shared/types/clients";
 import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
+import { clientId, therapistId } from "@shared/types/brands";
+import type { SessionId } from "@shared/types/brands";
 import { useFormState } from "@/hooks/use-form-state";
 import { mostRecentOccurrence, toDuration, fromDuration } from "@/lib/utils/sessions";
 
@@ -52,6 +54,14 @@ function mapSessionToFormFields(session: SessionWithClientAndTherapist): FormFie
   };
 }
 
+function isPastDateTime(date: string, time: string): boolean {
+  if (!date || !time) {
+    return false;
+  }
+  const dt = parse(`${date} ${time}`, "yyyy-MM-dd HH:mm", new Date());
+  return !isNaN(dt.getTime()) && dt < new Date();
+}
+
 // buildPayload drops any post-session fields when the scheduled date/time is in
 // the future. The form hides those fields in that case, but values can linger
 // in state if the user toggles the date back and forth.
@@ -62,8 +72,8 @@ function buildPayload(form: FormFields) {
     ? parse(`${form.occurred_date} ${form.occurred_time}`, "yyyy-MM-dd HH:mm", new Date())
     : null;
   return {
-    client_id: Number(form.client_id),
-    therapist_id: Number(form.therapist_id),
+    client_id: clientId(Number(form.client_id)),
+    therapist_id: therapistId(Number(form.therapist_id)),
     scheduled_at,
     duration: fromDuration(form.duration),
     status: isPast && form.status ? (form.status as SessionStatus) : null,
@@ -84,7 +94,7 @@ export interface SessionFormDefaults {
   deliveryMethod?: string;
 }
 
-export function useSessionForm(sessionId?: number, defaults?: SessionFormDefaults) {
+export function useSessionForm(sessionId?: SessionId, defaults?: SessionFormDefaults) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isEdit = sessionId !== undefined;
@@ -102,14 +112,20 @@ export function useSessionForm(sessionId?: number, defaults?: SessionFormDefault
       return mapSessionToFormFields(sessionData);
     }
     if (defaults) {
+      const date = defaults.date ?? "";
+      const time = defaults.time ?? "";
+      const occurred = isPastDateTime(date, time)
+        ? { occurred_date: date, occurred_time: time }
+        : { occurred_date: "", occurred_time: "" };
       return {
         ...EMPTY,
         client_id: defaults.clientId ?? "",
         therapist_id: defaults.therapistId ?? "",
-        date: defaults.date ?? "",
-        time: defaults.time ?? "",
+        date,
+        time,
         duration: defaults.durationMins ? toDuration(Number(defaults.durationMins)) : { hours: 0, minutes: 0 },
         delivery_method: (defaults.deliveryMethod ?? "") as DeliveryMethod,
+        ...occurred,
       };
     }
     return EMPTY;
@@ -140,17 +156,17 @@ export function useSessionForm(sessionId?: number, defaults?: SessionFormDefault
   const set = <K extends keyof FormFields>(field: K, value: FormFields[K]) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
-      if (field === "status") {
-        // Attended or unconfirmed have no missed_reason.
-        if (value === SessionStatus.Attended || value === "") {
-          next.missed_reason = "";
-        }
-        // When the user first picks a status, default the occurred date/time to
-        // the scheduled values — assumes the session ran when planned, easy to edit.
-        if (value && value !== "" && !prev.occurred_date && !prev.occurred_time) {
-          next.occurred_date = prev.date;
-          next.occurred_time = prev.time;
-        }
+      if (field === "status" && (value === SessionStatus.Attended || value === "")) {
+        next.missed_reason = "";
+      }
+      // When the scheduled date/time changes to a past value and occurred is
+      // empty, default occurred to the scheduled values — assumes the session
+      // ran when planned, easy to edit.
+      if ((field === "date" || field === "time")
+        && isPastDateTime(next.date, next.time)
+        && !prev.occurred_date && !prev.occurred_time) {
+        next.occurred_date = next.date;
+        next.occurred_time = next.time;
       }
       return next;
     });
@@ -164,17 +180,25 @@ export function useSessionForm(sessionId?: number, defaults?: SessionFormDefault
     const lockDate = !!(defaults && !isEdit && defaults.date);
     const lockTime = !!(defaults && !isEdit && defaults.time);
     const lockDuration = !!(defaults && !isEdit && defaults.durationMins);
-    setForm((prev) => ({
-      ...prev,
-      client_id: clientId,
-      therapist_id: prev.therapist_id || (client ? client.therapist_id.toString() : ""),
-      time: lockTime ? prev.time : (client?.session_time ?? ""),
-      date: lockDate ? prev.date : (client?.session_day ? mostRecentOccurrence(client.session_day) : ""),
-      duration: lockDuration
-        ? prev.duration
-        : (client?.session_duration != null ? toDuration(client.session_duration) : prev.duration),
-      delivery_method: (client?.session_delivery_method ?? prev.delivery_method) as DeliveryMethod,
-    }));
+    setForm((prev) => {
+      const date = lockDate ? prev.date : (client?.session_day ? mostRecentOccurrence(client.session_day) : "");
+      const time = lockTime ? prev.time : (client?.session_time ?? "");
+      const occurred = !prev.occurred_date && !prev.occurred_time && isPastDateTime(date, time)
+        ? { occurred_date: date, occurred_time: time }
+        : { occurred_date: prev.occurred_date, occurred_time: prev.occurred_time };
+      return {
+        ...prev,
+        client_id: clientId,
+        therapist_id: prev.therapist_id || (client ? client.therapist_id.toString() : ""),
+        time,
+        date,
+        duration: lockDuration
+          ? prev.duration
+          : (client?.session_duration != null ? toDuration(client.session_duration) : prev.duration),
+        delivery_method: (client?.session_delivery_method ?? prev.delivery_method) as DeliveryMethod,
+        ...occurred,
+      };
+    });
     clearError("client_id");
     clearError("therapist_id");
   }

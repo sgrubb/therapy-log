@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll, assert } from "vitest";
 import type { PrismaClient } from "../../generated/prisma/client";
 import { registerDatabaseHandlers } from "../../electron/handlers/database-handlers";
-import type { IpcApi } from "../../electron/types/ipc";
+import type { IpcApi } from "../../electron/lib/types/ipc";
 import { SortDir } from "@shared/types/enums";
 import { IpcErrorCode } from "@shared/types/ipc";
+import { therapistId, clientId, sessionId } from "@shared/types/brands";
 import {
   createTestPrismaClient,
   cleanupTestDb,
@@ -35,13 +36,13 @@ afterAll(async () => {
   cleanupTestDb(dbPath);
 });
 
-async function invoke<C extends keyof IpcApi>(
+async function invoke<C extends keyof IpcApi & string>(
   channel: C,
   ...args: IpcApi[C]["args"] extends void ? [] : [IpcApi[C]["args"]]
 ): Promise<IpcApi[C]["result"]> {
   const handler = handlers[channel];
   if (!handler) {
-    throw new Error(`No handler for ${String(channel)}`);
+    throw new Error(`No handler for ${channel}`);
   }
   const result = await handler({} as never, ...(args as never[]));
   return result as IpcApi[C]["result"];
@@ -72,7 +73,7 @@ describe("therapist:get", () => {
   });
 
   it("returns NOT_FOUND error for nonexistent id", async () => {
-    const result = await invoke("therapist:get", 9999);
+    const result = await invoke("therapist:get", therapistId(9999));
     assert(!result.success);
     expect(result.error.code).toBe(IpcErrorCode.NotFound);
   });
@@ -118,7 +119,7 @@ describe("therapist:update", () => {
 
   it("returns failure for nonexistent id", async () => {
     const result = await invoke("therapist:update", {
-      id: 9999,
+      id: therapistId(9999),
       data: { last_name: "Nope", updated_at: new Date() },
     });
     expect(result.success).toBe(false);
@@ -129,7 +130,7 @@ describe("therapist:update", () => {
 
 describe("client:list", () => {
   it("returns paginated clients with therapist relation", async () => {
-    const result = await invoke("client:list", { page: 1, pageSize: 25, sortKey: "last_name", sortDir: "asc" });
+    const result = await invoke("client:list", { page: 1, pageSize: 25, sortKey: "last_name", sortDir: "asc", status: "all" });
     assert(result.success);
     expect(result.data.data.length).toBeGreaterThanOrEqual(2);
     expect(result.data.data[0]).toHaveProperty("therapist");
@@ -139,7 +140,7 @@ describe("client:list", () => {
   });
 
   it("respects pageSize", async () => {
-    const result = await invoke("client:list", { page: 1, pageSize: 1, sortKey: "last_name", sortDir: "asc" });
+    const result = await invoke("client:list", { page: 1, pageSize: 1, sortKey: "last_name", sortDir: "asc", status: "all" });
     assert(result.success);
     expect(result.data.data).toHaveLength(1);
   });
@@ -157,7 +158,7 @@ describe("client:get", () => {
   });
 
   it("returns NOT_FOUND error for nonexistent id", async () => {
-    const result = await invoke("client:get", 9999);
+    const result = await invoke("client:get", clientId(9999));
     assert(!result.success);
     expect(result.error.code).toBe(IpcErrorCode.NotFound);
   });
@@ -217,7 +218,7 @@ describe("client:update", () => {
 
   it("returns failure for nonexistent id", async () => {
     const result = await invoke("client:update", {
-      id: 9999,
+      id: clientId(9999),
       data: { phone: "000", updated_at: new Date() },
     });
     expect(result.success).toBe(false);
@@ -239,7 +240,7 @@ describe("client:close", () => {
 
   it("returns failure for nonexistent id", async () => {
     const result = await invoke("client:close", {
-      id: 9999,
+      id: clientId(9999),
       data: { outcome: "Improved", closed_date: new Date("2026-01-15T00:00:00.000Z") },
     });
     expect(result.success).toBe(false);
@@ -275,7 +276,7 @@ describe("client:reopen", () => {
 
   it("returns failure for nonexistent id", async () => {
     const result = await invoke("client:reopen", {
-      id: 9999,
+      id: clientId(9999),
       data: {},
     });
     expect(result.success).toBe(false);
@@ -458,7 +459,7 @@ describe("session:get", () => {
   });
 
   it("returns NOT_FOUND error for nonexistent id", async () => {
-    const result = await invoke("session:get", 9999);
+    const result = await invoke("session:get", sessionId(9999));
     assert(!result.success);
     expect(result.error.code).toBe(IpcErrorCode.NotFound);
   });
@@ -507,7 +508,7 @@ describe("session:update", () => {
 
   it("returns failure for nonexistent id", async () => {
     const result = await invoke("session:update", {
-      id: 9999,
+      id: sessionId(9999),
       data: { notes: "Nope", updated_at: new Date() },
     });
     expect(result.success).toBe(false);

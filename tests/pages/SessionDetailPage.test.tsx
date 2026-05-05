@@ -7,8 +7,9 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import SessionDetailPage from "@/pages/SessionDetailPage";
-import { wrapped, wrappedPaginated, mockTherapists, mockSession, errorResponse } from "../helpers/ipc-mocks";
+import { wrapped, mockTherapists, mockSession, errorResponse } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
+import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
 
 vi.mock("@/components/ui/select");
 
@@ -30,7 +31,7 @@ beforeEach(() => {
   window.electronAPI = { invoke: mockInvoke } as never;
 });
 
-function renderDetailPage(sessionOverride?: Partial<typeof mockSession> | null) {
+function renderDetailPage(sessionOverride?: Partial<SessionWithClientAndTherapist> | null) {
   const sessionData =
     sessionOverride === null
       ? null

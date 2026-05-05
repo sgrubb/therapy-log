@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { UserPlus, Save, Loader2 } from "lucide-react";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { useTherapistForm } from "@/hooks/use-therapist-form";
+import { therapistId as mkTherapistId } from "@shared/types/brands";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
@@ -40,7 +41,7 @@ export default function TherapistFormPage() {
     handleSubmit,
     markTouched,
     getError,
-  } = useTherapistForm(id !== undefined ? Number(id) : undefined);
+  } = useTherapistForm(id !== undefined ? mkTherapistId(Number(id)) : undefined);
 
   if (!isAdmin) {
     return null;

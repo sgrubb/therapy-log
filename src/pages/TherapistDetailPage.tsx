@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
+import { therapistId as mkTherapistId } from "@shared/types/brands";
 import { queryKeys } from "@/lib/query-keys";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { formatDisplayDate } from "@/lib/utils/datetime";
@@ -43,7 +44,7 @@ export default function TherapistDetailPage() {
   const navigate = useNavigate();
   const { therapists: contextTherapists, selectedTherapistId } = useSelectedTherapist();
 
-  const therapistId = Number(id);
+  const therapistId = mkTherapistId(Number(id));
 
   const selectedTherapist = contextTherapists.find((t) => t.id === selectedTherapistId);
   const isAdmin = selectedTherapist?.is_admin ?? false;

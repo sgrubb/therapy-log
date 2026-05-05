@@ -5,7 +5,7 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import CalendarPage from "@/pages/CalendarPage";
-import { wrapped, wrappedPaginated, mockTherapists, mockSessions, mockClients } from "../helpers/ipc-mocks";
+import { wrapped, mockTherapists, mockSessions, mockClients } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
 
 // react-big-calendar renders a complex calendar that's not practical to test in jsdom.

@@ -44,3 +44,12 @@ export async function withErrorHandler<T>(
     return { success: false, error: classifyError(err) };
   }
 }
+
+// Combines withErrorHandler + the cast from plain Prisma types to branded IPC
+// result types. The cast is safe because branded types are compile-time only.
+export function handleIpc<T>(
+  channel: string,
+  handler: () => Promise<unknown>,
+): Promise<IpcResponse<T>> {
+  return withErrorHandler(channel, handler) as Promise<IpcResponse<T>>;
+}

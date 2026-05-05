@@ -11,12 +11,14 @@ import { minutesToMilliseconds } from "date-fns";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/query-keys";
 import type { Therapist } from "@shared/types/therapists";
+import { therapistId } from "@shared/types/brands";
+import type { TherapistId } from "@shared/types/brands";
 
 interface SelectedTherapistContextValue {
   therapists: Therapist[];
   activeTherapists: Therapist[];
-  selectedTherapistId: number | null;
-  setSelectedTherapistId: (id: number | null) => void;
+  selectedTherapistId: TherapistId | null;
+  setSelectedTherapistId: (id: TherapistId | null) => void;
 }
 
 const SelectedTherapistCtx = createContext<SelectedTherapistContextValue | null>(null);
@@ -35,9 +37,9 @@ export function SelectedTherapistProvider({ children }: { children: ReactNode })
     [therapists],
   );
 
-  const [selectedTherapistId, setSelectedTherapistIdState] = useState<number | null>(() => {
+  const [selectedTherapistId, setSelectedTherapistIdState] = useState<TherapistId | null>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? Number(stored) : null;
+    return stored ? therapistId(Number(stored)) : null;
   });
 
   useEffect(() => {
@@ -51,7 +53,7 @@ export function SelectedTherapistProvider({ children }: { children: ReactNode })
     }
   }, [therapists, selectedTherapistId]);
 
-  function setSelectedTherapistId(id: number | null) {
+  function setSelectedTherapistId(id: TherapistId | null) {
     setSelectedTherapistIdState(id);
     if (id === null) {
       localStorage.removeItem(STORAGE_KEY);

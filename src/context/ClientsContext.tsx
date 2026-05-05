@@ -13,6 +13,7 @@ import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/query-keys";
 import { SortDir, ClientStatus } from "@shared/types/enums";
 import type { ClientWithTherapist } from "@shared/types/clients";
+import type { TherapistId } from "@shared/types/brands";
 
 const DEFAULT_PAGE_SIZE = 25;
 
@@ -26,8 +27,8 @@ interface ClientContextValue {
   setSearch: (value: string) => void;
   statusFilter: ClientStatus;
   setStatusFilter: (value: ClientStatus) => void;
-  therapistFilter: number | "all";
-  setTherapistFilter: (value: number | "all") => void;
+  therapistFilter: TherapistId | "all";
+  setTherapistFilter: (value: TherapistId | "all") => void;
   showMine: boolean;
   sortKey: string;
   sortDir: SortDir;
@@ -43,7 +44,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
   const [page, setPageState] = useState(1);
   const [search, setSearchState] = useState("");
   const [statusFilter, setStatusFilterState] = useState<ClientStatus>(ClientStatus.Open);
-  const [therapistFilter, setTherapistFilterState] = useState<number | "all">(
+  const [therapistFilter, setTherapistFilterState] = useState<TherapistId | "all">(
     () => selectedTherapistId ?? "all",
   );
   const [sortKey, setSortKey] = useState("last_name");
@@ -89,7 +90,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  function setTherapistFilter(value: number | "all") {
+  function setTherapistFilter(value: TherapistId | "all") {
     startTransition(() => {
       setTherapistFilterState(value);
       setPageState(1);

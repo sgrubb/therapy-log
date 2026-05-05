@@ -133,8 +133,8 @@ describe("SessionFormPage — new session", () => {
     renderNewForm();
     await waitFor(() => screen.getByRole("heading", { name: /log session/i }));
 
-    expect(screen.getByLabelText(/^date/i)).toHaveValue("");
-    expect(screen.getByLabelText(/^time/i)).toHaveValue("");
+    expect(screen.getByLabelText(/^scheduled date$/i)).toHaveValue("");
+    expect(screen.getByLabelText(/^scheduled time$/i)).toHaveValue("");
     expect(screen.getByLabelText(/^duration/i)).toHaveValue("0");
     expect(screen.getByLabelText(/notes/i)).toHaveValue("");
   });
@@ -151,8 +151,8 @@ describe("SessionFormPage — new session", () => {
     await waitFor(() => screen.getByRole("heading", { name: /log session/i }));
 
     const yesterday = subDays(new Date(), 1);
-    fireEvent.change(screen.getByLabelText(/^time/i), { target: { value: "10:00" } });
-    fireEvent.change(screen.getByLabelText(/^date/i), {
+    fireEvent.change(screen.getByLabelText(/^scheduled time$/i), { target: { value: "10:00" } });
+    fireEvent.change(screen.getByLabelText(/^scheduled date$/i), {
       target: { value: format(yesterday, "yyyy-MM-dd") },
     });
     await waitFor(() => screen.getByText("Status *"));
@@ -169,8 +169,8 @@ describe("SessionFormPage — new session", () => {
     await waitFor(() => screen.getByRole("heading", { name: /log session/i }));
 
     const yesterday = subDays(new Date(), 1);
-    fireEvent.change(screen.getByLabelText(/^time/i), { target: { value: "10:00" } });
-    fireEvent.change(screen.getByLabelText(/^date/i), {
+    fireEvent.change(screen.getByLabelText(/^scheduled time$/i), { target: { value: "10:00" } });
+    fireEvent.change(screen.getByLabelText(/^scheduled date$/i), {
       target: { value: format(yesterday, "yyyy-MM-dd") },
     });
     await waitFor(() => screen.getByText("Status *"));
@@ -190,8 +190,8 @@ describe("SessionFormPage — new session", () => {
     await waitFor(() => screen.getByRole("heading", { name: /log session/i }));
 
     const yesterday = subDays(new Date(), 1);
-    fireEvent.change(screen.getByLabelText(/^time/i), { target: { value: "10:00" } });
-    fireEvent.change(screen.getByLabelText(/^date/i), {
+    fireEvent.change(screen.getByLabelText(/^scheduled time$/i), { target: { value: "10:00" } });
+    fireEvent.change(screen.getByLabelText(/^scheduled date$/i), {
       target: { value: format(yesterday, "yyyy-MM-dd") },
     });
 
@@ -212,8 +212,8 @@ describe("SessionFormPage — new session", () => {
     await waitFor(() => screen.getByRole("heading", { name: /log session/i }));
 
     const tomorrow = addDays(new Date(), 1);
-    fireEvent.change(screen.getByLabelText(/^time/i), { target: { value: "10:00" } });
-    fireEvent.change(screen.getByLabelText(/^date/i), {
+    fireEvent.change(screen.getByLabelText(/^scheduled time$/i), { target: { value: "10:00" } });
+    fireEvent.change(screen.getByLabelText(/^scheduled date$/i), {
       target: { value: format(tomorrow, "yyyy-MM-dd") },
     });
 
@@ -314,7 +314,7 @@ describe("SessionFormPage — new session", () => {
 
     fireEvent.change(getClientSelect(), { target: { value: "1" } });
     fireEvent.change(getTherapistSelect(), { target: { value: "1" } });
-    fireEvent.change(screen.getByLabelText(/^date/i), { target: { value: "2026-01-01" } });
+    fireEvent.change(screen.getByLabelText(/^scheduled date$/i), { target: { value: "2026-01-01" } });
     fireEvent.change(getSessionTypeSelect(), { target: { value: "Child" } });
     fireEvent.change(getDeliveryMethodSelect(), { target: { value: "FaceToFace" } });
     fireEvent.change(getStatusSelect(), { target: { value: "DNA" } });
@@ -344,10 +344,10 @@ describe("SessionFormPage — new session", () => {
       return Promise.resolve(wrapped(null));
     });
 
-    await waitFor(() => screen.getByLabelText(/^date/i));
+    await waitFor(() => screen.getByLabelText(/^scheduled date$/i));
 
     fireEvent.change(getClientSelect(), { target: { value: "1" } });
-    fireEvent.change(screen.getByLabelText(/^date/i), { target: { value: "2026-01-01" } });
+    fireEvent.change(screen.getByLabelText(/^scheduled date$/i), { target: { value: "2026-01-01" } });
     fireEvent.change(getSessionTypeSelect(), { target: { value: "Child" } });
     fireEvent.change(getDeliveryMethodSelect(), { target: { value: "FaceToFace" } });
     fireEvent.change(getStatusSelect(), { target: { value: "Attended" } });
@@ -388,10 +388,10 @@ describe("SessionFormPage — new session", () => {
       return Promise.resolve(wrapped(null));
     });
 
-    await waitFor(() => screen.getByLabelText(/^date/i));
+    await waitFor(() => screen.getByLabelText(/^scheduled date$/i));
 
     fireEvent.change(getClientSelect(), { target: { value: "1" } });
-    fireEvent.change(screen.getByLabelText(/^date/i), { target: { value: "2026-01-01" } });
+    fireEvent.change(screen.getByLabelText(/^scheduled date$/i), { target: { value: "2026-01-01" } });
     fireEvent.change(getSessionTypeSelect(), { target: { value: "Child" } });
     fireEvent.change(getDeliveryMethodSelect(), { target: { value: "FaceToFace" } });
     fireEvent.change(getStatusSelect(), { target: { value: "Attended" } });
@@ -422,10 +422,10 @@ describe("SessionFormPage — new session", () => {
 
   it("shows field error on blur", async () => {
     renderNewForm();
-    await waitFor(() => screen.getByLabelText(/^date/i));
+    await waitFor(() => screen.getByLabelText(/^scheduled date$/i));
 
-    fireEvent.change(screen.getByLabelText(/^date/i), { target: { value: "" } });
-    fireEvent.blur(screen.getByLabelText(/^date/i));
+    fireEvent.change(screen.getByLabelText(/^scheduled date$/i), { target: { value: "" } });
+    fireEvent.blur(screen.getByLabelText(/^scheduled date$/i));
 
     await waitFor(() => {
       expect(screen.getByText(/date is required/i)).toBeInTheDocument();
@@ -439,7 +439,7 @@ describe("SessionFormPage — new session", () => {
     fireEvent.click(screen.getByRole("button", { name: /log session/i }));
     await waitFor(() => screen.getByText(/date is required/i));
 
-    fireEvent.change(screen.getByLabelText(/^date/i), { target: { value: "2026-01-01" } });
+    fireEvent.change(screen.getByLabelText(/^scheduled date$/i), { target: { value: "2026-01-01" } });
 
     await waitFor(() => {
       expect(screen.queryByText(/date is required/i)).not.toBeInTheDocument();
@@ -477,10 +477,10 @@ describe("SessionFormPage — new session", () => {
       return Promise.resolve(wrapped(null));
     });
 
-    await waitFor(() => screen.getByLabelText(/^date/i));
+    await waitFor(() => screen.getByLabelText(/^scheduled date$/i));
 
     fireEvent.change(getClientSelect(), { target: { value: "1" } });
-    fireEvent.change(screen.getByLabelText(/^date/i), { target: { value: "2026-01-01" } });
+    fireEvent.change(screen.getByLabelText(/^scheduled date$/i), { target: { value: "2026-01-01" } });
     fireEvent.change(getSessionTypeSelect(), { target: { value: "Child" } });
     fireEvent.change(getDeliveryMethodSelect(), { target: { value: "FaceToFace" } });
     fireEvent.change(getStatusSelect(), { target: { value: "Attended" } });
@@ -510,8 +510,8 @@ describe("SessionFormPage — edit session", () => {
   it("pre-populates all fields from existing session data", async () => {
     renderEditForm();
     await waitFor(() => {
-      expect(screen.getByLabelText(/^date/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/^time/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/^scheduled date$/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/^scheduled time$/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/^duration/i)).toHaveValue("1");
       expect(getClientSelect()).toHaveValue("1");
       expect(getTherapistSelect()).toHaveValue("1");
@@ -568,7 +568,7 @@ describe("SessionFormPage — edit session", () => {
       </QueryClientProvider>,
     );
 
-    await waitFor(() => screen.getByLabelText(/^date/i));
+    await waitFor(() => screen.getByLabelText(/^scheduled date$/i));
 
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
 
@@ -632,14 +632,14 @@ describe("SessionFormPage — edit session", () => {
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
 
     resolveSession(mockSession);
-    await waitFor(() => screen.getByLabelText(/^date/i));
+    await waitFor(() => screen.getByLabelText(/^scheduled date$/i));
   });
 
   it("shows required field errors on empty submit", async () => {
     renderEditForm();
-    await waitFor(() => screen.getByLabelText(/^date/i));
+    await waitFor(() => screen.getByLabelText(/^scheduled date$/i));
 
-    fireEvent.change(screen.getByLabelText(/^date/i), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText(/^scheduled date$/i), { target: { value: "" } });
 
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
 
@@ -651,7 +651,7 @@ describe("SessionFormPage — edit session", () => {
 
   it("shows error alert on update failure", async () => {
     renderEditForm();
-    await waitFor(() => screen.getByLabelText(/^date/i));
+    await waitFor(() => screen.getByLabelText(/^scheduled date$/i));
 
     // Ensure a valid status is selected (may have been cleared by future-session filter)
     fireEvent.change(getStatusSelect(), { target: { value: "Rescheduled" } });
@@ -765,7 +765,7 @@ describe("SessionFormPage — edit session", () => {
       </QueryClientProvider>,
     );
 
-    await waitFor(() => screen.getByLabelText(/^date/i));
+    await waitFor(() => screen.getByLabelText(/^scheduled date$/i));
 
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
 
@@ -878,7 +878,7 @@ describe("SessionFormPage — edit session", () => {
       </QueryClientProvider>,
     );
 
-    await waitFor(() => screen.getByLabelText(/^date/i));
+    await waitFor(() => screen.getByLabelText(/^scheduled date$/i));
 
     await user.type(screen.getByLabelText(/notes/i), "My note");
 

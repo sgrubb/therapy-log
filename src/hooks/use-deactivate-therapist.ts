@@ -5,13 +5,14 @@ import log from "@/lib/logger";
 import { FormState } from "@/lib/types/enums";
 import { queryKeys } from "@/lib/query-keys";
 import type { Therapist } from "@shared/types/therapists";
+import type { ClientId, TherapistId } from "@shared/types/brands";
 
 export function useDeactivateTherapist(therapist: Therapist) {
   const queryClient = useQueryClient();
   const [showDialog, setShowDialog] = useState(false);
   const [formState, setFormState] = useState<FormState>(FormState.Idle);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [clientReassignments, setClientReassignmentsState] = useState<Record<number, number | null>>({});
+  const [clientReassignments, setClientReassignmentsState] = useState<Record<ClientId, TherapistId | null>>({});
 
   function openDialog() {
     setClientReassignmentsState({});
@@ -25,7 +26,7 @@ export function useDeactivateTherapist(therapist: Therapist) {
     setSaveError(null);
   }
 
-  function setClientReassignment(clientId: number, newTherapistId: number | null) {
+  function setClientReassignment(clientId: ClientId, newTherapistId: TherapistId | null) {
     setClientReassignmentsState((prev) => ({ ...prev, [clientId]: newTherapistId }));
   }
 
@@ -37,7 +38,7 @@ export function useDeactivateTherapist(therapist: Therapist) {
         updated_at: therapist.updated_at,
         client_reassignments: Object.entries(clientReassignments)
           .filter(([, newId]) => newId !== null)
-          .map(([clientId, newId]) => ({ client_id: Number(clientId), new_therapist_id: newId! })),
+          .map(([clientId, newId]) => ({ client_id: Number(clientId) as ClientId, new_therapist_id: newId! })),
       });
       await queryClient.invalidateQueries({ queryKey: queryKeys.therapists.root });
       await queryClient.invalidateQueries({ queryKey: queryKeys.clients.root });

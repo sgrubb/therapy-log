@@ -10,8 +10,8 @@ import {
   expectedToEvents,
 } from "@/lib/utils/calendar";
 import { mockTherapists, MOCK_UPDATED_AT, MOCK_SESSION_DATE_RECENT } from "../../helpers/ipc-mocks";
-import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
-import type { ExpectedSession } from "@shared/types/sessions";
+import { clientId, expectedSessionId, sessionId, therapistId } from "@shared/types/brands";
+import type { SessionWithClientAndTherapist, ExpectedSession } from "@shared/types/sessions";
 
 const clientBase = {
   hospital_number: "HN001",
@@ -36,7 +36,7 @@ const sessionBase = {
   missed_reason: null,
   notes: null,
   updated_at: MOCK_UPDATED_AT,
-  client: { ...clientBase, id: 1, first_name: "Jane", last_name: "Smith", therapist_id: 1, session_day: null, session_time: null, session_duration: null },
+  client: { ...clientBase, id: clientId(1), first_name: "Jane", last_name: "Smith", therapist_id: therapistId(1), session_day: null, session_time: null, session_duration: null },
   therapist: mockTherapists[0]!,
 };
 
@@ -44,9 +44,9 @@ const colorMap = new Map([[1, "#3b82f6"]]);
 
 const session: SessionWithClientAndTherapist = {
   ...sessionBase,
-  id: 1,
-  client_id: 1,
-  therapist_id: 1,
+  id: sessionId(1),
+  client_id: clientId(1),
+  therapist_id: therapistId(1),
   scheduled_at: new Date(2026, 2, 16, 10, 0, 0),
   duration: 60,
   status: "Attended",
@@ -55,13 +55,13 @@ const session: SessionWithClientAndTherapist = {
 
 function makeExpected(scheduledAt: Date): ExpectedSession {
   return {
-    id: "exp-1",
-    client_id: 3,
-    therapist_id: 1,
+    id: expectedSessionId("exp-1"),
+    client_id: clientId(3),
+    therapist_id: therapistId(1),
     scheduled_at: scheduledAt,
     duration: 60,
-    client: { id: 3, first_name: "Eve", last_name: "Walker" },
-    therapist: { id: 1, first_name: "Alice", last_name: "Morgan" },
+    client: { id: clientId(3), first_name: "Eve", last_name: "Walker" },
+    therapist: { id: therapistId(1), first_name: "Alice", last_name: "Morgan" },
   };
 }
 

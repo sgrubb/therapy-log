@@ -14,6 +14,7 @@ import {
   errorResponse,
 } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
+import type { Therapist } from "@shared/types/therapists";
 
 vi.mock("@/components/ui/select");
 vi.mock("@/components/ui/searchable-select");
@@ -37,7 +38,7 @@ beforeEach(() => {
 });
 
 interface RenderOptions {
-  therapistOverride?: Partial<typeof mockTherapist>;
+  therapistOverride?: Partial<Therapist>;
   asAdmin?: boolean;
   selectedTherapistId?: number | null;
 }

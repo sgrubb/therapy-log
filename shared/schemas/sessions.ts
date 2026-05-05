@@ -8,13 +8,14 @@ import {
   MissedReason,
   SortDir,
 } from "@shared/types/enums";
+import { sessionId, clientId, therapistId, expectedSessionId } from "@shared/types/brands";
 
 // ── Response schemas ────────────────────────────────────────────────────────
 
 export const sessionBaseSchema = z.object({
-  id: z.number(),
-  client_id: z.number(),
-  therapist_id: z.number(),
+  id: z.number().transform(sessionId),
+  client_id: z.number().transform(clientId),
+  therapist_id: z.number().transform(therapistId),
   scheduled_at: z.date(),
   occurred_at: z.date().nullable(),
   duration: z.number(),
@@ -48,9 +49,9 @@ const expectedSessionTherapistSchema = therapistSchema.pick({
 });
 
 export const expectedSessionSchema = z.object({
-  id: z.string(),
-  client_id: z.number(),
-  therapist_id: z.number(),
+  id: z.string().transform(expectedSessionId),
+  client_id: z.number().transform(clientId),
+  therapist_id: z.number().transform(therapistId),
   scheduled_at: z.date(),
   duration: z.number(),
   client: expectedSessionClientSchema,
@@ -117,8 +118,8 @@ function validateSessionStatusFields(
 }
 
 export const sessionCreateSchema = z.object({
-  client_id: z.number().int().positive(),
-  therapist_id: z.number().int().positive(),
+  client_id: z.number().int().positive().transform(clientId),
+  therapist_id: z.number().int().positive().transform(therapistId),
   scheduled_at: z.coerce.date(),
   occurred_at: z.coerce.date().nullable().optional(),
   duration: z.number().int().positive(),
@@ -131,8 +132,8 @@ export const sessionCreateSchema = z.object({
 
 export const sessionUpdateSchema = z.object({
   updated_at: z.coerce.date(),
-  client_id: z.number().int().positive().optional(),
-  therapist_id: z.number().int().positive().optional(),
+  client_id: z.number().int().positive().transform(clientId).optional(),
+  therapist_id: z.number().int().positive().transform(therapistId).optional(),
   scheduled_at: z.coerce.date().optional(),
   occurred_at: z.coerce.date().nullable().optional(),
   duration: z.number().int().positive().optional(),
@@ -154,8 +155,8 @@ export const sessionConfirmSchema = z.object({
 export const sessionFiltersSchema = z.object({
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
-  therapistIds: z.array(z.number().int().positive()).optional(),
-  clientId: z.number().int().positive().optional(),
+  therapistIds: z.array(z.number().int().positive().transform(therapistId)).optional(),
+  clientId: z.number().int().positive().transform(clientId).optional(),
   status: z.enum(Object.values(SessionStatus) as [SessionStatus, ...SessionStatus[]]).nullable().optional(),
 });
 
@@ -174,8 +175,8 @@ export const sessionListRangeParamsSchema = sessionFiltersSchema.extend({
 export const sessionListExpectedParamsSchema = z.object({
   from: z.coerce.date(),
   to: z.coerce.date(),
-  therapistIds: z.array(z.number().int().positive()).optional(),
-  clientId: z.number().int().positive().optional(),
+  therapistIds: z.array(z.number().int().positive().transform(therapistId)).optional(),
+  clientId: z.number().int().positive().transform(clientId).optional(),
   sortKey: z.string(),
   sortDir: z.enum([SortDir.Asc, SortDir.Desc] as const),
 });

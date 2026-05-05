@@ -1,6 +1,7 @@
 import { Dialog } from "radix-ui";
 import { UserCheck, Check, Loader2 } from "lucide-react";
 import type { ClientWithTherapist } from "@shared/types/clients";
+import type { ClientId } from "@shared/types/brands";
 import { useReopenClient } from "@/hooks/use-reopen-client";
 import { FormState } from "@/lib/types/enums";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SaveErrorAlert } from "@/components/ui/save-error-alert";
 
 interface Props {
-  clientId: number;
+  clientId: ClientId;
   client: ClientWithTherapist;
 }
 

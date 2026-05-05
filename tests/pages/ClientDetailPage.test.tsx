@@ -18,7 +18,8 @@ function EditFormSpy() {
 }
 import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import ClientDetailPage from "@/pages/ClientDetailPage";
-import { wrapped, wrappedPaginated, mockTherapists, mockClient, mockSession, mockSessions, errorResponse } from "../helpers/ipc-mocks";
+import { wrapped, mockTherapists, mockClient, mockSession, mockSessions, errorResponse } from "../helpers/ipc-mocks";
+import { therapistId } from "@shared/types/brands";
 import { IpcErrorCode } from "@shared/types/ipc";
 import { createTestQueryClient } from "../helpers/query-client";
 
@@ -381,7 +382,7 @@ describe("ClientDetailPage — close client", () => {
 
   it("shows Close Client button to an admin for any client", async () => {
     localStorage.setItem("selectedTherapistId", "1"); // Alice Morgan, is_admin: true
-    renderDetailPage({ therapist_id: 2 }); // different therapist, but admin can still close
+    renderDetailPage({ therapist_id: therapistId(2) }); // different therapist, but admin can still close
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /^close$/i })).toBeInTheDocument();
     });
@@ -389,7 +390,7 @@ describe("ClientDetailPage — close client", () => {
 
   it("hides Close Client button from a non-admin who is not the client's therapist", async () => {
     localStorage.setItem("selectedTherapistId", "2"); // Bob Chen, is_admin: false
-    renderDetailPage({ therapist_id: 1 }); // client belongs to Alice, not Bob
+    renderDetailPage({ therapist_id: therapistId(1) }); // client belongs to Alice, not Bob
     await waitFor(() => screen.getByText("Jane Smith"));
     expect(screen.queryByRole("button", { name: /^close$/i })).not.toBeInTheDocument();
   });
@@ -724,7 +725,7 @@ describe("ClientDetailPage — reopen client", () => {
 
   it("shows Reopen Client button to an admin when client is closed", async () => {
     localStorage.setItem("selectedTherapistId", "1"); // Alice, is_admin: true
-    renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z"), therapist_id: 2 });
+    renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z"), therapist_id: therapistId(2) });
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /^reopen$/i })).toBeInTheDocument();
     });
@@ -732,7 +733,7 @@ describe("ClientDetailPage — reopen client", () => {
 
   it("hides Reopen Client button from a non-admin who is not the client's therapist", async () => {
     localStorage.setItem("selectedTherapistId", "2"); // Bob, is_admin: false
-    renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z"), therapist_id: 1 }); // client belongs to Alice
+    renderDetailPage({ closed_date: new Date("2025-12-01T00:00:00.000Z"), therapist_id: therapistId(1) }); // client belongs to Alice
     await waitFor(() => screen.getByText("Jane Smith"));
     expect(screen.queryByRole("button", { name: /^reopen$/i })).not.toBeInTheDocument();
   });

@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Pencil, CalendarPlus } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
+import { clientId as mkClientId } from "@shared/types/brands";
 import { queryKeys } from "@/lib/query-keys";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { Badge, BadgeVariant } from "@/components/ui/badge";
@@ -24,7 +25,7 @@ export default function ClientDetailPage() {
   const navigate = useNavigate();
   const { therapists: contextTherapists, selectedTherapistId } = useSelectedTherapist();
 
-  const clientId = Number(id);
+  const clientId = mkClientId(Number(id));
 
   const { data: client } = useSuspenseQuery({
     queryKey: queryKeys.clients.detail(clientId),

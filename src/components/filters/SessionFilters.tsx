@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { AlertCircle, Clock, X } from "lucide-react";
+import { clientId, therapistId } from "@shared/types/brands";
 import { cn, sortableName } from "@/lib/utils";
 import { useSessions, DatePreset } from "@/context/SessionsContext";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
@@ -58,7 +59,7 @@ export function SessionFilters() {
           className="w-52"
           aria-label="Client filter"
           value={clientFilter === "all" ? "all" : String(clientFilter)}
-          onValueChange={(v) => setClientFilter(v === "all" ? "all" : Number(v))}
+          onValueChange={(v) => setClientFilter(v === "all" ? "all" : clientId(Number(v)))}
           placeholder="All clients"
           options={[
             { value: "all", label: "All clients" },
@@ -89,7 +90,7 @@ export function SessionFilters() {
           className="w-52"
           aria-label="Therapist filter"
           value={therapistFilter === "all" ? "all" : String(therapistFilter)}
-          onValueChange={(v) => setTherapistFilter(v === "all" ? "all" : Number(v))}
+          onValueChange={(v) => setTherapistFilter(v === "all" ? "all" : therapistId(Number(v)))}
           placeholder="All therapists"
           options={[
             { value: "all", label: "All therapists" },

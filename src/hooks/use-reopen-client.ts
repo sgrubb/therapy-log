@@ -4,6 +4,7 @@ import type { z } from "zod";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
 import type { ClientWithTherapist } from "@shared/types/clients";
+import type { ClientId } from "@shared/types/brands";
 import { reopenClientSchema } from "@/lib/schemas/forms";
 import { useFormState } from "@/hooks/use-form-state";
 import { FormState } from "@/lib/types/enums";
@@ -16,7 +17,7 @@ const EMPTY: FormFields = {
   reopen_notes: "",
 };
 
-export function useReopenClient(clientId: number, client: ClientWithTherapist) {
+export function useReopenClient(clientId: ClientId, client: ClientWithTherapist) {
   const queryClient = useQueryClient();
   const [showReopenDialog, setShowReopenDialog] = useState(false);
 

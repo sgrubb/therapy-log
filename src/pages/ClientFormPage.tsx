@@ -3,6 +3,7 @@ import { UserPlus, Save, Loader2 } from "lucide-react";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { useClientForm } from "@/hooks/use-client-form";
+import { clientId as mkClientId } from "@shared/types/brands";
 import { SessionDay, Outcome, DeliveryMethod } from "@shared/types/enums";
 import { DELIVERY_METHOD_NAMES } from "@/lib/labels";
 import { FormState } from "@/lib/types/enums";
@@ -40,7 +41,7 @@ export default function ClientFormPage() {
     handleSubmit,
     markTouched,
     getError,
-  } = useClientForm(id !== undefined ? Number(id) : undefined);
+  } = useClientForm(id !== undefined ? mkClientId(Number(id)) : undefined);
 
   return (
     <div className="max-w-2xl space-y-6">

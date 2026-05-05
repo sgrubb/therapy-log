@@ -5,6 +5,7 @@ import type { z } from "zod";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
 import { IpcErrorCode } from "@shared/types/ipc";
+import type { TherapistId } from "@shared/types/brands";
 import { queryKeys } from "@/lib/query-keys";
 import { therapistFormSchema } from "@/lib/schemas/forms";
 import { useFormState } from "@/hooks/use-form-state";
@@ -38,7 +39,7 @@ function buildPayload(form: FormFields) {
   };
 }
 
-export function useTherapistForm(therapistId?: number) {
+export function useTherapistForm(therapistId?: TherapistId) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isEdit = therapistId !== undefined;

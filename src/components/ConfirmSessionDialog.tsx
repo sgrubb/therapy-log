@@ -1,4 +1,5 @@
 import { Dialog } from "radix-ui";
+import { format } from "date-fns";
 import { CheckCircle2, Check, Loader2 } from "lucide-react";
 import { SessionStatus, MissedReason } from "@shared/types/enums";
 import { MISSED_REASON_NAMES } from "@/lib/labels";
@@ -38,6 +39,7 @@ export function ConfirmSessionDialog({ session }: Props) {
   const saving = formState === FormState.Saving;
   const showMissedReason =
     form.status === SessionStatus.DNA || form.status === SessionStatus.Cancelled;
+  const today = format(new Date(), "yyyy-MM-dd");
 
   return (
     <Dialog.Root
@@ -70,6 +72,7 @@ export function ConfirmSessionDialog({ session }: Props) {
               <Input
                 type="date"
                 aria-label="Occurred date"
+                max={today}
                 value={form.occurred_date}
                 onChange={(e) => set("occurred_date", e.target.value)}
                 onBlur={() => markTouched("occurred_date")}

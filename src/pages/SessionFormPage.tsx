@@ -1,10 +1,11 @@
 import { useMemo } from "react";
 import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { parse } from "date-fns";
+import { format, parse } from "date-fns";
 import { CalendarPlus, Save, Loader2 } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { useSessionForm } from "@/hooks/use-session-form";
+import { sessionId as mkSessionId } from "@shared/types/brands";
 import { mostRecentOccurrence } from "@/lib/utils/sessions";
 import { ipc } from "@/lib/ipc";
 import { queryKeys } from "@/lib/query-keys";
@@ -41,7 +42,7 @@ export default function SessionFormPage() {
     queryFn: () => ipc.listAllClients(),
   });
 
-  const sessionId = id !== undefined ? Number(id) : undefined;
+  const sessionId = id !== undefined ? mkSessionId(Number(id)) : undefined;
   const defaults = useMemo(() => {
     if (sessionId !== undefined) {
       return undefined;
@@ -98,6 +99,7 @@ export default function SessionFormPage() {
   }, [form.date, form.time]);
 
   const showMissedReason = form.status === SessionStatus.DNA || form.status === SessionStatus.Cancelled;
+  const today = format(new Date(), "yyyy-MM-dd");
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -107,10 +109,15 @@ export default function SessionFormPage() {
         </h1>
       </PageHeader>
 
-      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-8" noValidate>
         <SaveErrorAlert message={saveError} />
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* Session Details */}
+        <section className="space-y-4">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Session Details
+          </h2>
+          <div className="grid grid-cols-2 gap-4">
           <Field label="Client *" error={getError("client_id")} conflictError={getConflictError("client_id")}>
             <SearchableSelect
               value={form.client_id}
@@ -135,10 +142,10 @@ export default function SessionFormPage() {
             />
           </Field>
 
-          <Field label="Date *" error={getError("date")} conflictError={getConflictError("date")}>
+          <Field label="Scheduled Date *" error={getError("date")} conflictError={getConflictError("date")}>
             <Input
               type="date"
-              aria-label="Date"
+              aria-label="Scheduled date"
               value={form.date}
               onChange={(e) => set("date", e.target.value)}
               onBlur={() => markTouched("date")}
@@ -146,10 +153,10 @@ export default function SessionFormPage() {
             />
           </Field>
 
-          <Field label="Time *" error={getError("time")} conflictError={getConflictError("time")}>
+          <Field label="Scheduled Time *" error={getError("time")} conflictError={getConflictError("time")}>
             <Input
               type="time"
-              aria-label="Time"
+              aria-label="Scheduled time"
               value={form.time ?? ""}
               onChange={(e) => set("time", e.target.value)}
               onBlur={() => markTouched("time")}
@@ -165,28 +172,6 @@ export default function SessionFormPage() {
               onBlur={() => markTouched("duration")}
               aria-invalid={!!getError("duration")}
             />
-          </Field>
-
-          <Field label="Session Type *" error={getError("session_type")} conflictError={getConflictError("session_type")}>
-            <Select
-              value={form.session_type}
-              onValueChange={(v) => set("session_type", v as SessionType)}
-            >
-              <SelectTrigger
-                aria-label="Session type"
-                aria-invalid={!!getError("session_type")}
-                onBlur={() => markTouched("session_type")}
-              >
-                <SelectValue placeholder="Select type…" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.values(SessionType).map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {SESSION_TYPE_NAMES[t]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </Field>
 
           <Field label="Delivery Method *" error={getError("delivery_method")} conflictError={getConflictError("delivery_method")}>
@@ -211,8 +196,37 @@ export default function SessionFormPage() {
             </Select>
           </Field>
 
-          {isPastSession && (
-            <>
+          <Field label="Session Type *" error={getError("session_type")} conflictError={getConflictError("session_type")}>
+            <Select
+              value={form.session_type}
+              onValueChange={(v) => set("session_type", v as SessionType)}
+            >
+              <SelectTrigger
+                aria-label="Session type"
+                aria-invalid={!!getError("session_type")}
+                onBlur={() => markTouched("session_type")}
+              >
+                <SelectValue placeholder="Select type…" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(SessionType).map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {SESSION_TYPE_NAMES[t]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+
+          </div>
+        </section>
+
+        {isPastSession && (
+          <section className="space-y-4">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Session Outcome
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
               <Field label="Status *" error={getError("status")} conflictError={getConflictError("status")}>
                 <Select
                   value={form.status}
@@ -235,6 +249,30 @@ export default function SessionFormPage() {
                 </Select>
               </Field>
 
+              {showMissedReason && (
+                <Field label="Missed Reason *" error={getError("missed_reason")} conflictError={getConflictError("missed_reason")}>
+                  <Select
+                    value={form.missed_reason ?? ""}
+                    onValueChange={(v) => set("missed_reason", v as MissedReason)}
+                  >
+                    <SelectTrigger
+                      aria-label="Missed reason"
+                      aria-invalid={!!getError("missed_reason")}
+                      onBlur={() => markTouched("missed_reason")}
+                    >
+                      <SelectValue placeholder="Select reason…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(MissedReason).map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {MISSED_REASON_NAMES[r]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+
               <Field
                 label="Occurred Date *"
                 error={getError("occurred_date")}
@@ -243,6 +281,7 @@ export default function SessionFormPage() {
                 <Input
                   type="date"
                   aria-label="Occurred date"
+                  max={today}
                   value={form.occurred_date ?? ""}
                   onChange={(e) => set("occurred_date", e.target.value)}
                   onBlur={() => markTouched("occurred_date")}
@@ -264,33 +303,9 @@ export default function SessionFormPage() {
                   aria-invalid={!!getError("occurred_time")}
                 />
               </Field>
-            </>
-          )}
-
-          {isPastSession && showMissedReason && (
-            <Field label="Missed Reason *" error={getError("missed_reason")} conflictError={getConflictError("missed_reason")}>
-              <Select
-                value={form.missed_reason ?? ""}
-                onValueChange={(v) => set("missed_reason", v as MissedReason)}
-              >
-                <SelectTrigger
-                  aria-label="Missed reason"
-                  aria-invalid={!!getError("missed_reason")}
-                  onBlur={() => markTouched("missed_reason")}
-                >
-                  <SelectValue placeholder="Select reason…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.values(MissedReason).map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {MISSED_REASON_NAMES[r]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          )}
-        </div>
+            </div>
+          </section>
+        )}
 
         <Field
           label={`Notes (${(form.notes ?? "").length}/1000)`}

@@ -14,30 +14,15 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { queryKeys } from "@/lib/query-keys";
 import { CLIENT_CSV_HEADERS, CLIENT_REQUIRED_HEADERS } from "@shared/types/csv";
+import { CLIENT_CSV_DESCRIPTIONS } from "@/lib/labels";
 import type { Column } from "@/components/ui/data-table";
 import type { ClientWithTherapist } from "@shared/types/clients";
 
-const CLIENT_COLUMNS = [
-  { name: "hospital_number", required: true, description: "Unique hospital / NHS number" },
-  { name: "first_name", required: true, description: "First name" },
-  { name: "last_name", required: true, description: "Last name" },
-  { name: "dob", required: true, description: "Date of birth (YYYY-MM-DD)" },
-  { name: "start_date", required: true, description: "Date the client started (YYYY-MM-DD)" },
-  { name: "therapist_first_name", required: true, description: "Assigned therapist first name" },
-  { name: "therapist_last_name", required: true, description: "Assigned therapist last name" },
-  { name: "address", required: false, description: "Home address" },
-  { name: "phone", required: false, description: "Phone number" },
-  { name: "email", required: false, description: "Email address" },
-  { name: "session_day", required: false, description: "Monday / Tuesday / Wednesday / Thursday / Friday / Saturday / Sunday" },
-  { name: "session_time", required: false, description: "Scheduled time (HH:MM)" },
-  { name: "session_duration_minutes", required: false, description: "Session duration in minutes" },
-  { name: "session_delivery_method", required: false, description: "InPerson / Video / Phone" },
-  { name: "closed_date", required: false, description: "Date the client was closed (YYYY-MM-DD)" },
-  { name: "pre_score", required: false, description: "Pre-intervention score (number)" },
-  { name: "post_score", required: false, description: "Post-intervention score (number)" },
-  { name: "outcome", required: false, description: "Improved / NoChange / Deteriorated / Incomplete" },
-  { name: "notes", required: false, description: "Free-text notes" },
-];
+const CLIENT_COLUMNS = CLIENT_CSV_HEADERS.map((name) => ({
+  name,
+  required: (CLIENT_REQUIRED_HEADERS as readonly string[]).includes(name),
+  description: CLIENT_CSV_DESCRIPTIONS[name],
+}));
 
 const columns: Column<ClientWithTherapist>[] = [
   {
@@ -108,7 +93,7 @@ function ClientsPageContent() {
     try {
       await ipc.exportClientsCsv({
         status: statusFilter,
-        therapistId: therapistFilter !== "all" ? Number(therapistFilter) : null,
+        therapistId: therapistFilter !== "all" ? therapistFilter : null,
         search: search.trim() || undefined,
       });
     } finally {

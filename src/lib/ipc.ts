@@ -9,6 +9,7 @@ import type { Client, ClientWithTherapist, CreateClient, UpdateClient, CloseClie
 import type { Session, SessionWithClientAndTherapist, CreateSession, UpdateSession, ConfirmSession, SessionListParams, SessionListRangeParams, SessionListExpectedParams, ExpectedSession } from "@shared/types/sessions";
 import type { PaginatedResult } from "@shared/types/common";
 import { IpcErrorCode } from "@shared/types/ipc";
+import type { TherapistId, ClientId, SessionId } from "@shared/types/brands";
 import type { ImportResult, TherapistExportParams, ClientExportParams, SessionExportParams } from "@shared/types/csv";
 import { importResultSchema, csvExportResultSchema } from "@shared/schemas/csv";
 import { paginatedResultSchema } from "@shared/schemas/common";
@@ -138,7 +139,7 @@ export const ipc = {
     return z.array(therapistSchema).parse(unwrapResponse(response));
   },
 
-  async getTherapist(id: number): Promise<Therapist> {
+  async getTherapist(id: TherapistId): Promise<Therapist> {
     const response = await window.electronAPI.invoke("therapist:get", id);
     return therapistSchema.parse(unwrapResponse(response));
   },
@@ -148,17 +149,17 @@ export const ipc = {
     return therapistSchema.parse(unwrapResponse(response));
   },
 
-  async updateTherapist(id: number, data: UpdateTherapist): Promise<Therapist> {
+  async updateTherapist(id: TherapistId, data: UpdateTherapist): Promise<Therapist> {
     const response = await window.electronAPI.invoke("therapist:update", { id, data });
     return therapistSchema.parse(unwrapResponse(response));
   },
 
-  async deactivateTherapist(id: number, data: DeactivateTherapist): Promise<Therapist> {
+  async deactivateTherapist(id: TherapistId, data: DeactivateTherapist): Promise<Therapist> {
     const response = await window.electronAPI.invoke("therapist:deactivate", { id, data });
     return therapistSchema.parse(unwrapResponse(response));
   },
 
-  async reactivateTherapist(id: number, data: ReactivateTherapist): Promise<Therapist> {
+  async reactivateTherapist(id: TherapistId, data: ReactivateTherapist): Promise<Therapist> {
     const response = await window.electronAPI.invoke("therapist:reactivate", { id, data });
     return therapistSchema.parse(unwrapResponse(response));
   },
@@ -174,7 +175,7 @@ export const ipc = {
     return z.array(clientWithTherapistSchema).parse(unwrapResponse(response));
   },
 
-  async getClient(id: number): Promise<ClientWithTherapist> {
+  async getClient(id: ClientId): Promise<ClientWithTherapist> {
     const response = await window.electronAPI.invoke("client:get", id);
     return clientWithTherapistSchema.parse(unwrapResponse(response));
   },
@@ -184,17 +185,17 @@ export const ipc = {
     return clientSchema.parse(unwrapResponse(response));
   },
 
-  async updateClient(id: number, data: UpdateClient): Promise<Client> {
+  async updateClient(id: ClientId, data: UpdateClient): Promise<Client> {
     const response = await window.electronAPI.invoke("client:update", { id, data });
     return clientSchema.parse(unwrapResponse(response));
   },
 
-  async closeClient(id: number, data: CloseClient): Promise<ClientWithTherapist> {
+  async closeClient(id: ClientId, data: CloseClient): Promise<ClientWithTherapist> {
     const response = await window.electronAPI.invoke("client:close", { id, data });
     return clientWithTherapistSchema.parse(unwrapResponse(response));
   },
 
-  async reopenClient(id: number, data: ReopenClient): Promise<ClientWithTherapist> {
+  async reopenClient(id: ClientId, data: ReopenClient): Promise<ClientWithTherapist> {
     const response = await window.electronAPI.invoke("client:reopen", { id, data });
     return clientWithTherapistSchema.parse(unwrapResponse(response));
   },
@@ -215,7 +216,7 @@ export const ipc = {
     return z.array(expectedSessionSchema).parse(unwrapResponse(response));
   },
 
-  async getSession(id: number): Promise<SessionWithClientAndTherapist> {
+  async getSession(id: SessionId): Promise<SessionWithClientAndTherapist> {
     const response = await window.electronAPI.invoke("session:get", id);
     return sessionWithClientAndTherapistSchema.parse(unwrapResponse(response));
   },
@@ -225,12 +226,12 @@ export const ipc = {
     return sessionSchema.parse(unwrapResponse(response));
   },
 
-  async updateSession(id: number, data: UpdateSession): Promise<Session> {
+  async updateSession(id: SessionId, data: UpdateSession): Promise<Session> {
     const response = await window.electronAPI.invoke("session:update", { id, data });
     return sessionSchema.parse(unwrapResponse(response));
   },
 
-  async confirmSession(id: number, data: ConfirmSession): Promise<Session> {
+  async confirmSession(id: SessionId, data: ConfirmSession): Promise<Session> {
     const response = await window.electronAPI.invoke("session:confirm", { id, data });
     return sessionSchema.parse(unwrapResponse(response));
   },

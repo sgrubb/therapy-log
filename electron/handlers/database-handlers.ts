@@ -26,9 +26,8 @@ import {
   sessionListExpectedParamsSchema,
 } from "@shared/schemas/sessions";
 import type { IpcApi } from "../lib/types/ipc";
-import { withErrorHandler } from "../lib/error-handler";
+import { handleIpc } from "../lib/error-handler";
 import { IpcErrorCode } from "@shared/types/ipc";
-import type { ExpectedSession } from "@shared/types/sessions";
 import { SortDir } from "@shared/types/enums";
 import { buildTherapistWhere, buildClientWhere, buildSessionWhere } from "../lib/utils/database";
 
@@ -60,7 +59,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "therapist:list",
     (_e, rawParams: unknown): Promise<IpcApi["therapist:list"]["result"]> =>
-      withErrorHandler("therapist:list", async () => {
+      handleIpc("therapist:list", async () => {
         const { page, pageSize, sortKey, sortDir, status } = therapistListParamsSchema.parse(rawParams);
         const where = buildTherapistWhere(status);
         const total = await prisma.therapist.count({ where });
@@ -78,7 +77,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "therapist:list-all",
     (_e, rawParams: unknown): Promise<IpcApi["therapist:list-all"]["result"]> =>
-      withErrorHandler("therapist:list-all", () => {
+      handleIpc("therapist:list-all", () => {
         const { activeOnly } = therapistListAllParamsSchema.parse(rawParams ?? {});
         return prisma.therapist.findMany({
           ...(activeOnly ? { where: { deactivated_date: null } } : {}),
@@ -90,7 +89,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "therapist:get",
     (_e, id: number): Promise<IpcApi["therapist:get"]["result"]> =>
-      withErrorHandler("therapist:get", () =>
+      handleIpc("therapist:get", () =>
         prisma.therapist.findUniqueOrThrow({ where: { id } }),
       ),
   );
@@ -98,7 +97,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "therapist:create",
     (_e, rawData: unknown): Promise<IpcApi["therapist:create"]["result"]> =>
-      withErrorHandler("therapist:create", async () => {
+      handleIpc("therapist:create", async () => {
         const data = therapistCreateSchema.parse(rawData);
         return prisma.therapist.create({ data });
       }),
@@ -107,7 +106,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "therapist:update",
     (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["therapist:update"]["result"]> =>
-      withErrorHandler("therapist:update", async () => {
+      handleIpc("therapist:update", async () => {
         const { id, data: rawData } = rawInput;
         const { updated_at: therapistUpdatedAt, ...updateData } = therapistUpdateSchema.parse(rawData);
         return prisma.$transaction(async (tx) => {
@@ -123,7 +122,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "therapist:deactivate",
     (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["therapist:deactivate"]["result"]> =>
-      withErrorHandler("therapist:deactivate", async () => {
+      handleIpc("therapist:deactivate", async () => {
         const { id, data: rawData } = rawInput;
         const { updated_at: therapistUpdatedAt, client_reassignments } = therapistDeactivateSchema.parse(rawData);
         return prisma.$transaction(async (tx) => {
@@ -135,8 +134,8 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
             where: { therapist_id: id, closed_date: null },
             select: { id: true },
           });
-          const reassignmentMap = new Map(client_reassignments.map((r) => [r.client_id, r.new_therapist_id]));
-          if (openClients.some((c) => !reassignmentMap.has(c.id))) {
+          const reassignedClientIds = new Set<number>(client_reassignments.map((r) => r.client_id));
+          if (openClients.some((c) => !reassignedClientIds.has(c.id))) {
             throw new Error(IpcErrorCode.Validation);
           }
           await Promise.all(
@@ -152,7 +151,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "therapist:reactivate",
     (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["therapist:reactivate"]["result"]> =>
-      withErrorHandler("therapist:reactivate", async () => {
+      handleIpc("therapist:reactivate", async () => {
         const { id, data: rawData } = rawInput;
         const { updated_at: therapistUpdatedAt } = therapistReactivateSchema.parse(rawData);
         return prisma.$transaction(async (tx) => {
@@ -169,7 +168,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "client:list",
     (_e, rawParams: unknown): Promise<IpcApi["client:list"]["result"]> =>
-      withErrorHandler("client:list", async () => {
+      handleIpc("client:list", async () => {
         const {
           page,
           pageSize,
@@ -196,7 +195,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "client:list-all",
     (_e, rawParams: unknown): Promise<IpcApi["client:list-all"]["result"]> =>
-      withErrorHandler("client:list-all", () => {
+      handleIpc("client:list-all", () => {
         const { therapistId, openOnly } = clientListAllParamsSchema.parse(rawParams ?? {});
         return prisma.client.findMany({
           where: {
@@ -212,7 +211,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "client:get",
     (_e, id: number): Promise<IpcApi["client:get"]["result"]> =>
-      withErrorHandler("client:get", () =>
+      handleIpc("client:get", () =>
         prisma.client.findUniqueOrThrow({ where: { id }, include: { therapist: true } }),
       ),
   );
@@ -220,7 +219,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "client:create",
     (_e, rawData: unknown): Promise<IpcApi["client:create"]["result"]> =>
-      withErrorHandler("client:create", async () => {
+      handleIpc("client:create", async () => {
         const data = clientCreateSchema.parse(rawData);
         return prisma.client.create({ data });
       }),
@@ -229,7 +228,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "client:update",
     (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["client:update"]["result"]> =>
-      withErrorHandler("client:update", async () => {
+      handleIpc("client:update", async () => {
         const { id, data: rawData } = rawInput;
         const { updated_at: clientUpdatedAt, ...updateData } = clientUpdateSchema.parse(rawData);
         return prisma.$transaction(async (tx) => {
@@ -245,7 +244,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "client:close",
     (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["client:close"]["result"]> =>
-      withErrorHandler("client:close", async () => {
+      handleIpc("client:close", async () => {
         const { id, data: rawData } = rawInput;
         const data = clientCloseSchema.parse(rawData);
         return prisma.client.update({
@@ -259,7 +258,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "client:reopen",
     (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["client:reopen"]["result"]> =>
-      withErrorHandler("client:reopen", async () => {
+      handleIpc("client:reopen", async () => {
         const { id, data: rawData } = rawInput;
         const data = clientReopenSchema.parse(rawData);
         return prisma.client.update({
@@ -275,7 +274,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "session:list",
     (_e, rawParams: unknown): Promise<IpcApi["session:list"]["result"]> =>
-      withErrorHandler("session:list", async () => {
+      handleIpc("session:list", async () => {
         const { page, pageSize, sortKey, sortDir, ...filters } = sessionListParamsSchema.parse(rawParams);
         const where = buildSessionWhere(filters);
         const total = await prisma.session.count({ where });
@@ -294,7 +293,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "session:list-range",
     (_e, rawFilters: unknown): Promise<IpcApi["session:list-range"]["result"]> =>
-      withErrorHandler("session:list-range", async () => {
+      handleIpc("session:list-range", async () => {
         const { sortKey, sortDir, ...filters } = sessionListRangeParamsSchema.parse(rawFilters);
         return prisma.session.findMany({
           where: buildSessionWhere(filters),
@@ -307,7 +306,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "session:list-expected",
     (_e, rawParams: unknown): Promise<IpcApi["session:list-expected"]["result"]> =>
-      withErrorHandler("session:list-expected", async () => {
+      handleIpc("session:list-expected", async () => {
         const { from, to, therapistIds, clientId, sortKey, sortDir } =
           sessionListExpectedParamsSchema.parse(rawParams);
 
@@ -345,9 +344,9 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
           { weekStartsOn: WEEK_STARTS_ON },
         );
 
-        const expected: ExpectedSession[] = weekStarts.flatMap((weekDate) => {
+        const expected = weekStarts.flatMap((weekDate) => {
           const weekKey = format(weekDate, "yyyy-MM-dd");
-          return clients.flatMap((client): ExpectedSession[] => {
+          return clients.flatMap((client) => {
             if (coveredWeeks.has(`${client.id}-${weekKey}`)) {
               return [];
             }
@@ -411,7 +410,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "session:get",
     (_e, id: number): Promise<IpcApi["session:get"]["result"]> =>
-      withErrorHandler("session:get", () =>
+      handleIpc("session:get", () =>
         prisma.session.findUniqueOrThrow({
           where: { id },
           include: { client: true, therapist: true },
@@ -422,7 +421,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "session:create",
     (_e, rawData: unknown): Promise<IpcApi["session:create"]["result"]> =>
-      withErrorHandler("session:create", async () => {
+      handleIpc("session:create", async () => {
         const data = sessionCreateSchema.parse(rawData);
         return prisma.session.create({ data });
       }),
@@ -431,7 +430,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "session:update",
     (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["session:update"]["result"]> =>
-      withErrorHandler("session:update", async () => {
+      handleIpc("session:update", async () => {
         const { id, data: rawData } = rawInput;
         const { updated_at: sessionUpdatedAt, ...updateData } = sessionUpdateSchema.parse(rawData);
         return prisma.$transaction(async (tx) => {
@@ -447,7 +446,7 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
   ipcMain.handle(
     "session:confirm",
     (_e, rawInput: { id: number; data: unknown }): Promise<IpcApi["session:confirm"]["result"]> =>
-      withErrorHandler("session:confirm", async () => {
+      handleIpc("session:confirm", async () => {
         const { id, data: rawData } = rawInput;
         const { updated_at: sessionUpdatedAt, ...confirmData } = sessionConfirmSchema.parse(rawData);
         return prisma.$transaction(async (tx) => {

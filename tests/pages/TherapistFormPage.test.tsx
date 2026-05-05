@@ -8,7 +8,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import TherapistFormPage from "@/pages/TherapistFormPage";
 import { addSeconds } from "date-fns";
-import { wrapped, wrappedPaginated, mockTherapists, errorResponse, MOCK_UPDATED_AT } from "../helpers/ipc-mocks";
+import { wrapped, mockTherapists, errorResponse, MOCK_UPDATED_AT } from "../helpers/ipc-mocks";
 import { createTestQueryClient } from "../helpers/query-client";
 
 const mockInvoke = vi.fn();

@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import { SessionProvider, useSessions } from "@/context/SessionsContext";
 import { wrapped, wrappedPaginated, mockTherapists, mockSessions, mockClients } from "../helpers/ipc-mocks";
+import { clientId, expectedSessionId, sessionId, therapistId } from "@shared/types/brands";
 import { createTestQueryClient } from "../helpers/query-client";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 
@@ -71,7 +72,7 @@ describe("SessionProvider", () => {
     await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
 
     await act(async () => { result.current.setPage(3); });
-    await act(async () => { result.current.setClientFilter(1); });
+    await act(async () => { result.current.setClientFilter(clientId(1)); });
 
     await waitFor(() => {
       expect(result.current.clientFilter).toBe(1);
@@ -84,7 +85,7 @@ describe("SessionProvider", () => {
     await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
 
     await act(async () => { result.current.setPage(2); });
-    await act(async () => { result.current.setTherapistFilter(2); });
+    await act(async () => { result.current.setTherapistFilter(therapistId(2)); });
 
     await waitFor(() => {
       expect(result.current.therapistFilter).toBe(2);
@@ -121,8 +122,8 @@ describe("SessionProvider", () => {
     await waitFor(() => expect(result.current.displayedSessions.length).toBeGreaterThan(0));
 
     act(() => {
-      result.current.setClientFilter(1);
-      result.current.setTherapistFilter(2);
+      result.current.setClientFilter(clientId(1));
+      result.current.setTherapistFilter(therapistId(2));
       result.current.setStatusFilter("DNA");
       result.current.setDateFromFilter("2026-01-01");
       result.current.setPage(3);
@@ -159,7 +160,7 @@ describe("SessionProvider", () => {
 
   it("shows unconfirmed sessions computed from range sessions", async () => {
     const past = new Date("2020-01-01T10:00:00");
-    const unconfirmedSession = { ...mockSessions[0]!, id: 10, status: null, scheduled_at: past };
+    const unconfirmedSession = { ...mockSessions[0]!, id: sessionId(10), status: null, scheduled_at: past };
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "session:list") return Promise.resolve(wrappedPaginated(mockSessions));
@@ -184,15 +185,15 @@ describe("SessionProvider", () => {
     // Two sessions for the same therapist at overlapping times
     const sessionA = {
       ...mockSessions[0]!,
-      id: 20,
-      therapist_id: 1,
+      id: sessionId(20),
+      therapist_id: therapistId(1),
       scheduled_at: new Date("2026-06-01T10:00:00"),
       duration: 60,
     };
     const sessionB = {
       ...mockSessions[0]!,
-      id: 21,
-      therapist_id: 1,
+      id: sessionId(21),
+      therapist_id: therapistId(1),
       scheduled_at: new Date("2026-06-01T10:30:00"),
       duration: 60,
     };
@@ -259,13 +260,13 @@ it("defaults therapist filter to selected therapist", async () => {
       if (channel === "session:list-range") return Promise.resolve(wrapped([]));
       if (channel === "session:list-expected") {
         return Promise.resolve(wrapped([{
-          id: "exp-1",
-          client_id: 3,
-          therapist_id: 1,
+          id: expectedSessionId("exp-1"),
+          client_id: clientId(3),
+          therapist_id: therapistId(1),
           scheduled_at: new Date(),
           duration: 60,
-          client: { id: 3, first_name: "Eve", last_name: "Walker" },
-          therapist: { id: 1, first_name: "Alice", last_name: "Morgan" },
+          client: { id: clientId(3), first_name: "Eve", last_name: "Walker" },
+          therapist: { id: therapistId(1), first_name: "Alice", last_name: "Morgan" },
         }]));
       }
       if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));

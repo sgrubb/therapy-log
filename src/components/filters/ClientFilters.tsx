@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { therapistId } from "@shared/types/brands";
 import { useClients } from "@/context/ClientsContext";
 import { ClientStatus } from "@shared/types/enums";
 import { useSelectedTherapist } from "@/context/SelectedTherapistContext";
@@ -81,7 +82,7 @@ export function ClientFilters() {
           className="w-52"
           aria-label="Therapist filter"
           value={therapistFilter === "all" ? "all" : String(therapistFilter)}
-          onValueChange={(v) => setTherapistFilter(v === "all" ? "all" : Number(v))}
+          onValueChange={(v) => setTherapistFilter(v === "all" ? "all" : therapistId(Number(v)))}
           placeholder="All therapists"
           options={[
             { value: "all", label: "All therapists" },

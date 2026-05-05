@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TherapistStatus, ClientStatus } from "@shared/types/enums";
 import { sessionFiltersSchema } from "@shared/schemas/sessions";
+import { therapistId } from "@shared/types/brands";
 
 export const importResultSchema = z.object({
   inserted: z.number(),
@@ -15,7 +16,7 @@ export const therapistExportParamsSchema = z.object({
 
 export const clientExportParamsSchema = z.object({
   status: z.enum(Object.values(ClientStatus) as [ClientStatus, ...ClientStatus[]]).optional(),
-  therapistId: z.number().int().nullable().optional(),
+  therapistId: z.number().int().transform(therapistId).nullable().optional(),
   search: z.string().optional(),
 });
 

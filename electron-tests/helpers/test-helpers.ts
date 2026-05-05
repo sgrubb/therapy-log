@@ -4,6 +4,14 @@ import path from "node:path";
 import Database from "better-sqlite3";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "../../generated/prisma/client";
+import {
+  type TherapistId,
+  type ClientId,
+  type SessionId,
+  therapistId,
+  clientId,
+  sessionId,
+} from "../../shared/types/brands";
 
 const MIGRATIONS_DIR = path.join(__dirname, "..", "..", "prisma", "migrations");
 
@@ -44,11 +52,11 @@ export function cleanupTestDb(dbPath: string): void {
 }
 
 interface SeedIds {
-  therapistAlice: number;
-  therapistBob: number;
-  clientCharlie: number;
-  clientDana: number;
-  sessionId: number;
+  therapistAlice: TherapistId;
+  therapistBob: TherapistId;
+  clientCharlie: ClientId;
+  clientDana: ClientId;
+  sessionId: SessionId;
 }
 
 export async function seedTestData(prisma: PrismaClient): Promise<SeedIds> {
@@ -109,10 +117,10 @@ export async function seedTestData(prisma: PrismaClient): Promise<SeedIds> {
   });
 
   return {
-    therapistAlice: alice.id,
-    therapistBob: bob.id,
-    clientCharlie: charlie.id,
-    clientDana: dana.id,
-    sessionId: session.id,
+    therapistAlice: therapistId(alice.id),
+    therapistBob: therapistId(bob.id),
+    clientCharlie: clientId(charlie.id),
+    clientDana: clientId(dana.id),
+    sessionId: sessionId(session.id),
   };
 }

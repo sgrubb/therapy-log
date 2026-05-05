@@ -9,6 +9,7 @@ import { queryKeys } from "@/lib/query-keys";
 import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
 import type { ClientWithTherapist } from "@shared/types/clients";
 import type { ExpectedSession, SessionFilters, SessionListParams } from "@shared/types/sessions";
+import type { TherapistId, ClientId } from "@shared/types/brands";
 import {
   computeOverlappingIds,
   computeUnconfirmedIds,
@@ -43,10 +44,10 @@ function getPresetRange(preset: DatePreset): { from: string; to: string } {
 }
 
 interface SessionContextValue {
-  clientFilter: number | "all";
-  setClientFilter: (value: number | "all") => void;
-  therapistFilter: number | "all";
-  setTherapistFilter: (value: number | "all") => void;
+  clientFilter: ClientId | "all";
+  setClientFilter: (value: ClientId | "all") => void;
+  therapistFilter: TherapistId | "all";
+  setTherapistFilter: (value: TherapistId | "all") => void;
   statusFilter: SessionStatus | "all";
   setStatusFilter: (value: SessionStatus | "all") => void;
   datePreset: DatePreset;
@@ -90,8 +91,8 @@ const SessionCtx = createContext<SessionContextValue | null>(null);
 export function SessionProvider({ children }: { children: ReactNode }) {
   const { selectedTherapistId } = useSelectedTherapist();
 
-  const [clientFilter, setClientFilterRaw] = useState<number | "all">("all");
-  const [therapistFilter, setTherapistFilterRaw] = useState<number | "all">(
+  const [clientFilter, setClientFilterRaw] = useState<ClientId | "all">("all");
+  const [therapistFilter, setTherapistFilterRaw] = useState<TherapistId | "all">(
     () => selectedTherapistId ?? "all",
   );
   const [statusFilter, setStatusFilterRaw] = useState<SessionStatus | "all">("all");
@@ -166,14 +167,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  function setClientFilter(value: number | "all") {
+  function setClientFilter(value: ClientId | "all") {
     startTransition(() => {
       setClientFilterRaw(value);
       setPage(1);
     });
   }
 
-  function setTherapistFilter(value: number | "all") {
+  function setTherapistFilter(value: TherapistId | "all") {
     startTransition(() => {
       setTherapistFilterRaw(value);
       setPage(1);

@@ -1,4 +1,5 @@
 import type { IpcResponse } from "@shared/types/ipc";
+import type { TherapistId, ClientId, SessionId } from "@shared/types/brands";
 import type { PaginatedResult } from "@shared/types/common";
 import type { SetupSaveConfigParams, ValidateDatabaseResult } from "@shared/types/setup";
 import type { MigrationInfo } from "@shared/types/migrations";
@@ -54,21 +55,21 @@ export type IpcApi = {
     args: TherapistListAllParams;
     result: IpcResponse<Therapist[]>;
   };
-  "therapist:get": { args: number; result: IpcResponse<Therapist> };
+  "therapist:get": { args: TherapistId; result: IpcResponse<Therapist> };
   "therapist:create": {
     args: CreateTherapist;
     result: IpcResponse<Therapist>;
   };
   "therapist:update": {
-    args: { id: number; data: UpdateTherapist };
+    args: { id: TherapistId; data: UpdateTherapist };
     result: IpcResponse<Therapist>;
   };
   "therapist:deactivate": {
-    args: { id: number; data: DeactivateTherapist };
+    args: { id: TherapistId; data: DeactivateTherapist };
     result: IpcResponse<Therapist>;
   };
   "therapist:reactivate": {
-    args: { id: number; data: ReactivateTherapist };
+    args: { id: TherapistId; data: ReactivateTherapist };
     result: IpcResponse<Therapist>;
   };
 
@@ -82,7 +83,7 @@ export type IpcApi = {
     result: IpcResponse<ClientWithTherapist[]>;
   };
   "client:get": {
-    args: number;
+    args: ClientId;
     result: IpcResponse<ClientWithTherapist>;
   };
   "client:create": {
@@ -90,15 +91,15 @@ export type IpcApi = {
     result: IpcResponse<Client>;
   };
   "client:update": {
-    args: { id: number; data: UpdateClient };
+    args: { id: ClientId; data: UpdateClient };
     result: IpcResponse<Client>;
   };
   "client:close": {
-    args: { id: number; data: CloseClient };
+    args: { id: ClientId; data: CloseClient };
     result: IpcResponse<ClientWithTherapist>;
   };
   "client:reopen": {
-    args: { id: number; data: ReopenClient };
+    args: { id: ClientId; data: ReopenClient };
     result: IpcResponse<ClientWithTherapist>;
   };
 
@@ -116,7 +117,7 @@ export type IpcApi = {
     result: IpcResponse<ExpectedSession[]>;
   };
   "session:get": {
-    args: number;
+    args: SessionId;
     result: IpcResponse<SessionWithClientAndTherapist>;
   };
   "session:create": {
@@ -124,11 +125,11 @@ export type IpcApi = {
     result: IpcResponse<Session>;
   };
   "session:update": {
-    args: { id: number; data: UpdateSession };
+    args: { id: SessionId; data: UpdateSession };
     result: IpcResponse<Session>;
   };
   "session:confirm": {
-    args: { id: number; data: ConfirmSession };
+    args: { id: SessionId; data: ConfirmSession };
     result: IpcResponse<Session>;
   };
 

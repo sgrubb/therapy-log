@@ -16,26 +16,16 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES } from "@/lib/labels";
 import { DataTable } from "@/components/ui/data-table";
 import { SESSION_CSV_HEADERS, SESSION_REQUIRED_HEADERS } from "@shared/types/csv";
+import { SESSION_CSV_DESCRIPTIONS } from "@/lib/labels";
 import type { Column } from "@/components/ui/data-table";
 import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
 import type { ExpectedSession } from "@shared/types/sessions";
 
-const SESSION_COLUMNS = [
-  { name: "client_first_name", required: true, description: "Client first name" },
-  { name: "client_last_name", required: true, description: "Client last name" },
-  { name: "therapist_first_name", required: true, description: "Therapist first name" },
-  { name: "therapist_last_name", required: true, description: "Therapist last name" },
-  { name: "scheduled_date", required: true, description: "Scheduled date (YYYY-MM-DD)" },
-  { name: "scheduled_time", required: true, description: "Scheduled time (HH:mm)" },
-  { name: "duration", required: true, description: "Duration in minutes (positive integer)" },
-  { name: "session_type", required: true, description: "AssessmentChild / AssessmentParentFamily / Child / Parent / Family / CheckIn / ProfessionalsMeeting / Other" },
-  { name: "delivery_method", required: true, description: "FaceToFace / Online / Telephone / Email" },
-  { name: "status", required: false, description: "Attended / DNA / Cancelled / Rescheduled — leave blank for unconfirmed" },
-  { name: "occurred_date", required: false, description: "Actual date the session occurred (YYYY-MM-DD) — required when status is set" },
-  { name: "occurred_time", required: false, description: "Actual time the session occurred (HH:mm) — required when status is set" },
-  { name: "missed_reason", required: false, description: "Required when status is DNA or Cancelled. Illness / Holiday / ExamPeriod / AnnualLeave / SchoolTransition / NoShow / Other" },
-  { name: "notes", required: false, description: "Free-text notes" },
-];
+const SESSION_COLUMNS = SESSION_CSV_HEADERS.map((name) => ({
+  name,
+  required: (SESSION_REQUIRED_HEADERS as readonly string[]).includes(name),
+  description: SESSION_CSV_DESCRIPTIONS[name],
+}));
 
 const expectedColumns: Column<ExpectedSession>[] = [
   {

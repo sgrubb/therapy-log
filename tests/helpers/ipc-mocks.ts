@@ -1,4 +1,6 @@
 import { IpcErrorCode } from "@shared/types/ipc";
+import type { SessionStatus, MissedReason } from "@shared/types/enums";
+import { therapistId, clientId, sessionId, expectedSessionId } from "@shared/types/brands";
 
 // ── Response helpers ────────────────────────────────────────────────────────
 
@@ -47,21 +49,21 @@ export const MOCK_SESSION_DATE_OLDER = setHours(olderDay, 14);   // 14:00
 
 export const mockTherapists = [
   {
-    id: 1,
+    id: therapistId(1),
     first_name: "Alice",
     last_name: "Morgan",
     is_admin: true,
     start_date: new Date("2024-01-01T00:00:00.000Z"),
-    deactivated_date: null,
+    deactivated_date: null as Date | null,
     updated_at: MOCK_UPDATED_AT,
   },
   {
-    id: 2,
+    id: therapistId(2),
     first_name: "Bob",
     last_name: "Chen",
     is_admin: false,
     start_date: new Date("2024-06-01T00:00:00.000Z"),
-    deactivated_date: null,
+    deactivated_date: null as Date | null,
     updated_at: MOCK_UPDATED_AT,
   },
 ];
@@ -91,10 +93,10 @@ export const mockClientBase = {
 
 export const mockClient = {
   ...mockClientBase,
-  id: 1,
+  id: clientId(1),
   first_name: "Jane",
   last_name: "Smith",
-  therapist_id: 1,
+  therapist_id: therapistId(1),
   therapist: mockTherapist,
   session_day: "Monday" as const,
   dob: new Date("2000-01-15T00:00:00.000Z"),
@@ -108,24 +110,24 @@ export const mockClients = [
   mockClient,
   {
     ...mockClientBase,
-    id: 2,
+    id: clientId(2),
     first_name: "Tom",
     last_name: "Jones",
     hospital_number: "HN002",
     dob: new Date("1995-05-10T00:00:00.000Z"),
-    therapist_id: 2,
+    therapist_id: therapistId(2),
     therapist: mockTherapists[1]!,
     closed_date: new Date("2025-12-01T00:00:00.000Z"),
     email: "tom@example.com",
   },
   {
     ...mockClientBase,
-    id: 3,
+    id: clientId(3),
     first_name: "Eve",
     last_name: "Walker",
     hospital_number: "HN003",
     dob: new Date("1998-03-20T00:00:00.000Z"),
-    therapist_id: 1,
+    therapist_id: therapistId(1),
     therapist: mockTherapists[0]!,
     session_day: "Monday" as const,
     session_time: "10:00",
@@ -136,59 +138,59 @@ export const mockClients = [
 // ── Sessions ─────────────────────────────────────────────────────────────────
 
 export const mockSession = {
-  id: 1,
-  client_id: 1,
-  therapist_id: 1,
+  id: sessionId(1),
+  client_id: clientId(1),
+  therapist_id: therapistId(1),
   scheduled_at: MOCK_SESSION_DATE_RECENT,
-  occurred_at: null,
+  occurred_at: null as Date | null,
   duration: 60,
-  status: "Attended" as const,
+  status: "Attended" as SessionStatus | null,
   session_type: "Child" as const,
   delivery_method: "FaceToFace" as const,
-  missed_reason: null,
-  notes: null,
+  missed_reason: null as MissedReason | null,
+  notes: null as string | null,
   updated_at: MOCK_UPDATED_AT,
   client: {
     ...mockClientBase,
-    id: 1,
+    id: clientId(1),
     first_name: "Jane",
     last_name: "Smith",
-    therapist_id: 1,
+    therapist_id: therapistId(1),
   },
   therapist: mockTherapist,
 };
 
 export const mockExpectedSession = {
-  id: "expected-1",
-  client_id: 3,
-  therapist_id: 1,
+  id: expectedSessionId("expected-1"),
+  client_id: clientId(3),
+  therapist_id: therapistId(1),
   scheduled_at: MOCK_SESSION_DATE_RECENT,
   duration: 60,
-  client: { id: 3, first_name: "Eve", last_name: "Walker" },
-  therapist: { id: 1, first_name: "Alice", last_name: "Morgan" },
+  client: { id: clientId(3), first_name: "Eve", last_name: "Walker" },
+  therapist: { id: therapistId(1), first_name: "Alice", last_name: "Morgan" },
 };
 
 export const mockSessions = [
   mockSession,
   {
-    id: 2,
-    client_id: 2,
-    therapist_id: 2,
+    id: sessionId(2),
+    client_id: clientId(2),
+    therapist_id: therapistId(2),
     scheduled_at: MOCK_SESSION_DATE_OLDER,
-    occurred_at: null,
+    occurred_at: null as Date | null,
     duration: 50,
-    status: "DNA" as const,
+    status: "DNA" as SessionStatus | null,
     session_type: "Parent" as const,
     delivery_method: "Online" as const,
-    missed_reason: "Illness" as const,
-    notes: null,
+    missed_reason: "Illness" as MissedReason | null,
+    notes: null as string | null,
     updated_at: MOCK_UPDATED_AT,
     client: {
       ...mockClientBase,
-      id: 2,
+      id: clientId(2),
       first_name: "Tom",
       last_name: "Jones",
-      therapist_id: 2,
+      therapist_id: therapistId(2),
       hospital_number: "HN002",
     },
     therapist: mockTherapists[1]!,

@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import { ClientProvider, useClients } from "@/context/ClientsContext";
 import { wrapped, wrappedPaginated, mockTherapists, mockClients } from "../helpers/ipc-mocks";
+import { therapistId } from "@shared/types/brands";
 import { createTestQueryClient } from "../helpers/query-client";
 
 const mockInvoke = vi.fn();
@@ -97,7 +98,7 @@ describe("ClientProvider", () => {
 
     act(() => {
       result.current.setStatusFilter("all");
-      result.current.setTherapistFilter(2);
+      result.current.setTherapistFilter(therapistId(2));
     });
 
     await waitFor(() => {
@@ -143,7 +144,7 @@ describe("ClientProvider", () => {
     act(() => {
       result.current.setStatusFilter("all");
       result.current.setSearch("jane");
-      result.current.setTherapistFilter(1);
+      result.current.setTherapistFilter(therapistId(1));
     });
 
     act(() => { result.current.reset(); });

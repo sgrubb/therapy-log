@@ -5,6 +5,7 @@ import { useParams, useLocation, Link } from "react-router-dom";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ipc } from "@/lib/ipc";
+import { sessionId as mkSessionId } from "@shared/types/brands";
 import { queryKeys } from "@/lib/query-keys";
 import { SessionStatus } from "@shared/types/enums";
 import { SESSION_TYPE_NAMES, DELIVERY_METHOD_NAMES, MISSED_REASON_NAMES } from "@/lib/labels";
@@ -20,7 +21,7 @@ export default function SessionDetailPage() {
   const backTo = locationState?.from ?? "/sessions";
   const backLabel = locationState?.fromLabel ?? "Back to Sessions";
 
-  const sessionId = Number(id);
+  const sessionId = mkSessionId(Number(id));
 
   const { data: session } = useSuspenseQuery({
     queryKey: queryKeys.sessions.detail(sessionId),
@@ -36,6 +37,7 @@ export default function SessionDetailPage() {
   const showMissedReason =
     (session.status === SessionStatus.DNA || session.status === SessionStatus.Cancelled)
     && !!session.missed_reason;
+  const showOutcome = session.scheduled_at < new Date() || session.status !== null;
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -70,47 +72,64 @@ export default function SessionDetailPage() {
         </div>
       </PageHeader>
 
-      <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">
-        <InfoRow
-          label="Client"
-          value={
-            <Link
-              to={`/clients/${session.client_id}`}
-              className="text-primary hover:underline"
-            >
-              {session.client.first_name} {session.client.last_name}
-            </Link>
-          }
-        />
-        <InfoRow
-          label="Therapist"
-          value={`${session.therapist.first_name} ${session.therapist.last_name}`}
-        />
-        <InfoRow label="Date" value={date} />
-        <InfoRow label="Time" value={time} />
-        <InfoRow label="Duration" value={durationLabel} />
-        <InfoRow
-          label="Session Type"
-          value={SESSION_TYPE_NAMES[session.session_type]}
-        />
-        <InfoRow
-          label="Delivery Method"
-          value={DELIVERY_METHOD_NAMES[session.delivery_method]}
-        />
-        <InfoRow label="Status" value={session.status ?? "Unconfirmed"} />
-        {showOccurredAt && (
-          <>
-            <InfoRow label="Occurred Date" value={formatDisplayDate(session.occurred_at!)} />
-            <InfoRow label="Occurred Time" value={format(session.occurred_at!, "HH:mm")} />
-          </>
-        )}
-        {showMissedReason && (
+      {/* Session Details */}
+      <div className="space-y-3 rounded-lg border p-4">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+          Session Details
+        </h2>
+        <div className="grid grid-cols-2 gap-4">
           <InfoRow
-            label="Missed Reason"
-            value={MISSED_REASON_NAMES[session.missed_reason!]}
+            label="Client"
+            value={
+              <Link
+                to={`/clients/${session.client_id}`}
+                className="text-primary hover:underline"
+              >
+                {session.client.first_name} {session.client.last_name}
+              </Link>
+            }
           />
-        )}
+          <InfoRow
+            label="Therapist"
+            value={`${session.therapist.first_name} ${session.therapist.last_name}`}
+          />
+          <InfoRow label="Scheduled Date" value={date} />
+          <InfoRow label="Scheduled Time" value={time} />
+          <InfoRow label="Duration" value={durationLabel} />
+          <InfoRow
+            label="Delivery Method"
+            value={DELIVERY_METHOD_NAMES[session.delivery_method]}
+          />
+          <InfoRow
+            label="Session Type"
+            value={SESSION_TYPE_NAMES[session.session_type]}
+          />
+        </div>
       </div>
+
+      {/* Session Outcome */}
+      {showOutcome && (
+        <div className="space-y-3 rounded-lg border p-4">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Session Outcome
+          </h2>
+          <div className="grid grid-cols-2 gap-4">
+            <InfoRow label="Status" value={session.status ?? "Unconfirmed"} />
+            {showMissedReason && (
+              <InfoRow
+                label="Missed Reason"
+                value={MISSED_REASON_NAMES[session.missed_reason!]}
+              />
+            )}
+            {showOccurredAt && (
+              <>
+                <InfoRow label="Occurred Date" value={formatDisplayDate(session.occurred_at!)} />
+                <InfoRow label="Occurred Time" value={format(session.occurred_at!, "HH:mm")} />
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {session.notes && (
         <div className="space-y-1 rounded-lg border p-4">

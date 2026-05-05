@@ -7,11 +7,12 @@ import {
   ClientStatus,
   SortDir,
 } from "@shared/types/enums";
+import { clientId, therapistId } from "@shared/types/brands";
 
 // ── Response schemas ────────────────────────────────────────────────────────
 
 export const clientBaseSchema = z.object({
-  id: z.number(),
+  id: z.number().transform(clientId),
   hospital_number: z.string(),
   first_name: z.string(),
   last_name: z.string(),
@@ -24,7 +25,7 @@ export const clientBaseSchema = z.object({
   session_time: z.string().nullable(),
   session_duration: z.number().nullable(),
   session_delivery_method: z.enum(Object.values(DeliveryMethod) as [DeliveryMethod, ...DeliveryMethod[]]).nullable(),
-  therapist_id: z.number(),
+  therapist_id: z.number().transform(therapistId),
   closed_date: z.date().nullable(),
   pre_score: z.number().nullable(),
   post_score: z.number().nullable(),
@@ -105,7 +106,7 @@ export const clientCreateSchema = z.object({
   session_time: z.string().nullable().optional(),
   session_duration: z.number().int().positive().nullable().optional(),
   session_delivery_method: z.enum(Object.values(DeliveryMethod) as [DeliveryMethod, ...DeliveryMethod[]]).nullable().optional(),
-  therapist_id: z.number().int().positive(),
+  therapist_id: z.number().int().positive().transform(therapistId),
   closed_date: z.coerce.date().nullable().optional(),
   pre_score: z.number().nullable().optional(),
   post_score: z.number().nullable().optional(),
@@ -127,7 +128,7 @@ export const clientUpdateSchema = z.object({
   session_time: z.string().nullable().optional(),
   session_duration: z.number().int().positive().nullable().optional(),
   session_delivery_method: z.enum(Object.values(DeliveryMethod) as [DeliveryMethod, ...DeliveryMethod[]]).nullable().optional(),
-  therapist_id: z.number().int().positive().optional(),
+  therapist_id: z.number().int().positive().transform(therapistId).optional(),
   closed_date: z.coerce.date().nullable().optional(),
   pre_score: z.number().nullable().optional(),
   post_score: z.number().nullable().optional(),
@@ -147,7 +148,7 @@ export const clientReopenSchema = z.object({
 });
 
 export const clientListAllParamsSchema = z.object({
-  therapistId: z.number().int().positive().optional(),
+  therapistId: z.number().int().positive().transform(therapistId).optional(),
   openOnly: z.boolean().optional(),
 });
 
@@ -155,7 +156,7 @@ export const clientListParamsSchema = z.object({
   page: z.number().int().min(1),
   pageSize: z.number().int().min(1).max(500),
   status: z.enum(Object.values(ClientStatus) as [ClientStatus, ...ClientStatus[]]).optional().default(ClientStatus.All),
-  therapistId: z.number().int().positive().nullable().optional(),
+  therapistId: z.number().int().positive().transform(therapistId).nullable().optional(),
   search: z.string().optional(),
   sortKey: z.string(),
   sortDir: z.enum([SortDir.Asc, SortDir.Desc] as const),

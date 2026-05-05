@@ -4,6 +4,7 @@ import type { z } from "zod";
 import { ipc } from "@/lib/ipc";
 import log from "@/lib/logger";
 import type { ClientWithTherapist } from "@shared/types/clients";
+import type { ClientId } from "@shared/types/brands";
 import { Outcome } from "@shared/types/enums";
 import { FormState } from "@/lib/types/enums";
 import { closeClientSchema } from "@/lib/schemas/forms";
@@ -20,7 +21,7 @@ const EMPTY: FormFields = {
   closing_notes: "",
 };
 
-export function useCloseClient(clientId: number, client: ClientWithTherapist) {
+export function useCloseClient(clientId: ClientId, client: ClientWithTherapist) {
   const queryClient = useQueryClient();
   const [showCloseDialog, setShowCloseDialog] = useState(false);
 

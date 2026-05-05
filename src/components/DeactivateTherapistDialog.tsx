@@ -11,6 +11,8 @@ import { Field } from "@/components/ui/field";
 import { SaveErrorAlert } from "@/components/ui/save-error-alert";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import type { Therapist } from "@shared/types/therapists";
+import { therapistId as mkTherapistId } from "@shared/types/brands";
+import type { TherapistId, ClientId } from "@shared/types/brands";
 
 interface Props {
   therapist: Therapist;
@@ -64,10 +66,10 @@ export function DeactivateTherapistDialog({ therapist }: Props) {
 }
 
 interface BodyProps {
-  therapistId: number;
+  therapistId: TherapistId;
   saving: boolean;
-  clientReassignments: Record<number, number | null>;
-  setClientReassignment: (clientId: number, therapistId: number | null) => void;
+  clientReassignments: Record<ClientId, TherapistId | null>;
+  setClientReassignment: (clientId: ClientId, therapistId: TherapistId | null) => void;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -112,7 +114,7 @@ function DeactivateDialogBody({
               <SearchableSelect
                 options={replacementOptions}
                 value={clientReassignments[client.id]?.toString() ?? ""}
-                onValueChange={(v) => setClientReassignment(client.id, v ? Number(v) : null)}
+                onValueChange={(v) => setClientReassignment(client.id, v ? mkTherapistId(Number(v)) : null)}
                 placeholder="Select replacement therapist…"
               />
             </Field>

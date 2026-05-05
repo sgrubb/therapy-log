@@ -3,6 +3,7 @@ import { UserX, Check, Loader2 } from "lucide-react";
 import { Outcome } from "@shared/types/enums";
 import { FormState } from "@/lib/types/enums";
 import type { ClientWithTherapist } from "@shared/types/clients";
+import type { ClientId } from "@shared/types/brands";
 import { useCloseClient } from "@/hooks/use-close-client";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -18,7 +19,7 @@ import {
 } from "@/components/ui/select";
 
 interface Props {
-  clientId: number;
+  clientId: ClientId;
   client: ClientWithTherapist;
 }
 

@@ -4,7 +4,8 @@ import React, { Suspense } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { SelectedTherapistProvider } from "@/context/SelectedTherapistContext";
 import { CalendarProvider, useCalendar } from "@/context/CalendarContext";
-import { wrapped, wrappedPaginated, mockTherapists, mockSessions, mockClients } from "../helpers/ipc-mocks";
+import { wrapped, mockTherapists, mockSessions, mockClients } from "../helpers/ipc-mocks";
+import { sessionId, therapistId } from "@shared/types/brands";
 import { createTestQueryClient } from "../helpers/query-client";
 
 const mockInvoke = vi.fn();
@@ -155,8 +156,8 @@ describe("CalendarProvider", () => {
 
   it("computes overlapping count from range sessions", async () => {
     // Two sessions for the same therapist at overlapping times
-    const sessionA = { ...mockSessions[0]!, id: 1, therapist_id: 1, scheduled_at: new Date("2026-06-01T10:00:00"), duration: 60 };
-    const sessionB = { ...mockSessions[0]!, id: 2, therapist_id: 1, scheduled_at: new Date("2026-06-01T10:30:00"), duration: 60 };
+    const sessionA = { ...mockSessions[0]!, id: sessionId(1), therapist_id: therapistId(1), scheduled_at: new Date("2026-06-01T10:00:00"), duration: 60 };
+    const sessionB = { ...mockSessions[0]!, id: sessionId(2), therapist_id: therapistId(1), scheduled_at: new Date("2026-06-01T10:30:00"), duration: 60 };
 
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
@@ -179,9 +180,9 @@ describe("CalendarProvider", () => {
     await waitFor(() => expect(result.current.events.length).toBeGreaterThan(0));
 
     const event = result.current.events[0]!;
-    const props = result.current.eventPropGetter(event);
-    expect(props.style.backgroundColor).toBeDefined();
-    expect(props.style.border).toBe("none");
+    const props = result.current.eventPropGetter(event, event.start, event.end, false);
+    expect(props.style?.backgroundColor).toBeDefined();
+    expect(props.style?.border).toBe("none");
   });
 });
 

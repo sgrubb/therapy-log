@@ -14,15 +14,15 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { queryKeys } from "@/lib/query-keys";
 import { THERAPIST_CSV_HEADERS, THERAPIST_REQUIRED_HEADERS } from "@shared/types/csv";
+import { THERAPIST_CSV_DESCRIPTIONS } from "@/lib/labels";
 import type { Column } from "@/components/ui/data-table";
 import type { Therapist } from "@shared/types/therapists";
 
-const THERAPIST_COLUMNS = [
-  { name: "first_name", required: true, description: "First name" },
-  { name: "last_name", required: true, description: "Last name" },
-  { name: "start_date", required: true, description: "Start date (YYYY-MM-DD)" },
-  { name: "is_admin", required: false, description: "true or false (default: false)" },
-];
+const THERAPIST_COLUMNS = THERAPIST_CSV_HEADERS.map((name) => ({
+  name,
+  required: (THERAPIST_REQUIRED_HEADERS as readonly string[]).includes(name),
+  description: THERAPIST_CSV_DESCRIPTIONS[name],
+}));
 
 function buildColumns(isAdmin: boolean): Column<Therapist>[] {
   return [

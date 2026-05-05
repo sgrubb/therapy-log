@@ -5,6 +5,8 @@ import type { z } from "zod";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { ipc, IpcError } from "@/lib/ipc";
 import { IpcErrorCode } from "@shared/types/ipc";
+import { therapistId } from "@shared/types/brands";
+import type { ClientId } from "@shared/types/brands";
 import { queryKeys } from "@/lib/query-keys";
 import { clientFormSchema } from "@/lib/schemas/forms";
 import { SessionDay, Outcome } from "@shared/types/enums";
@@ -78,7 +80,7 @@ function buildPayload(form: FormFields) {
     session_time: form.session_time || null,
     session_duration: fromDuration(form.session_duration) || null,
     session_delivery_method: (form.session_delivery_method || null) as DeliveryMethod | null,
-    therapist_id: Number(form.therapist_id),
+    therapist_id: therapistId(Number(form.therapist_id)),
     closed_date: form.closed_date ? parse(form.closed_date, "yyyy-MM-dd", new Date()) : null,
     pre_score: form.pre_score !== "" ? Number(form.pre_score) : null,
     post_score: form.post_score !== "" ? Number(form.post_score) : null,
@@ -87,7 +89,7 @@ function buildPayload(form: FormFields) {
   };
 }
 
-export function useClientForm(clientId?: number) {
+export function useClientForm(clientId?: ClientId) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isEdit = clientId !== undefined;

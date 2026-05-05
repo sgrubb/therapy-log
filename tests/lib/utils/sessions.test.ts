@@ -5,7 +5,8 @@ import {
   toDuration,
   fromDuration,
 } from "@/lib/utils/sessions";
-import { MOCK_UPDATED_AT, mockTherapists, mockClients } from "../../helpers/ipc-mocks";
+import { MOCK_UPDATED_AT, mockTherapists } from "../../helpers/ipc-mocks";
+import { clientId, sessionId, therapistId } from "@shared/types/brands";
 import type { SessionWithClientAndTherapist } from "@shared/types/sessions";
 
 // ── Shared fixtures ───────────────────────────────────────────────────────────
@@ -30,9 +31,16 @@ const clientBase = {
   therapist: mockTherapists[0]!,
 };
 
-function makeSession(overrides: Partial<SessionWithClientAndTherapist> & Pick<SessionWithClientAndTherapist, "id" | "therapist_id" | "scheduled_at" | "duration">): SessionWithClientAndTherapist {
+type SessionOverrides = Omit<Partial<SessionWithClientAndTherapist>, "id" | "therapist_id"> & {
+  id: number;
+  therapist_id: number;
+  scheduled_at: Date;
+  duration: number;
+};
+
+function makeSession({ id, therapist_id, ...rest }: SessionOverrides): SessionWithClientAndTherapist {
   return {
-    client_id: 1,
+    client_id: clientId(1),
     occurred_at: null,
     status: "Attended",
     session_type: "Child",
@@ -40,9 +48,11 @@ function makeSession(overrides: Partial<SessionWithClientAndTherapist> & Pick<Se
     missed_reason: null,
     notes: null,
     updated_at: MOCK_UPDATED_AT,
-    client: { ...clientBase, id: 1, first_name: "Jane", last_name: "Smith", therapist_id: 1 },
+    client: { ...clientBase, id: clientId(1), first_name: "Jane", last_name: "Smith", therapist_id: therapistId(1) },
     therapist: mockTherapists[0]!,
-    ...overrides,
+    ...rest,
+    id: sessionId(id),
+    therapist_id: therapistId(therapist_id),
   };
 }
 

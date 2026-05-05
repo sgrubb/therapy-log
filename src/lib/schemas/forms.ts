@@ -152,6 +152,21 @@ export const sessionFormSchema = z
         }
       }
     }
+
+    if (occurredDateValid && occurredTimeValid && data.occurred_date && data.occurred_time) {
+      const occurred = parse(
+        `${data.occurred_date} ${data.occurred_time}`,
+        "yyyy-MM-dd HH:mm",
+        new Date(),
+      );
+      if (occurred > new Date()) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Occurred date and time cannot be in the future.",
+          path: ["occurred_date"],
+        });
+      }
+    }
   });
 
 export const therapistFormSchema = z.object({
@@ -197,5 +212,23 @@ export const confirmSessionSchema = z
         message: "Reason is required when session is missed or cancelled.",
         path: ["missed_reason"],
       });
+    }
+
+    if (
+      isValidDateStr(data.occurred_date)
+      && isValidTimeStr(data.occurred_time)
+    ) {
+      const occurred = parse(
+        `${data.occurred_date} ${data.occurred_time}`,
+        "yyyy-MM-dd HH:mm",
+        new Date(),
+      );
+      if (occurred > new Date()) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Occurred date and time cannot be in the future.",
+          path: ["occurred_date"],
+        });
+      }
     }
   });

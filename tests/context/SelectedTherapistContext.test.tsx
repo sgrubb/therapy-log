@@ -4,6 +4,7 @@ import React, { Suspense } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { SelectedTherapistProvider, useSelectedTherapist } from "@/context/SelectedTherapistContext";
 import { wrapped, mockTherapists } from "../helpers/ipc-mocks";
+import { therapistId } from "@shared/types/brands";
 import { createTestQueryClient } from "../helpers/query-client";
 
 const mockInvoke = vi.fn();
@@ -62,7 +63,7 @@ describe("SelectedTherapistProvider", () => {
     await waitFor(() => expect(result.current).not.toBeNull());
 
     act(() => {
-      result.current.setSelectedTherapistId(1);
+      result.current.setSelectedTherapistId(therapistId(1));
     });
 
     expect(result.current.selectedTherapistId).toBe(1);
