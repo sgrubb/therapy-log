@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { FolderOpen } from "lucide-react";
+import { FolderOpen, Loader2 } from "lucide-react";
 import { ipc, IpcError } from "@/lib/ipc";
 import { queryKeys } from "@/lib/query-keys";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ export default function SettingsPage() {
   const queryClient = useQueryClient();
   const [restartWarning, setRestartWarning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [changing, setChanging] = useState(false);
 
   const { data: dbPath } = useSuspenseQuery({
     queryKey: queryKeys.settings.dbPath,
@@ -17,6 +18,7 @@ export default function SettingsPage() {
 
   async function handleChangePath() {
     setError(null);
+    setChanging(true);
     try {
       const chosen = await ipc.openFileDialog();
       if (chosen === null) {
@@ -27,6 +29,8 @@ export default function SettingsPage() {
       setRestartWarning(true);
     } catch (err) {
       setError(err instanceof IpcError ? err.message : "An unexpected error occurred.");
+    } finally {
+      setChanging(false);
     }
   }
 
@@ -41,9 +45,15 @@ export default function SettingsPage() {
             Current location:{" "}
             <span className="font-mono">{dbPath ?? "Not configured"}</span>
           </p>
-          <Button variant="outline" size="default" onClick={handleChangePath}>
-            <FolderOpen className="size-4" />
-            Change Database Location
+          <Button
+            variant="outline"
+            size="default"
+            onClick={handleChangePath}
+            disabled={changing}
+          >
+            {changing
+              ? <><Loader2 className="size-4 animate-spin" /> Changing…</>
+              : <><FolderOpen className="size-4" /> Change Database Location</>}
           </Button>
         </div>
       </section>

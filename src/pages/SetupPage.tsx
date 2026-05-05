@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, RotateCcw, Database, FolderOpen } from "lucide-react";
+import { ArrowLeft, ArrowRight, RotateCcw, Database, FolderOpen, Loader2 } from "lucide-react";
 import { ipc, IpcError } from "@/lib/ipc";
 import { Button } from "@/components/ui/button";
 import log from "@/lib/logger";
 
 type Step =
   | { type: "idle" }
+  | { type: "picking-new" }
+  | { type: "picking-existing" }
   | { type: "busy"; message: string }
   | { type: "created"; dbPath: string }
   | { type: "validated"; dbPath: string }
@@ -19,7 +21,7 @@ export default function SetupPage() {
   const [step, setStep] = useState<Step>({ type: "idle" });
 
   async function handleCreateNew() {
-    setStep({ type: "busy", message: "Opening file dialog…" });
+    setStep({ type: "picking-new" });
     try {
       const filePath = await ipc.setupOpenSaveDialog();
       if (!filePath) {
@@ -39,7 +41,7 @@ export default function SetupPage() {
   }
 
   async function handleUseExisting() {
-    setStep({ type: "busy", message: "Opening file dialog…" });
+    setStep({ type: "picking-existing" });
     try {
       const filePath = await ipc.setupOpenFileDialog();
       if (!filePath) {
@@ -157,7 +159,11 @@ export default function SetupPage() {
     );
   }
 
-  // idle — welcome screen
+  // idle — welcome screen (also rendered while picking a file)
+  const pickingNew = step.type === "picking-new";
+  const pickingExisting = step.type === "picking-existing";
+  const pickingAny = pickingNew || pickingExisting;
+
   return (
     <div className="flex h-screen items-center justify-center p-8">
       <div className="max-w-md space-y-8">
@@ -184,9 +190,10 @@ export default function SetupPage() {
                 Start fresh. Choose where to save your database file.
               </p>
             </div>
-            <Button onClick={handleCreateNew} className="w-full">
-              <Database className="size-4" />
-              Create New Database
+            <Button onClick={handleCreateNew} className="w-full" disabled={pickingAny}>
+              {pickingNew
+                ? <><Loader2 className="size-4 animate-spin" /> Opening…</>
+                : <><Database className="size-4" /> Create New Database</>}
             </Button>
           </div>
 
@@ -197,9 +204,15 @@ export default function SetupPage() {
                 Open a database file you have already created with this app.
               </p>
             </div>
-            <Button variant="outline" onClick={handleUseExisting} className="w-full">
-              <FolderOpen className="size-4" />
-              Select Database File
+            <Button
+              variant="outline"
+              onClick={handleUseExisting}
+              className="w-full"
+              disabled={pickingAny}
+            >
+              {pickingExisting
+                ? <><Loader2 className="size-4 animate-spin" /> Opening…</>
+                : <><FolderOpen className="size-4" /> Select Database File</>}
             </Button>
           </div>
         </div>

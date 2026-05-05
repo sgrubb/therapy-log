@@ -107,14 +107,14 @@ function renderEditForm() {
 }
 
 // Select order in new form:
-// 0 = client, 1 = therapist, 2 = duration-hours, 3 = duration-minutes, 4 = session_type, 5 = delivery_method, 6 = status
+// 0 = client, 1 = therapist, 2 = duration-hours, 3 = duration-minutes, 4 = delivery_method, 5 = session_type, 6 = status
 function getSelect(index: number) {
   return screen.getAllByRole("combobox")[index]!;
 }
 function getClientSelect() { return getSelect(0); }
 function getTherapistSelect() { return getSelect(1); }
-function getSessionTypeSelect() { return getSelect(4); }
-function getDeliveryMethodSelect() { return getSelect(5); }
+function getDeliveryMethodSelect() { return getSelect(4); }
+function getSessionTypeSelect() { return getSelect(5); }
 function getStatusSelect() { return getSelect(6); }
 
 // ── New session ───────────────────────────────────────────────────────

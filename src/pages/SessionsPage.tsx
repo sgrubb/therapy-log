@@ -190,10 +190,9 @@ function SessionsPageContent() {
             <CsvImportDialog
               title="Import Sessions"
               columns={SESSION_COLUMNS}
-              requiredHeaders={SESSION_REQUIRED_HEADERS}
               onImport={() => ipc.importSessionsCsv()}
               onSuccess={() => queryClient.invalidateQueries({ queryKey: queryKeys.sessions.root })}
-              templateHeaders={SESSION_CSV_HEADERS}
+              onDownloadTemplate={() => ipc.saveSessionsTemplate()}
             />
             <Button
               variant="outline"

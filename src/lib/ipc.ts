@@ -266,4 +266,19 @@ export const ipc = {
     const response = await window.electronAPI.invoke("session:import-csv");
     return importResultSchema.nullable().parse(unwrapResponse(response));
   },
+
+  async saveTherapistsTemplate(): Promise<{ path: string } | null> {
+    const response = await window.electronAPI.invoke("therapist:save-template");
+    return csvExportResultSchema.nullable().parse(unwrapResponse(response));
+  },
+
+  async saveClientsTemplate(): Promise<{ path: string } | null> {
+    const response = await window.electronAPI.invoke("client:save-template");
+    return csvExportResultSchema.nullable().parse(unwrapResponse(response));
+  },
+
+  async saveSessionsTemplate(): Promise<{ path: string } | null> {
+    const response = await window.electronAPI.invoke("session:save-template");
+    return csvExportResultSchema.nullable().parse(unwrapResponse(response));
+  },
 };

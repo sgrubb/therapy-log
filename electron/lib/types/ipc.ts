@@ -158,6 +158,18 @@ export type IpcApi = {
     args: void;
     result: IpcResponse<ImportResult | null>;
   };
+  "therapist:save-template": {
+    args: void;
+    result: IpcResponse<{ path: string } | null>;
+  };
+  "client:save-template": {
+    args: void;
+    result: IpcResponse<{ path: string } | null>;
+  };
+  "session:save-template": {
+    args: void;
+    result: IpcResponse<{ path: string } | null>;
+  };
 };
 
 export type IpcChannel = keyof IpcApi;

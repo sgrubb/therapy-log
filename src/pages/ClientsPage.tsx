@@ -113,10 +113,9 @@ function ClientsPageContent() {
             <CsvImportDialog
               title="Import Clients"
               columns={CLIENT_COLUMNS}
-              requiredHeaders={CLIENT_REQUIRED_HEADERS}
               onImport={() => ipc.importClientsCsv()}
               onSuccess={() => queryClient.invalidateQueries({ queryKey: queryKeys.clients.root })}
-              templateHeaders={CLIENT_CSV_HEADERS}
+              onDownloadTemplate={() => ipc.saveClientsTemplate()}
             />
             <Button
               variant="outline"

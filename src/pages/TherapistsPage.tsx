@@ -102,10 +102,9 @@ function TherapistsPageContent() {
               <CsvImportDialog
                 title="Import Therapists"
                 columns={THERAPIST_COLUMNS}
-                requiredHeaders={THERAPIST_REQUIRED_HEADERS}
                 onImport={() => ipc.importTherapistsCsv()}
                 onSuccess={() => queryClient.invalidateQueries({ queryKey: queryKeys.therapists.root })}
-                templateHeaders={THERAPIST_CSV_HEADERS}
+                onDownloadTemplate={() => ipc.saveTherapistsTemplate()}
               />
               <Button
                 variant="outline"

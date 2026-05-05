@@ -108,7 +108,7 @@ export const therapistRowSchema = z.object({
   first_name: reqStr("first_name"),
   last_name: reqStr("last_name"),
   start_date: reqDateField("start_date"),
-  is_admin: z.string().optional().transform((v) => v === "true" || v === "1"),
+  is_admin: z.string().optional().transform((v) => v?.toLowerCase() === "true" || v === "1"),
 });
 
 export const clientRowSchema = z.object({
