@@ -135,11 +135,10 @@ describe("ClientFormPage — new client", () => {
   });
 
   it("shows error when notes exceed 1000 characters", async () => {
-    const user = userEvent.setup();
     renderNewForm();
     await waitFor(() => screen.getByLabelText(/notes/i));
 
-    await user.type(screen.getByLabelText(/notes/i), "a".repeat(1001));
+    fireEvent.change(screen.getByLabelText(/notes/i), { target: { value: "a".repeat(1001) } });
 
     fireEvent.click(screen.getByRole("button", { name: /add client/i }));
 

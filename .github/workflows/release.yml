@@ -1,0 +1,67 @@
+name: Release
+
+# To create a release:
+#   npm run release:patch   # or release:minor / release:major
+# This builds installers for Windows and macOS and publishes them as a GitHub Release.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+        env:
+          DATABASE_URL: file:./dev.db
+
+      - name: Generate migrations bundle
+        run: npm run generate:migrations
+
+      - name: Run tests
+        shell: bash
+        run: npm run test:ci
+
+      - name: Restore Electron native modules
+        run: npm run rebuild:electron
+
+      - name: Build and package (Windows)
+        if: runner.os == 'Windows'
+        run: npm run package:win
+
+      - name: Build and package (macOS)
+        if: runner.os == 'macOS'
+        run: npm run package:mac
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.exe
+            dist/*.dmg
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

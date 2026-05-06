@@ -4,7 +4,7 @@ Session management tool for NHS therapists.
 
 ## Installation
 
-Download the installer for your platform and run it. On first launch you'll be prompted to set up your database.
+Download the latest installer from the [Releases page](https://github.com/sgrubb/therapy-log/releases/latest) and run it — download the `.exe` file on Windows or the `.dmg` file on macOS. On first launch you'll be prompted to set up your database.
 
 ## First-Run Setup
 
@@ -131,6 +131,18 @@ prisma/           Database schema and migrations
 scripts/          Build-time code generation scripts
 generated/        Generated migration bundle (committed, do not edit manually)
 ```
+
+### Creating a Release
+
+Run one of the release scripts, which bumps `package.json`, commits, tags, and pushes in one step:
+
+```
+npm run release:patch   # 0.1.0 → 0.1.1
+npm run release:minor   # 0.1.0 → 0.2.0
+npm run release:major   # 0.1.0 → 1.0.0
+```
+
+This triggers the release workflow, which builds installers for Windows and macOS and publishes them as a GitHub Release.
 
 ### Database Migrations
 

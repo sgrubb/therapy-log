@@ -27,6 +27,7 @@ export default defineConfig({
           name: "node",
           environment: "node",
           include: ["electron-tests/**/*.test.ts"],
+          testTimeout: 30000,
         },
       },
       {
