@@ -64,11 +64,14 @@ function isPastDateTime(date: string, time: string): boolean {
 
 // buildPayload drops any post-session fields when the scheduled date/time is in
 // the future. The form hides those fields in that case, but values can linger
-// in state if the user toggles the date back and forth.
+// in state if the user toggles the date back and forth. occurred_at is only
+// kept when status is Attended — for missed/cancelled/rescheduled sessions the
+// session never happened, so the field has no meaning.
 function buildPayload(form: FormFields) {
   const scheduled_at = parse(`${form.date} ${form.time}`, "yyyy-MM-dd HH:mm", new Date());
   const isPast = scheduled_at < new Date();
-  const occurred_at = isPast && form.occurred_date && form.occurred_time
+  const status = isPast && form.status ? (form.status as SessionStatus) : null;
+  const occurred_at = status === SessionStatus.Attended && form.occurred_date && form.occurred_time
     ? parse(`${form.occurred_date} ${form.occurred_time}`, "yyyy-MM-dd HH:mm", new Date())
     : null;
   return {
@@ -76,7 +79,7 @@ function buildPayload(form: FormFields) {
     therapist_id: therapistId(Number(form.therapist_id)),
     scheduled_at,
     duration: fromDuration(form.duration),
-    status: isPast && form.status ? (form.status as SessionStatus) : null,
+    status,
     session_type: form.session_type as SessionType,
     delivery_method: form.delivery_method as DeliveryMethod,
     occurred_at,
@@ -156,14 +159,26 @@ export function useSessionForm(sessionId?: SessionId, defaults?: SessionFormDefa
   const set = <K extends keyof FormFields>(field: K, value: FormFields[K]) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
-      if (field === "status" && (value === SessionStatus.Attended || value === "")) {
-        next.missed_reason = "";
+      if (field === "status") {
+        if (value === SessionStatus.Attended || value === "") {
+          next.missed_reason = "";
+        }
+        if (value !== SessionStatus.Attended) {
+          next.occurred_date = "";
+          next.occurred_time = "";
+        } else if (!prev.occurred_date && !prev.occurred_time) {
+          // Default occurred to the scheduled values when the user picks
+          // Attended — assumes the session ran when planned, easy to edit.
+          next.occurred_date = next.date;
+          next.occurred_time = next.time;
+        }
       }
       // When the scheduled date/time changes to a past value and occurred is
       // empty, default occurred to the scheduled values — assumes the session
       // ran when planned, easy to edit.
       if ((field === "date" || field === "time")
         && isPastDateTime(next.date, next.time)
+        && next.status === SessionStatus.Attended
         && !prev.occurred_date && !prev.occurred_time) {
         next.occurred_date = next.date;
         next.occurred_time = next.time;

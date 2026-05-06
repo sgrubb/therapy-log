@@ -185,7 +185,7 @@ describe("SessionFormPage — new session", () => {
     });
   });
 
-  it("shows status and occurred fields when date is in the past", async () => {
+  it("shows status when date is in the past and reveals occurred fields when Attended is picked", async () => {
     renderNewForm();
     await waitFor(() => screen.getByRole("heading", { name: /log session/i }));
 
@@ -197,13 +197,22 @@ describe("SessionFormPage — new session", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Status *")).toBeInTheDocument();
-      expect(screen.getByText("Occurred Date *")).toBeInTheDocument();
-      expect(screen.getByText("Occurred Time *")).toBeInTheDocument();
       const options = Array.from(getStatusSelect().querySelectorAll("option"))
         .map((o) => o.textContent);
       expect(options).toContain("Attended");
       expect(options).toContain("DNA");
       expect(options).not.toContain("Scheduled");
+    });
+
+    // Occurred fields stay hidden until status === Attended.
+    expect(screen.queryByText("Occurred Date *")).not.toBeInTheDocument();
+    expect(screen.queryByText("Occurred Time *")).not.toBeInTheDocument();
+
+    fireEvent.change(getStatusSelect(), { target: { value: "Attended" } });
+
+    await waitFor(() => {
+      expect(screen.getByText("Occurred Date *")).toBeInTheDocument();
+      expect(screen.getByText("Occurred Time *")).toBeInTheDocument();
     });
   });
 

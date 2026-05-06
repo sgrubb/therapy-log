@@ -267,14 +267,20 @@ describe("SessionDetailPage — confirm session", () => {
     });
   });
 
-  it("opens the Confirm dialog with scheduled date and time prefilled", async () => {
+  it("prefills occurred date and time with scheduled values once Attended is picked", async () => {
     renderDetailPage({ status: null });
     await waitFor(() => screen.getByRole("button", { name: /^confirm$/i }));
 
     fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+    await waitFor(() => screen.getByRole("heading", { name: /confirm session/i }));
+
+    // Occurred fields are hidden until status is Attended.
+    expect(screen.queryByLabelText(/occurred date/i)).not.toBeInTheDocument();
+
+    const statusSelect = screen.getAllByRole("combobox")[0]!;
+    fireEvent.change(statusSelect, { target: { value: "Attended" } });
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /confirm session/i })).toBeInTheDocument();
       const dateInput = screen.getByLabelText(/occurred date/i) as HTMLInputElement;
       const timeInput = screen.getByLabelText(/occurred time/i) as HTMLInputElement;
       expect(dateInput.value).toBe(format(mockSession.scheduled_at, "yyyy-MM-dd"));

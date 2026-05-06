@@ -42,8 +42,17 @@ export function useConfirmSession(session: SessionWithClientAndTherapist) {
   const set = <K extends keyof FormFields>(field: K, value: FormFields[K]) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
-      if (field === "status" && value === SessionStatus.Attended) {
-        next.missed_reason = "";
+      if (field === "status") {
+        if (value === SessionStatus.Attended) {
+          next.missed_reason = "";
+          if (!prev.occurred_date && !prev.occurred_time) {
+            next.occurred_date = format(session.scheduled_at, "yyyy-MM-dd");
+            next.occurred_time = format(session.scheduled_at, "HH:mm");
+          }
+        } else {
+          next.occurred_date = "";
+          next.occurred_time = "";
+        }
       }
       return next;
     });
@@ -74,14 +83,18 @@ export function useConfirmSession(session: SessionWithClientAndTherapist) {
     setFormState(FormState.Saving);
     setSaveError(null);
     try {
+      const status = form.status as SessionStatus;
+      const occurred_at = status === SessionStatus.Attended
+        ? parse(
+            `${form.occurred_date} ${form.occurred_time}`,
+            "yyyy-MM-dd HH:mm",
+            new Date(),
+          )
+        : null;
       await ipc.confirmSession(session.id, {
         updated_at: session.updated_at,
-        status: form.status as SessionStatus,
-        occurred_at: parse(
-          `${form.occurred_date} ${form.occurred_time}`,
-          "yyyy-MM-dd HH:mm",
-          new Date(),
-        ),
+        status,
+        occurred_at,
         missed_reason: form.missed_reason ? (form.missed_reason as MissedReason) : null,
       });
       await queryClient.invalidateQueries({ queryKey: queryKeys.sessions.detail(session.id) });

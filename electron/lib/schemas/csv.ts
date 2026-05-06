@@ -10,11 +10,52 @@ import {
 
 // ── Field helpers ─────────────────────────────────────────────────────────────
 
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_REGEX = /^\d{2}:\d{2}$/;
+
 const reqStr = (key: string) =>
   z.string().min(1, `"${key}" is required`);
 
 // Optional helpers accept undefined so entirely absent CSV columns degrade gracefully to null.
 const optStr = z.string().optional().transform((v) => v || null);
+
+const reqDateStrField = (key: string) =>
+  z.string()
+    .min(1, `"${key}" is required`)
+    .refine((v) => DATE_REGEX.test(v), {
+      message: `"${key}" must be in YYYY-MM-DD format`,
+    });
+
+const reqTimeStrField = (key: string) =>
+  z.string()
+    .min(1, `"${key}" is required`)
+    .refine((v) => TIME_REGEX.test(v), {
+      message: `"${key}" must be in HH:MM 24-hour format (e.g. 09:00)`,
+    });
+
+const optDateStrField = (key: string) =>
+  z.string().optional().transform((v, ctx) => {
+    if (!v) {
+      return null;
+    }
+    if (!DATE_REGEX.test(v)) {
+      ctx.addIssue({ code: "custom", message: `"${key}" must be in YYYY-MM-DD format` });
+      return z.NEVER;
+    }
+    return v;
+  });
+
+const optTimeStrField = (key: string) =>
+  z.string().optional().transform((v, ctx) => {
+    if (!v) {
+      return null;
+    }
+    if (!TIME_REGEX.test(v)) {
+      ctx.addIssue({ code: "custom", message: `"${key}" must be in HH:MM 24-hour format (e.g. 09:00)` });
+      return z.NEVER;
+    }
+    return v;
+  });
 
 const reqDateField = (key: string) =>
   z.string()
@@ -141,14 +182,14 @@ export const sessionRowSchema = z.object({
   client_last_name: reqStr("client_last_name"),
   therapist_first_name: reqStr("therapist_first_name"),
   therapist_last_name: reqStr("therapist_last_name"),
-  scheduled_date: reqStr("scheduled_date"),
-  scheduled_time: reqStr("scheduled_time"),
+  scheduled_date: reqDateStrField("scheduled_date"),
+  scheduled_time: reqTimeStrField("scheduled_time"),
   duration: reqPosIntField("duration"),
   session_type: reqEnumField("session_type", Object.values(SessionType) as SessionType[]),
   delivery_method: reqEnumField("delivery_method", Object.values(DeliveryMethod) as DeliveryMethod[]),
   status: optEnumField("status", Object.values(SessionStatus) as SessionStatus[]),
-  occurred_date: optStr,
-  occurred_time: optStr,
+  occurred_date: optDateStrField("occurred_date"),
+  occurred_time: optTimeStrField("occurred_time"),
   missed_reason: optEnumField("missed_reason", Object.values(MissedReason) as MissedReason[]),
   notes: optStr,
 });

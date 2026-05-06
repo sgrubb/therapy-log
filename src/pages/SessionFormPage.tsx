@@ -99,6 +99,7 @@ export default function SessionFormPage() {
   }, [form.date, form.time]);
 
   const showMissedReason = form.status === SessionStatus.DNA || form.status === SessionStatus.Cancelled;
+  const showOccurred = form.status === SessionStatus.Attended;
   const today = format(new Date(), "yyyy-MM-dd");
 
   return (
@@ -273,36 +274,40 @@ export default function SessionFormPage() {
                 </Field>
               )}
 
-              <Field
-                label="Occurred Date *"
-                error={getError("occurred_date")}
-                conflictError={getConflictError("occurred_date")}
-              >
-                <Input
-                  type="date"
-                  aria-label="Occurred date"
-                  max={today}
-                  value={form.occurred_date ?? ""}
-                  onChange={(e) => set("occurred_date", e.target.value)}
-                  onBlur={() => markTouched("occurred_date")}
-                  aria-invalid={!!getError("occurred_date")}
-                />
-              </Field>
+              {showOccurred && (
+                <>
+                  <Field
+                    label="Occurred Date *"
+                    error={getError("occurred_date")}
+                    conflictError={getConflictError("occurred_date")}
+                  >
+                    <Input
+                      type="date"
+                      aria-label="Occurred date"
+                      max={today}
+                      value={form.occurred_date ?? ""}
+                      onChange={(e) => set("occurred_date", e.target.value)}
+                      onBlur={() => markTouched("occurred_date")}
+                      aria-invalid={!!getError("occurred_date")}
+                    />
+                  </Field>
 
-              <Field
-                label="Occurred Time *"
-                error={getError("occurred_time")}
-                conflictError={getConflictError("occurred_time")}
-              >
-                <Input
-                  type="time"
-                  aria-label="Occurred time"
-                  value={form.occurred_time ?? ""}
-                  onChange={(e) => set("occurred_time", e.target.value)}
-                  onBlur={() => markTouched("occurred_time")}
-                  aria-invalid={!!getError("occurred_time")}
-                />
-              </Field>
+                  <Field
+                    label="Occurred Time *"
+                    error={getError("occurred_time")}
+                    conflictError={getConflictError("occurred_time")}
+                  >
+                    <Input
+                      type="time"
+                      aria-label="Occurred time"
+                      value={form.occurred_time ?? ""}
+                      onChange={(e) => set("occurred_time", e.target.value)}
+                      onBlur={() => markTouched("occurred_time")}
+                      aria-invalid={!!getError("occurred_time")}
+                    />
+                  </Field>
+                </>
+              )}
             </div>
           </section>
         )}

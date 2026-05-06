@@ -128,28 +128,29 @@ export const sessionFormSchema = z
 
     if (dateValid && timeValid) {
       const scheduled = parse(`${data.date} ${data.time}`, "yyyy-MM-dd HH:mm", new Date());
-      if (scheduled < new Date()) {
-        if (!data.status) {
-          ctx.addIssue({
-            code: "custom",
-            message: "Status is required for past sessions.",
-            path: ["status"],
-          });
-        }
-        if (!data.occurred_date) {
-          ctx.addIssue({
-            code: "custom",
-            message: "Occurred date is required.",
-            path: ["occurred_date"],
-          });
-        }
-        if (!data.occurred_time) {
-          ctx.addIssue({
-            code: "custom",
-            message: "Occurred time is required.",
-            path: ["occurred_time"],
-          });
-        }
+      if (scheduled < new Date() && !data.status) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Status is required for past sessions.",
+          path: ["status"],
+        });
+      }
+    }
+
+    if (data.status === SessionStatus.Attended) {
+      if (!data.occurred_date) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Occurred date is required.",
+          path: ["occurred_date"],
+        });
+      }
+      if (!data.occurred_time) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Occurred time is required.",
+          path: ["occurred_time"],
+        });
       }
     }
 
@@ -197,8 +198,8 @@ export const reopenClientSchema = z.object({
 
 export const confirmSessionSchema = z
   .object({
-    occurred_date: z.string().min(1, "Date is required."),
-    occurred_time: z.string().min(1, "Time is required."),
+    occurred_date: z.string().optional().or(z.literal("")),
+    occurred_time: z.string().optional().or(z.literal("")),
     status: z.enum(sessionStatusValues, "Status is required."),
     missed_reason: z.enum(missedReasonValues).optional().or(z.literal("")),
   })
@@ -214,8 +215,27 @@ export const confirmSessionSchema = z
       });
     }
 
+    if (data.status === SessionStatus.Attended) {
+      if (!data.occurred_date) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Date is required.",
+          path: ["occurred_date"],
+        });
+      }
+      if (!data.occurred_time) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Time is required.",
+          path: ["occurred_time"],
+        });
+      }
+    }
+
     if (
-      isValidDateStr(data.occurred_date)
+      data.occurred_date
+      && data.occurred_time
+      && isValidDateStr(data.occurred_date)
       && isValidTimeStr(data.occurred_time)
     ) {
       const occurred = parse(

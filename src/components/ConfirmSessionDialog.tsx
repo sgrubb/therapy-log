@@ -39,6 +39,7 @@ export function ConfirmSessionDialog({ session }: Props) {
   const saving = formState === FormState.Saving;
   const showMissedReason =
     form.status === SessionStatus.DNA || form.status === SessionStatus.Cancelled;
+  const showOccurred = form.status === SessionStatus.Attended;
   const today = format(new Date(), "yyyy-MM-dd");
 
   return (
@@ -61,35 +62,11 @@ export function ConfirmSessionDialog({ session }: Props) {
         <Dialog.Content className="bg-background fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 space-y-4 rounded-lg border p-6">
           <Dialog.Title className="text-lg font-semibold">Confirm Session</Dialog.Title>
           <Dialog.Description className="text-muted-foreground text-sm">
-            Record what happened. Defaults to the scheduled date and time — change if
-            the session occurred at a different time.
+            Record what happened. If the session was attended, defaults to the scheduled
+            date and time — change if it occurred at a different time.
           </Dialog.Description>
 
           <SaveErrorAlert message={saveError} />
-
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Occurred Date *" error={getError("occurred_date")}>
-              <Input
-                type="date"
-                aria-label="Occurred date"
-                max={today}
-                value={form.occurred_date}
-                onChange={(e) => set("occurred_date", e.target.value)}
-                onBlur={() => markTouched("occurred_date")}
-                aria-invalid={!!getError("occurred_date")}
-              />
-            </Field>
-            <Field label="Occurred Time *" error={getError("occurred_time")}>
-              <Input
-                type="time"
-                aria-label="Occurred time"
-                value={form.occurred_time}
-                onChange={(e) => set("occurred_time", e.target.value)}
-                onBlur={() => markTouched("occurred_time")}
-                aria-invalid={!!getError("occurred_time")}
-              />
-            </Field>
-          </div>
 
           <Field label="Status *" error={getError("status")}>
             <Select
@@ -112,6 +89,32 @@ export function ConfirmSessionDialog({ session }: Props) {
               </SelectContent>
             </Select>
           </Field>
+
+          {showOccurred && (
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Occurred Date *" error={getError("occurred_date")}>
+                <Input
+                  type="date"
+                  aria-label="Occurred date"
+                  max={today}
+                  value={form.occurred_date}
+                  onChange={(e) => set("occurred_date", e.target.value)}
+                  onBlur={() => markTouched("occurred_date")}
+                  aria-invalid={!!getError("occurred_date")}
+                />
+              </Field>
+              <Field label="Occurred Time *" error={getError("occurred_time")}>
+                <Input
+                  type="time"
+                  aria-label="Occurred time"
+                  value={form.occurred_time}
+                  onChange={(e) => set("occurred_time", e.target.value)}
+                  onBlur={() => markTouched("occurred_time")}
+                  aria-invalid={!!getError("occurred_time")}
+                />
+              </Field>
+            </div>
+          )}
 
           {showMissedReason && (
             <Field label="Missed Reason *" error={getError("missed_reason")}>

@@ -1,6 +1,6 @@
 import { parse as csvParse } from "csv-parse/sync";
 import { stringify as csvStringify } from "csv-stringify/sync";
-import { format } from "date-fns";
+import { format, parse as parseDate, isValid as isValidDate } from "date-fns";
 import type { Therapist, Client, Session } from "../../../generated/prisma/client";
 import { therapistRowSchema, clientRowSchema, sessionRowSchema } from "../schemas/csv";
 import { therapistCreateSchema } from "@shared/schemas/therapists";
@@ -123,10 +123,14 @@ export function mapCSVRowToSession(
     return { errors };
   }
 
-  const scheduled_at = new Date(`${result.data.scheduled_date}T${result.data.scheduled_time}`);
-  if (isNaN(scheduled_at.getTime())) {
+  const scheduled_at = parseDate(
+    `${result.data.scheduled_date} ${result.data.scheduled_time}`,
+    "yyyy-MM-dd HH:mm",
+    new Date(),
+  );
+  if (!isValidDate(scheduled_at)) {
     return {
-      errors: [{ row: rowNum, message: '"scheduled_date" and "scheduled_time" do not form a valid datetime' }],
+      errors: [{ row: rowNum, message: '"scheduled_date" and "scheduled_time" are not a real calendar datetime' }],
     };
   }
 
@@ -138,11 +142,11 @@ export function mapCSVRowToSession(
     };
   }
   const occurred_at = occurredDate !== null && occurredTime !== null
-    ? new Date(`${occurredDate}T${occurredTime}`)
+    ? parseDate(`${occurredDate} ${occurredTime}`, "yyyy-MM-dd HH:mm", new Date())
     : null;
-  if (occurred_at !== null && isNaN(occurred_at.getTime())) {
+  if (occurred_at !== null && !isValidDate(occurred_at)) {
     return {
-      errors: [{ row: rowNum, message: '"occurred_date" and "occurred_time" do not form a valid datetime' }],
+      errors: [{ row: rowNum, message: '"occurred_date" and "occurred_time" are not a real calendar datetime' }],
     };
   }
 
