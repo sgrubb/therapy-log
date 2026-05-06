@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ipc } from "@/lib/ipc";
+import { ipc, IpcError } from "@/lib/ipc";
 import log from "@/lib/logger";
 import { FormState } from "@/lib/types/enums";
+import { IpcErrorCode } from "@shared/types/ipc";
 import { queryKeys } from "@/lib/query-keys";
 import type { Therapist } from "@shared/types/therapists";
 import type { ClientId, TherapistId } from "@shared/types/brands";
@@ -45,7 +46,13 @@ export function useDeactivateTherapist(therapist: Therapist) {
       setShowDialog(false);
     } catch (err) {
       log.error("Failed to deactivate therapist:", err);
-      setSaveError("Failed to deactivate therapist. Please try again.");
+      if (err instanceof IpcError && err.code === IpcErrorCode.Validation) {
+        setSaveError(
+          "Cannot deactivate the last admin. Edit another therapist to make them an admin first, then try again.",
+        );
+      } else {
+        setSaveError("Failed to deactivate therapist. Please try again.");
+      }
       setFormState(FormState.Error);
     }
   }

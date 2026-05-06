@@ -3,6 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, RotateCcw, Database, FolderOpen, Loader2 } from "lucide-react";
 import { ipc, IpcError } from "@/lib/ipc";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Field } from "@/components/ui/field";
 import log from "@/lib/logger";
 
 type Step =
@@ -19,6 +21,9 @@ export default function SetupPage() {
   const [searchParams] = useSearchParams();
   const recoveryError = searchParams.get("error");
   const [step, setStep] = useState<Step>({ type: "idle" });
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ firstName?: string; lastName?: string }>({});
 
   async function handleCreateNew() {
     setStep({ type: "picking-new" });
@@ -59,8 +64,7 @@ export default function SetupPage() {
       log.error("Setup use-existing failed:", err);
       setStep({
         type: "error",
-        message:
-          err instanceof IpcError ? err.message : "This database is incompatible or corrupted.",
+        message: "This database is incompatible or corrupted.",
       });
     }
   }
@@ -79,6 +83,36 @@ export default function SetupPage() {
     }
   }
 
+  async function handleCreateFirstTherapist(dbPath: string) {
+    const errors: { firstName?: string; lastName?: string } = {};
+    if (!firstName.trim()) {
+      errors.firstName = "First name is required.";
+    }
+    if (!lastName.trim()) {
+      errors.lastName = "Last name is required.";
+    }
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+    setStep({ type: "busy", message: "Creating your account…" });
+    try {
+      await ipc.setupCreateFirstTherapist({
+        dbPath,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        startDate: new Date(),
+      });
+      await handleContinue(dbPath, true);
+    } catch (err) {
+      log.error("Setup create-first-therapist failed:", err);
+      setStep({
+        type: "error",
+        message: err instanceof IpcError ? err.message : "Failed to create therapist.",
+      });
+    }
+  }
+
   if (step.type === "busy") {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -90,12 +124,42 @@ export default function SetupPage() {
   if (step.type === "created") {
     return (
       <div className="flex h-screen items-center justify-center p-8">
-        <div className="max-w-md space-y-4 text-center">
-          <h1 className="text-xl font-semibold">Database Created</h1>
-          <p className="text-sm text-muted-foreground break-all">{step.dbPath}</p>
-          <Button onClick={() => handleContinue(step.dbPath, true)}>
+        <div className="max-w-md space-y-6">
+          <div className="space-y-1">
+            <h1 className="text-xl font-semibold">Create Your Account</h1>
+            <p className="text-sm text-muted-foreground">
+              You'll be set up as an admin therapist so you can manage the system.
+            </p>
+          </div>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="First Name *" error={fieldErrors.firstName}>
+                <Input
+                  aria-label="First name"
+                  value={firstName}
+                  onChange={(e) => {
+                    setFirstName(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, firstName: undefined }));
+                  }}
+                  aria-invalid={!!fieldErrors.firstName}
+                />
+              </Field>
+              <Field label="Last Name *" error={fieldErrors.lastName}>
+                <Input
+                  aria-label="Last name"
+                  value={lastName}
+                  onChange={(e) => {
+                    setLastName(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, lastName: undefined }));
+                  }}
+                  aria-invalid={!!fieldErrors.lastName}
+                />
+              </Field>
+            </div>
+          </div>
+          <Button onClick={() => handleCreateFirstTherapist(step.dbPath)}>
             <ArrowRight className="size-4" />
-            Continue
+            Create Account &amp; Continue
           </Button>
         </div>
       </div>

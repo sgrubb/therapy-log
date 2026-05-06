@@ -1,5 +1,8 @@
 import type { IpcMain, Dialog, BrowserWindow } from "electron";
+import type { PrismaClient } from "../../generated/prisma/client";
+import { createPrismaClient } from "../lib/prisma";
 import { initializeDatabase, validateDatabase, CURRENT_SCHEMA_VERSION } from "../lib/migrations";
+import { setupCreateFirstTherapistSchema } from "@shared/schemas/setup";
 import { writeConfig } from "../db-path";
 import log from "../lib/logger";
 import type { IpcResponse } from "../lib/types/ipc";
@@ -113,4 +116,35 @@ export function registerSetupHandlers(
       return { success: false, error: { code: IpcErrorCode.Unknown, message: "Failed to complete setup." } };
     }
   });
+
+  ipcMain.handle(
+    "setup:create-first-therapist",
+    async (
+      _e,
+      rawData: unknown,
+    ): Promise<IpcResponse<null>> => {
+      let prisma: PrismaClient | null = null;
+      try {
+        const { dbPath, firstName, lastName, startDate } = setupCreateFirstTherapistSchema.parse(rawData);
+        prisma = createPrismaClient(`file:${dbPath}`);
+        await prisma!.therapist.create({
+          data: {
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            is_admin: true,
+            start_date: startDate,
+          },
+        });
+        return { success: true, data: null };
+      } catch (error) {
+        log.error("setup:create-first-therapist failed:", error);
+        return {
+          success: false,
+          error: { code: IpcErrorCode.Unknown, message: "Failed to create therapist." },
+        };
+      } finally {
+        await prisma?.$disconnect();
+      }
+    },
+  );
 }

@@ -1,7 +1,7 @@
 import type { IpcResponse } from "@shared/types/ipc";
 import type { TherapistId, ClientId, SessionId } from "@shared/types/brands";
 import type { PaginatedResult } from "@shared/types/common";
-import type { SetupSaveConfigParams, ValidateDatabaseResult } from "@shared/types/setup";
+import type { SetupSaveConfigParams, ValidateDatabaseResult, SetupCreateFirstTherapistParams } from "@shared/types/setup";
 import type { MigrationInfo } from "@shared/types/migrations";
 import type { ExpectedSession, SessionWithClientAndTherapist, Session } from "@shared/types/sessions";
 import type { SessionListParams, SessionListRangeParams, SessionListExpectedParams } from "@shared/types/sessions";
@@ -31,6 +31,10 @@ export type IpcApi = {
     result: IpcResponse<null>;
   };
   "setup:complete": { args: void; result: IpcResponse<null> };
+  "setup:create-first-therapist": {
+    args: SetupCreateFirstTherapistParams;
+    result: IpcResponse<null>;
+  };
 
   // Migration
   "migration:get-info": {

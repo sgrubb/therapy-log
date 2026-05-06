@@ -179,3 +179,47 @@ describe("setup:save-config", () => {
     expect(result.error!.message).toBe("Failed to save configuration.");
   });
 });
+
+// ── setup:create-first-therapist ──────────────────────────────────────────────
+
+describe("setup:create-first-therapist", () => {
+  it("creates an admin therapist in the given database", async () => {
+    const dbPath = tempPath();
+    await handlers["setup:create-database"]!({}, dbPath);
+
+    const result = await (handlers["setup:create-first-therapist"]!({}, {
+      dbPath,
+      firstName: "Alice",
+      lastName: "Smith",
+      startDate: new Date("2026-01-01"),
+    }) as Promise<{ success: boolean; data: null }>);
+
+    expect(result.success).toBe(true);
+
+    // Verify the therapist was created with is_admin=true by validating the DB
+    const { PrismaClient } = await import("../../generated/prisma/client");
+    const { PrismaBetterSqlite3 } = await import("@prisma/adapter-better-sqlite3");
+    const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
+    const prisma = new PrismaClient({ adapter });
+    const therapists = await prisma.therapist.findMany();
+    expect(therapists).toHaveLength(1);
+    expect(therapists[0]).toMatchObject({
+      first_name: "Alice",
+      last_name: "Smith",
+      is_admin: true,
+    });
+    await prisma.$disconnect();
+  });
+
+  it("returns a failure response when the database path is invalid", async () => {
+    const result = await (handlers["setup:create-first-therapist"]!({}, {
+      dbPath: "/nonexistent/dir/db.db",
+      firstName: "Alice",
+      lastName: "Smith",
+      startDate: new Date("2026-01-01"),
+    }) as Promise<{ success: boolean; error?: { message: string } }>);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+  });
+});

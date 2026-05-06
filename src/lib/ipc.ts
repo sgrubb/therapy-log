@@ -2,7 +2,7 @@ import { z } from "zod";
 import { therapistSchema } from "@shared/schemas/therapists";
 import { clientSchema, clientWithTherapistSchema } from "@shared/schemas/clients";
 import { sessionSchema, sessionWithClientAndTherapistSchema, expectedSessionSchema } from "@shared/schemas/sessions";
-import type { SetupSaveConfigParams, ValidateDatabaseResult } from "@shared/types/setup";
+import type { SetupSaveConfigParams, ValidateDatabaseResult, SetupCreateFirstTherapistParams } from "@shared/types/setup";
 import type { MigrationInfo } from "@shared/types/migrations";
 import type { Therapist, CreateTherapist, UpdateTherapist, DeactivateTherapist, ReactivateTherapist, TherapistListParams, TherapistListAllParams } from "@shared/types/therapists";
 import type { Client, ClientWithTherapist, CreateClient, UpdateClient, CloseClient, ReopenClient, ClientListParams, ClientListAllParams } from "@shared/types/clients";
@@ -89,6 +89,11 @@ export const ipc = {
 
   async setupComplete(): Promise<void> {
     const response = await window.electronAPI.invoke("setup:complete");
+    unwrapResponse(response);
+  },
+
+  async setupCreateFirstTherapist(params: SetupCreateFirstTherapistParams): Promise<void> {
+    const response = await window.electronAPI.invoke("setup:create-first-therapist", params);
     unwrapResponse(response);
   },
 

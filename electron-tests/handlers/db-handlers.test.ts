@@ -514,3 +514,45 @@ describe("session:update", () => {
     expect(result.success).toBe(false);
   });
 });
+
+// ── therapist:deactivate ──────────────────────────────────────────────────────
+
+describe("therapist:deactivate — last-admin guard", () => {
+  it("prevents deactivating the only active admin", async () => {
+    const current = await invoke("therapist:get", ids.therapistAlice);
+    assert(current.success);
+    const result = await invoke("therapist:deactivate", {
+      id: ids.therapistAlice,
+      data: { updated_at: current.data.updated_at, client_reassignments: [] },
+    });
+    assert(!result.success);
+    expect(result.error.code).toBe(IpcErrorCode.Validation);
+  });
+
+  it("allows deactivating a non-admin therapist regardless of admin count", async () => {
+    const current = await invoke("therapist:get", ids.therapistBob);
+    assert(current.success);
+    const openClients = await prisma.client.findMany({
+      where: { therapist_id: current.data.id, closed_date: null },
+      select: { id: true },
+    });
+    const result = await invoke("therapist:deactivate", {
+      id: ids.therapistBob,
+      data: {
+        updated_at: current.data.updated_at,
+        client_reassignments: openClients.map((c) => ({
+          client_id: c.id,
+          new_therapist_id: ids.therapistAlice,
+        })),
+      },
+    });
+    assert(result.success);
+    expect(result.data.deactivated_date).not.toBeNull();
+    // restore Bob for other tests
+    const reactivated = await invoke("therapist:reactivate", {
+      id: ids.therapistBob,
+      data: { updated_at: result.data.updated_at },
+    });
+    assert(reactivated.success);
+  });
+});

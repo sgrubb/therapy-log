@@ -25,6 +25,10 @@ export const errorResponse = {
     success: false,
     error: { code: IpcErrorCode.Conflict, message: "This record was modified by someone else." },
   },
+  validation: {
+    success: false,
+    error: { code: IpcErrorCode.Validation, message: "The provided data is invalid." },
+  },
   unknown: {
     success: false,
     error: { code: IpcErrorCode.Unknown, message: "An unexpected error occurred." },

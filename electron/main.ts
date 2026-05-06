@@ -2,8 +2,8 @@ import path from "node:path";
 import fs from "node:fs";
 import { app, BrowserWindow, ipcMain, dialog, globalShortcut } from "electron";
 import windowStateKeeper from "electron-window-state";
-import { PrismaClient } from "../generated/prisma/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import type { PrismaClient } from "../generated/prisma/client";
+import { createPrismaClient } from "./lib/prisma";
 import dotenv from "dotenv";
 import { registerAppHandlers } from "./handlers/app-handlers";
 import { registerDatabaseHandlers } from "./handlers/database-handlers";
@@ -18,6 +18,8 @@ import { checkSchemaVersion, CURRENT_SCHEMA_VERSION } from "./lib/migrations";
 import log from "./lib/logger";
 import { IS_DEV } from "./lib/config";
 
+app.setName("TherapyLog");
+
 if (IS_DEV) {
   dotenv.config();
 }
@@ -25,15 +27,6 @@ if (IS_DEV) {
 let prisma: PrismaClient | null = null;
 let mainWin: BrowserWindow | null = null;
 
-function createPrismaClient(url: string): PrismaClient | null {
-  try {
-    const adapter = new PrismaBetterSqlite3({ url });
-    return new PrismaClient({ adapter });
-  } catch (err) {
-    log.error("Failed to create Prisma client:", err);
-    return null;
-  }
-}
 
 async function createWindow(): Promise<BrowserWindow> {
   const windowState = windowStateKeeper({ defaultWidth: 1200, defaultHeight: 800 });

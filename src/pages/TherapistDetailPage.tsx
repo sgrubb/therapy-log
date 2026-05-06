@@ -86,6 +86,7 @@ export default function TherapistDetailPage() {
   });
 
   const isDeactivated = therapist.deactivated_date !== null;
+  const isSelf = therapist.id === selectedTherapistId;
 
   if (!isAdmin) {
     return null;
@@ -112,7 +113,7 @@ export default function TherapistDetailPage() {
               <div className="flex gap-2">
                 {isDeactivated
                   ? <ReactivateTherapistDialog therapist={therapist} />
-                  : <DeactivateTherapistDialog therapist={therapist} />}
+                  : !isSelf && <DeactivateTherapistDialog therapist={therapist} />}
                 <Link
                   to={`/therapists/${id}/edit`}
                   state={{ from: `/therapists/${id}` }}

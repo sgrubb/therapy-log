@@ -117,11 +117,43 @@ describe("TherapistDetailPage", () => {
     });
   });
 
-  it("shows deactivate button for active therapists", async () => {
-    renderDetail();
+  it("shows deactivate button for active therapists when viewing someone else", async () => {
+    // View Bob (therapist[1]) while logged in as Alice (therapist[0]).
+    // mockTherapist defaults to Alice, so override to Bob here.
+    const bob = mockTherapists[1]!;
+    const bobData = { ...bob };
+    mockInvoke.mockImplementation((channel: string, params: unknown) => {
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:get") return Promise.resolve(wrapped(bobData));
+      if (channel === "client:list-all") return Promise.resolve(wrapped([]));
+      return Promise.resolve(wrapped([]));
+    });
+    // selectedTherapistId=1 (Alice), viewing therapist id=2 (Bob)
+    localStorage.setItem("selectedTherapistId", "1");
+    render(
+      <QueryClientProvider client={createTestQueryClient()}>
+        <MemoryRouter initialEntries={["/therapists/2"]}>
+          <SelectedTherapistProvider>
+            <Suspense fallback={null}>
+              <Routes>
+                <Route path="/therapists/:id" element={<TherapistDetailPage />} />
+              </Routes>
+            </Suspense>
+          </SelectedTherapistProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /^deactivate$/i })).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: /^reactivate$/i })).not.toBeInTheDocument();
+    });
+  });
+
+  it("hides deactivate button when viewing your own profile", async () => {
+    // Alice (id=1) is the selected therapist and also the therapist being viewed.
+    renderDetail({ selectedTherapistId: mockTherapist.id });
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: /^deactivate$/i })).not.toBeInTheDocument();
     });
   });
 

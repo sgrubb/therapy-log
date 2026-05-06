@@ -5,6 +5,7 @@ import { createElement } from "react";
 import { useDeactivateTherapist } from "@/hooks/use-deactivate-therapist";
 import { createTestQueryClient } from "../helpers/query-client";
 import { clientId, therapistId } from "@shared/types/brands";
+import { errorResponse } from "../helpers/ipc-mocks";
 import type { Therapist } from "@shared/types/therapists";
 import { FormState } from "@/lib/types/enums";
 
@@ -129,5 +130,31 @@ describe("useDeactivateTherapist — handleDeactivate", () => {
 
     expect(result.current.showDialog).toBe(false);
     expect(result.current.formState).toBe(FormState.Saving);
+  });
+
+  it("shows last-admin message when server returns a validation error", async () => {
+    mockInvoke.mockResolvedValue(errorResponse.validation);
+    const { result } = renderHook(() => useDeactivateTherapist(THERAPIST), { wrapper });
+    act(() => result.current.openDialog());
+
+    await act(async () => {
+      await result.current.handleDeactivate();
+    });
+
+    expect(result.current.saveError).toMatch(/cannot deactivate the last admin/i);
+    expect(result.current.formState).toBe(FormState.Error);
+  });
+
+  it("shows generic error message for non-validation failures", async () => {
+    mockInvoke.mockResolvedValue(errorResponse.unknown);
+    const { result } = renderHook(() => useDeactivateTherapist(THERAPIST), { wrapper });
+    act(() => result.current.openDialog());
+
+    await act(async () => {
+      await result.current.handleDeactivate();
+    });
+
+    expect(result.current.saveError).toMatch(/failed to deactivate therapist/i);
+    expect(result.current.formState).toBe(FormState.Error);
   });
 });

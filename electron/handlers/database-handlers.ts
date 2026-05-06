@@ -130,6 +130,14 @@ export function registerDatabaseHandlers(ipcMain: IpcMain, prisma: PrismaClient)
           if (existing.updated_at.getTime() !== therapistUpdatedAt.getTime()) {
             throw new Error(IpcErrorCode.Conflict);
           }
+          if (existing.is_admin) {
+            const activeAdminCount = await tx.therapist.count({
+              where: { deactivated_date: null, is_admin: true },
+            });
+            if (activeAdminCount <= 1) {
+              throw new Error(IpcErrorCode.Validation);
+            }
+          }
           const openClients = await tx.client.findMany({
             where: { therapist_id: id, closed_date: null },
             select: { id: true },

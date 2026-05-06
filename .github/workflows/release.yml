@@ -35,7 +35,7 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
         env:
-          DATABASE_URL: file:./dev.db
+          DATABASE_URL: file:./prisma/dev.db
 
       - name: Generate migrations bundle
         run: npm run generate:migrations

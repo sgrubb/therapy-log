@@ -41,7 +41,7 @@ describe("SetupPage — idle/welcome", () => {
 });
 
 describe("SetupPage — create new database", () => {
-  it("creates the database and shows the Database Created screen", async () => {
+  it("creates the database and shows the Create Your Account form", async () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "setup:open-save-dialog") return Promise.resolve(wrapped("/tmp/new.db"));
       if (channel === "setup:create-database") return Promise.resolve(wrapped(null));
@@ -52,9 +52,51 @@ describe("SetupPage — create new database", () => {
     fireEvent.click(screen.getByRole("button", { name: /create new database/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /database created/i })).toBeInTheDocument();
-      expect(screen.getByText("/tmp/new.db")).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /continue/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /create your account/i })).toBeInTheDocument();
+      expect(screen.getByRole("textbox", { name: /first name/i })).toBeInTheDocument();
+      expect(screen.getByRole("textbox", { name: /last name/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /create account/i })).toBeInTheDocument();
+    });
+  });
+
+  it("shows field validation errors when name fields are empty", async () => {
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "setup:open-save-dialog") return Promise.resolve(wrapped("/tmp/new.db"));
+      if (channel === "setup:create-database") return Promise.resolve(wrapped(null));
+      return Promise.resolve(wrapped(null));
+    });
+
+    renderSetup();
+    fireEvent.click(screen.getByRole("button", { name: /create new database/i }));
+    await waitFor(() => screen.getByRole("button", { name: /create account/i }));
+    fireEvent.click(screen.getByRole("button", { name: /create account/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/first name is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/last name is required/i)).toBeInTheDocument();
+    });
+    expect(mockInvoke).not.toHaveBeenCalledWith("setup:create-first-therapist", expect.anything());
+  });
+
+  it("shows an error screen when therapist creation fails", async () => {
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "setup:open-save-dialog") return Promise.resolve(wrapped("/tmp/new.db"));
+      if (channel === "setup:create-database") return Promise.resolve(wrapped(null));
+      if (channel === "setup:create-first-therapist") {
+        return Promise.resolve({ success: false, error: { code: "UNKNOWN", message: "disk error" } });
+      }
+      return Promise.resolve(wrapped(null));
+    });
+
+    renderSetup();
+    fireEvent.click(screen.getByRole("button", { name: /create new database/i }));
+    await waitFor(() => screen.getByRole("button", { name: /create account/i }));
+    fireEvent.change(screen.getByRole("textbox", { name: /first name/i }), { target: { value: "Alice" } });
+    fireEvent.change(screen.getByRole("textbox", { name: /last name/i }), { target: { value: "Smith" } });
+    fireEvent.click(screen.getByRole("button", { name: /create account/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /something went wrong/i })).toBeInTheDocument();
     });
   });
 
@@ -161,10 +203,10 @@ describe("SetupPage — use existing database", () => {
     });
   });
 
-  it("shows an error screen when validation throws", async () => {
+  it("shows an error screen with a meaningful message when the database is incompatible", async () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "setup:open-file-dialog") return Promise.resolve(wrapped("/tmp/bad.db"));
-      if (channel === "setup:validate-existing-database") return Promise.resolve(errorResponse.unknown);
+      if (channel === "setup:validate-existing-database") return Promise.resolve(errorResponse.validation);
       return Promise.resolve(wrapped(null));
     });
 
@@ -173,15 +215,17 @@ describe("SetupPage — use existing database", () => {
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /something went wrong/i })).toBeInTheDocument();
+      expect(screen.getByRole("alert")).toHaveTextContent(/incompatible or corrupted/i);
     });
   });
 });
 
 describe("SetupPage — Continue from created/validated screens", () => {
-  it("calls setup:save-config and setup:complete with createdByApp=true after creating", async () => {
+  it("creates therapist then calls setup:save-config and setup:complete with createdByApp=true", async () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "setup:open-save-dialog") return Promise.resolve(wrapped("/tmp/new.db"));
       if (channel === "setup:create-database") return Promise.resolve(wrapped(null));
+      if (channel === "setup:create-first-therapist") return Promise.resolve(wrapped(null));
       if (channel === "setup:save-config") return Promise.resolve(wrapped(null));
       if (channel === "setup:complete") return Promise.resolve(wrapped(null));
       return Promise.resolve(wrapped(null));
@@ -189,10 +233,16 @@ describe("SetupPage — Continue from created/validated screens", () => {
 
     renderSetup();
     fireEvent.click(screen.getByRole("button", { name: /create new database/i }));
-    await waitFor(() => screen.getByRole("button", { name: /continue/i }));
-    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+    await waitFor(() => screen.getByRole("button", { name: /create account/i }));
+    fireEvent.change(screen.getByRole("textbox", { name: /first name/i }), { target: { value: "Alice" } });
+    fireEvent.change(screen.getByRole("textbox", { name: /last name/i }), { target: { value: "Smith" } });
+    fireEvent.click(screen.getByRole("button", { name: /create account/i }));
 
     await waitFor(() => {
+      expect(mockInvoke).toHaveBeenCalledWith(
+        "setup:create-first-therapist",
+        expect.objectContaining({ firstName: "Alice", lastName: "Smith" }),
+      );
       expect(mockInvoke).toHaveBeenCalledWith(
         "setup:save-config",
         { dbPath: "/tmp/new.db", createdByApp: true },
@@ -225,18 +275,21 @@ describe("SetupPage — Continue from created/validated screens", () => {
     });
   });
 
-  it("shows error screen when setup:save-config fails on Continue", async () => {
+  it("shows error screen when setup:save-config fails after therapist creation", async () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "setup:open-save-dialog") return Promise.resolve(wrapped("/tmp/new.db"));
       if (channel === "setup:create-database") return Promise.resolve(wrapped(null));
+      if (channel === "setup:create-first-therapist") return Promise.resolve(wrapped(null));
       if (channel === "setup:save-config") return Promise.resolve(errorResponse.unknown);
       return Promise.resolve(wrapped(null));
     });
 
     renderSetup();
     fireEvent.click(screen.getByRole("button", { name: /create new database/i }));
-    await waitFor(() => screen.getByRole("button", { name: /continue/i }));
-    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+    await waitFor(() => screen.getByRole("button", { name: /create account/i }));
+    fireEvent.change(screen.getByRole("textbox", { name: /first name/i }), { target: { value: "Alice" } });
+    fireEvent.change(screen.getByRole("textbox", { name: /last name/i }), { target: { value: "Smith" } });
+    fireEvent.click(screen.getByRole("button", { name: /create account/i }));
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /something went wrong/i })).toBeInTheDocument();
