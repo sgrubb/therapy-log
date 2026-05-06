@@ -7,7 +7,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ children, className }: PageHeaderProps) {
   return (
-    <div className={cn("sticky top-0 z-10 space-y-4 bg-background pb-2", className)}>
+    <div className={cn("z-10 space-y-4 bg-background pb-2", className)}>
       {children}
     </div>
   );

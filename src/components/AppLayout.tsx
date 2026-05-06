@@ -103,7 +103,7 @@ function AppLayout() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-hidden flex flex-col p-6">
           <ErrorBoundary>
             <Suspense fallback={
               <div className="flex justify-center py-8"><Spinner /></div>

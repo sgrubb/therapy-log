@@ -102,7 +102,7 @@ function ClientsPageContent() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex h-full flex-col gap-4">
       <PageHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -136,23 +136,25 @@ function ClientsPageContent() {
         <ClientFilters />
       </PageHeader>
 
-      <DataTable
-        data={clients}
-        columns={columns}
-        keyFn={(c) => c.id}
-        sortKey={sortKey}
-        sortDir={sortDir}
-        onSort={setSort}
-        onRowClick={(c) => navigate(`/clients/${c.id}`)}
-        emptyMessage="No clients found."
-      />
+      <div className="min-h-0 flex-1 overflow-auto">
+        <DataTable
+          data={clients}
+          columns={columns}
+          keyFn={(c) => c.id}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onSort={setSort}
+          onRowClick={(c) => navigate(`/clients/${c.id}`)}
+          emptyMessage="No clients found."
+        />
 
-      <Pagination
-        page={page}
-        pageSize={pageSize}
-        total={totalClients}
-        onPageChange={setPage}
-      />
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          total={totalClients}
+          onPageChange={setPage}
+        />
+      </div>
     </div>
   );
 }

@@ -32,7 +32,7 @@ export function DataTable<T>({
   emptyMessage = "No results found.",
 }: Props<T>) {
   return (
-    <div className="min-w-0 overflow-x-auto">
+    <div className="min-w-0 max-h-[60vh] overflow-auto">
       <table className="w-full text-sm">
         <thead className="sticky top-0 z-10">
           <tr className="bg-muted text-muted-foreground border-b text-left">

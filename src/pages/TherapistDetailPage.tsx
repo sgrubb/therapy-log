@@ -92,80 +92,82 @@ export default function TherapistDetailPage() {
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
-      {/* Header */}
-      <PageHeader>
-        <div className="space-y-1">
-          <Link to="/therapists" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-            <ArrowLeft className="size-4" />
-            Back to Therapists
-          </Link>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold">
-                {therapist.first_name} {therapist.last_name}
-              </h1>
-              <Badge variant={isDeactivated ? BadgeVariant.Closed : BadgeVariant.Open}>
-                {isDeactivated ? "Inactive" : "Active"}
-              </Badge>
-            </div>
-            <div className="flex gap-2">
-              {isDeactivated
-                ? <ReactivateTherapistDialog therapist={therapist} />
-                : <DeactivateTherapistDialog therapist={therapist} />}
-              <Link
-                to={`/therapists/${id}/edit`}
-                state={{ from: `/therapists/${id}` }}
-                className={buttonVariants({ variant: "outline" })}
-              >
-                <Pencil className="size-4" />
-                Edit
-              </Link>
+    <div className="h-full flex flex-col gap-6">
+      <div className="max-w-3xl">
+        <PageHeader>
+          <div className="space-y-1">
+            <Link to="/therapists" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+              <ArrowLeft className="size-4" />
+              Back to Therapists
+            </Link>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-semibold">
+                  {therapist.first_name} {therapist.last_name}
+                </h1>
+                <Badge variant={isDeactivated ? BadgeVariant.Closed : BadgeVariant.Open}>
+                  {isDeactivated ? "Inactive" : "Active"}
+                </Badge>
+              </div>
+              <div className="flex gap-2">
+                {isDeactivated
+                  ? <ReactivateTherapistDialog therapist={therapist} />
+                  : <DeactivateTherapistDialog therapist={therapist} />}
+                <Link
+                  to={`/therapists/${id}/edit`}
+                  state={{ from: `/therapists/${id}` }}
+                  className={buttonVariants({ variant: "outline" })}
+                >
+                  <Pencil className="size-4" />
+                  Edit
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      </PageHeader>
-
-      {/* Personal information */}
-      <div className="space-y-3 rounded-lg border p-4">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-          Personal Information
-        </h2>
-        <div className="grid grid-cols-2 gap-4">
-          <InfoRow label="First Name" value={therapist.first_name} />
-          <InfoRow label="Last Name" value={therapist.last_name} />
-        </div>
+        </PageHeader>
       </div>
 
-      {/* Professional information */}
-      <div className="space-y-3 rounded-lg border p-4">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-          Professional Details
-        </h2>
-        <div className="grid grid-cols-2 gap-4">
-          <InfoRow label="Start Date" value={formatDisplayDate(therapist.start_date)} />
-          {isDeactivated && (
-            <InfoRow label="Deactivated Date" value={formatDisplayDate(therapist.deactivated_date!)} />
-          )}
-          <InfoRow label="Admin" value={therapist.is_admin ? "Yes" : "No"} />
-        </div>
-      </div>
+      <div className="min-h-0 flex-1 overflow-auto">
+        <div className="max-w-3xl space-y-6 pb-6">
+          <div className="space-y-3 rounded-lg border p-4">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Personal Information
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <InfoRow label="First Name" value={therapist.first_name} />
+              <InfoRow label="Last Name" value={therapist.last_name} />
+            </div>
+          </div>
 
-      {/* Active clients */}
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold">Active Clients</h2>
-        <DataTable
-          data={sortedClients}
-          columns={clientColumns}
-          keyFn={(c) => c.id}
-          sortKey={clientSortKey}
-          sortDir={clientSortDir}
-          onSort={handleClientSort}
-          onRowClick={(c) => navigate(`/clients/${c.id}`, {
-            state: { from: `/therapists/${therapistId}`, fromLabel: "Back to Therapist" },
-          })}
-          emptyMessage="No active clients."
-        />
+          <div className="space-y-3 rounded-lg border p-4">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Professional Details
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <InfoRow label="Start Date" value={formatDisplayDate(therapist.start_date)} />
+              {isDeactivated && (
+                <InfoRow label="Deactivated Date" value={formatDisplayDate(therapist.deactivated_date!)} />
+              )}
+              <InfoRow label="Admin" value={therapist.is_admin ? "Yes" : "No"} />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold">Active Clients</h2>
+            <DataTable
+              data={sortedClients}
+              columns={clientColumns}
+              keyFn={(c) => c.id}
+              sortKey={clientSortKey}
+              sortDir={clientSortDir}
+              onSort={handleClientSort}
+              onRowClick={(c) => navigate(`/clients/${c.id}`, {
+                state: { from: `/therapists/${therapistId}`, fromLabel: "Back to Therapist" },
+              })}
+              emptyMessage="No active clients."
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

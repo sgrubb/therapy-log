@@ -40,103 +40,107 @@ export default function SessionDetailPage() {
   const showOutcome = session.scheduled_at < new Date() || session.status !== null;
 
   return (
-    <div className="max-w-3xl space-y-6">
-      <PageHeader>
-        <div className="space-y-1">
-          <Link to={backTo} className={buttonVariants({ variant: "ghost", size: "sm" })}>
-            <ArrowLeft className="size-4" />
-            {backLabel}
-          </Link>
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold">
-              <Link
-                to={`/clients/${session.client_id}`}
-                className="hover:underline"
-              >
-                {session.client.first_name} {session.client.last_name}
-              </Link>
-              {" "}— {date}
-            </h1>
-            <div className="flex gap-2">
-              {isUnconfirmed && <ConfirmSessionDialog session={session} />}
-              <Link
-                to={`/sessions/${id}/edit`}
-                state={{ from: `/sessions/${id}` }}
-                className={buttonVariants({ variant: "outline" })}
-              >
-                <Pencil className="size-4" />
-                Edit
-              </Link>
+    <div className="h-full flex flex-col gap-6">
+      <div className="max-w-3xl">
+        <PageHeader>
+          <div className="space-y-1">
+            <Link to={backTo} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+              <ArrowLeft className="size-4" />
+              {backLabel}
+            </Link>
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-semibold">
+                <Link
+                  to={`/clients/${session.client_id}`}
+                  className="hover:underline"
+                >
+                  {session.client.first_name} {session.client.last_name}
+                </Link>
+                {" "}— {date}
+              </h1>
+              <div className="flex gap-2">
+                {isUnconfirmed && <ConfirmSessionDialog session={session} />}
+                <Link
+                  to={`/sessions/${id}/edit`}
+                  state={{ from: `/sessions/${id}` }}
+                  className={buttonVariants({ variant: "outline" })}
+                >
+                  <Pencil className="size-4" />
+                  Edit
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      </PageHeader>
-
-      {/* Session Details */}
-      <div className="space-y-3 rounded-lg border p-4">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-          Session Details
-        </h2>
-        <div className="grid grid-cols-2 gap-4">
-          <InfoRow
-            label="Client"
-            value={
-              <Link
-                to={`/clients/${session.client_id}`}
-                className="text-primary hover:underline"
-              >
-                {session.client.first_name} {session.client.last_name}
-              </Link>
-            }
-          />
-          <InfoRow
-            label="Therapist"
-            value={`${session.therapist.first_name} ${session.therapist.last_name}`}
-          />
-          <InfoRow label="Scheduled Date" value={date} />
-          <InfoRow label="Scheduled Time" value={time} />
-          <InfoRow label="Duration" value={durationLabel} />
-          <InfoRow
-            label="Delivery Method"
-            value={DELIVERY_METHOD_NAMES[session.delivery_method]}
-          />
-          <InfoRow
-            label="Session Type"
-            value={SESSION_TYPE_NAMES[session.session_type]}
-          />
-        </div>
+        </PageHeader>
       </div>
 
-      {/* Session Outcome */}
-      {showOutcome && (
-        <div className="space-y-3 rounded-lg border p-4">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Session Outcome
-          </h2>
-          <div className="grid grid-cols-2 gap-4">
-            <InfoRow label="Status" value={session.status ?? "Unconfirmed"} />
-            {showMissedReason && (
+      <div className="min-h-0 flex-1 overflow-auto">
+        <div className="max-w-3xl space-y-6 pb-6">
+          <div className="space-y-3 rounded-lg border p-4">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Session Details
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
               <InfoRow
-                label="Missed Reason"
-                value={MISSED_REASON_NAMES[session.missed_reason!]}
+                label="Client"
+                value={
+                  <Link
+                    to={`/clients/${session.client_id}`}
+                    className="text-primary hover:underline"
+                  >
+                    {session.client.first_name} {session.client.last_name}
+                  </Link>
+                }
               />
-            )}
-            {showOccurredAt && (
-              <>
-                <InfoRow label="Occurred Date" value={formatDisplayDate(session.occurred_at!)} />
-                <InfoRow label="Occurred Time" value={format(session.occurred_at!, "HH:mm")} />
-              </>
-            )}
+              <InfoRow
+                label="Therapist"
+                value={`${session.therapist.first_name} ${session.therapist.last_name}`}
+              />
+              <InfoRow label="Scheduled Date" value={date} />
+              <InfoRow label="Scheduled Time" value={time} />
+              <InfoRow label="Duration" value={durationLabel} />
+              <InfoRow
+                label="Delivery Method"
+                value={DELIVERY_METHOD_NAMES[session.delivery_method]}
+              />
+              <InfoRow
+                label="Session Type"
+                value={SESSION_TYPE_NAMES[session.session_type]}
+              />
+            </div>
           </div>
-        </div>
-      )}
 
-      {session.notes && (
-        <div className="space-y-1 rounded-lg border p-4">
-          <p className="text-muted-foreground text-sm font-medium">Notes</p>
-          <p className="text-sm whitespace-pre-wrap">{session.notes}</p>
+          {showOutcome && (
+            <div className="space-y-3 rounded-lg border p-4">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Session Outcome
+              </h2>
+              <div className="grid grid-cols-2 gap-4">
+                <InfoRow label="Status" value={session.status ?? "Unconfirmed"} />
+                {showMissedReason && (
+                  <InfoRow
+                    label="Missed Reason"
+                    value={MISSED_REASON_NAMES[session.missed_reason!]}
+                  />
+                )}
+                {showOccurredAt && (
+                  <>
+                    <InfoRow label="Occurred Date" value={formatDisplayDate(session.occurred_at!)} />
+                    <InfoRow label="Occurred Time" value={format(session.occurred_at!, "HH:mm")} />
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {session.notes && (
+            <div className="space-y-1 rounded-lg border p-4">
+              <p className="text-muted-foreground text-sm font-medium">Notes</p>
+              <p className="text-sm whitespace-pre-wrap">{session.notes}</p>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

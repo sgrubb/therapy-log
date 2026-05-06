@@ -35,46 +35,48 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-lg space-y-6">
-      <h2 className="text-xl font-semibold">Settings</h2>
+    <div className="h-full overflow-auto">
+      <div className="max-w-lg space-y-6">
+        <h2 className="text-xl font-semibold">Settings</h2>
 
-      <section className="space-y-2">
-        <h3 className="text-sm font-medium">Database</h3>
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">
-            Current location:{" "}
-            <span className="font-mono">{dbPath ?? "Not configured"}</span>
-          </p>
-          <Button
-            variant="outline"
-            size="default"
-            onClick={handleChangePath}
-            disabled={changing}
+        <section className="space-y-2">
+          <h3 className="text-sm font-medium">Database</h3>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Current location:{" "}
+              <span className="font-mono">{dbPath ?? "Not configured"}</span>
+            </p>
+            <Button
+              variant="outline"
+              size="default"
+              onClick={handleChangePath}
+              disabled={changing}
+            >
+              {changing
+                ? <><Loader2 className="size-4 animate-spin" /> Changing…</>
+                : <><FolderOpen className="size-4" /> Change Database Location</>}
+            </Button>
+          </div>
+        </section>
+
+        {restartWarning && (
+          <div
+            role="alert"
+            className="rounded-md border border-yellow-400 bg-yellow-50 px-4 py-3 text-sm text-yellow-800"
           >
-            {changing
-              ? <><Loader2 className="size-4 animate-spin" /> Changing…</>
-              : <><FolderOpen className="size-4" /> Change Database Location</>}
-          </Button>
-        </div>
-      </section>
+            Database path updated. Restart the app to use the new database.
+          </div>
+        )}
 
-      {restartWarning && (
-        <div
-          role="alert"
-          className="rounded-md border border-yellow-400 bg-yellow-50 px-4 py-3 text-sm text-yellow-800"
-        >
-          Database path updated. Restart the app to use the new database.
-        </div>
-      )}
-
-      {error && (
-        <div
-          role="alert"
-          className="rounded-md border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive"
-        >
-          {error}
-        </div>
-      )}
+        {error && (
+          <div
+            role="alert"
+            className="rounded-md border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          >
+            {error}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

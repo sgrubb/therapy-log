@@ -179,7 +179,7 @@ function SessionsPageContent() {
   ], [overlappingIds, unconfirmedIds]);
 
   return (
-    <div className="space-y-4">
+    <div className="flex h-full flex-col gap-4">
       <PageHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -213,55 +213,57 @@ function SessionsPageContent() {
         <SessionFilters />
       </PageHeader>
 
-      {showExpectedSessions && (
-        <div className="my-6 w-full rounded-md border px-4 py-3">
-          <button
-            className="flex w-full cursor-pointer items-center gap-2 text-sm font-semibold"
-            onClick={() => setExpectedOpen(!expectedOpen)}
-          >
-            <span className="text-muted-foreground">Expected sessions</span>
-            {expectedOpen
-              ? <ChevronUp size={16} className="ml-auto" />
-              : <ChevronDown size={16} className="ml-auto" />
-            }
-          </button>
-          {expectedOpen && (
-            <div className="mt-3">
-              <DataTable
-                data={displayedExpectedSessions}
-                columns={expectedColumns}
-                keyFn={(s) => s.id}
-                sortKey={expectedSortKey}
-                sortDir={expectedSortDir}
-                onSort={setExpectedSort}
-                emptyMessage="No expected sessions."
-              />
-            </div>
-          )}
-        </div>
-      )}
+      <div className="min-h-0 flex-1 overflow-auto space-y-8">
+        {showExpectedSessions && (
+          <div className="w-full rounded-md border px-4 py-3">
+            <button
+              className="flex w-full cursor-pointer items-center gap-2 text-sm font-semibold"
+              onClick={() => setExpectedOpen(!expectedOpen)}
+            >
+              <span className="text-muted-foreground">Expected sessions</span>
+              {expectedOpen
+                ? <ChevronUp size={16} className="ml-auto" />
+                : <ChevronDown size={16} className="ml-auto" />
+              }
+            </button>
+            {expectedOpen && (
+              <div className="mt-3">
+                <DataTable
+                  data={displayedExpectedSessions}
+                  columns={expectedColumns}
+                  keyFn={(s) => s.id}
+                  sortKey={expectedSortKey}
+                  sortDir={expectedSortDir}
+                  onSort={setExpectedSort}
+                  emptyMessage="No expected sessions."
+                />
+              </div>
+            )}
+          </div>
+        )}
 
-      {showMainTable && (
-        <DataTable
-          data={displayedSessions}
-          columns={warningSessionColumns}
-          keyFn={(s) => s.id}
-          sortKey={sortKey}
-          sortDir={sortDir}
-          onSort={setSort}
-          onRowClick={(s) => navigate(`/sessions/${s.id}`)}
-          emptyMessage="No sessions found."
-        />
-      )}
+        {showMainTable && (
+          <DataTable
+            data={displayedSessions}
+            columns={warningSessionColumns}
+            keyFn={(s) => s.id}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onSort={setSort}
+            onRowClick={(s) => navigate(`/sessions/${s.id}`)}
+            emptyMessage="No sessions found."
+          />
+        )}
 
-      {showPagination && (
-        <Pagination
-          page={page}
-          pageSize={pageSize}
-          total={totalSessions}
-          onPageChange={setPage}
-        />
-      )}
+        {showPagination && (
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={totalSessions}
+            onPageChange={setPage}
+          />
+        )}
+      </div>
     </div>
   );
 }

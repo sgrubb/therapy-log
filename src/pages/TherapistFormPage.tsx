@@ -48,74 +48,80 @@ export default function TherapistFormPage() {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <PageHeader>
-        <h1 className="text-2xl font-semibold">
-          {isEdit ? "Edit Therapist" : "Add Therapist"}
-        </h1>
-      </PageHeader>
+    <div className="h-full flex flex-col gap-6">
+      <div className="max-w-2xl">
+        <PageHeader>
+          <h1 className="text-2xl font-semibold">
+            {isEdit ? "Edit Therapist" : "Add Therapist"}
+          </h1>
+        </PageHeader>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8" noValidate>
-        <SaveErrorAlert message={saveError} />
+      <div className="min-h-0 flex-1 overflow-auto">
+        <form id="therapist-form" onSubmit={handleSubmit} className="max-w-2xl space-y-8" noValidate>
+          <SaveErrorAlert message={saveError} />
 
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Personal Information
-          </h2>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="First Name *" error={getError("first_name")} conflictError={getConflictError("first_name")}>
-              <Input
-                id="first_name"
-                aria-label="First name"
-                value={form.first_name}
-                onChange={(e) => set("first_name", e.target.value)}
-                onBlur={() => markTouched("first_name")}
-                aria-invalid={!!getError("first_name")}
+          <section className="space-y-4">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Personal Information
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="First Name *" error={getError("first_name")} conflictError={getConflictError("first_name")}>
+                <Input
+                  id="first_name"
+                  aria-label="First name"
+                  value={form.first_name}
+                  onChange={(e) => set("first_name", e.target.value)}
+                  onBlur={() => markTouched("first_name")}
+                  aria-invalid={!!getError("first_name")}
+                />
+              </Field>
+              <Field label="Last Name *" error={getError("last_name")} conflictError={getConflictError("last_name")}>
+                <Input
+                  id="last_name"
+                  aria-label="Last name"
+                  value={form.last_name}
+                  onChange={(e) => set("last_name", e.target.value)}
+                  onBlur={() => markTouched("last_name")}
+                  aria-invalid={!!getError("last_name")}
+                />
+              </Field>
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Professional Details
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Start Date *" error={getError("start_date")} conflictError={getConflictError("start_date")}>
+                <Input
+                  id="start_date"
+                  type="date"
+                  aria-label="Start date"
+                  value={form.start_date}
+                  onChange={(e) => set("start_date", e.target.value)}
+                  onBlur={() => markTouched("start_date")}
+                  aria-invalid={!!getError("start_date")}
+                  disabled={isEdit}
+                />
+              </Field>
+            </div>
+            <Field label="Is Admin" error={getError("is_admin")} conflictError={getConflictError("is_admin")}>
+              <input
+                type="checkbox"
+                aria-label="Is admin"
+                checked={form.is_admin}
+                onChange={(e) => set("is_admin", e.target.checked)}
               />
             </Field>
-            <Field label="Last Name *" error={getError("last_name")} conflictError={getConflictError("last_name")}>
-              <Input
-                id="last_name"
-                aria-label="Last name"
-                value={form.last_name}
-                onChange={(e) => set("last_name", e.target.value)}
-                onBlur={() => markTouched("last_name")}
-                aria-invalid={!!getError("last_name")}
-              />
-            </Field>
-          </div>
-        </section>
+          </section>
+        </form>
+      </div>
 
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Professional Details
-          </h2>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Start Date *" error={getError("start_date")} conflictError={getConflictError("start_date")}>
-              <Input
-                id="start_date"
-                type="date"
-                aria-label="Start date"
-                value={form.start_date}
-                onChange={(e) => set("start_date", e.target.value)}
-                onBlur={() => markTouched("start_date")}
-                aria-invalid={!!getError("start_date")}
-                disabled={isEdit}
-              />
-            </Field>
-          </div>
-          <Field label="Is Admin" error={getError("is_admin")} conflictError={getConflictError("is_admin")}>
-            <input
-              type="checkbox"
-              aria-label="Is admin"
-              checked={form.is_admin}
-              onChange={(e) => set("is_admin", e.target.checked)}
-            />
-          </Field>
-        </section>
-
+      <div className="max-w-2xl border-t pt-4">
         <div className="flex gap-3">
-          <Button type="submit" disabled={formState === FormState.Saving}>
+          <Button type="submit" form="therapist-form" disabled={formState === FormState.Saving}>
             {formState === FormState.Saving
               ? <><Loader2 className="size-4 animate-spin" /> Saving…</>
               : isEdit
@@ -131,7 +137,7 @@ export default function TherapistFormPage() {
             Cancel
           </Button>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

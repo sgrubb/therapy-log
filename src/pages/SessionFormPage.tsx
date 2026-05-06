@@ -72,7 +72,6 @@ export default function SessionFormPage() {
     getError,
   } = useSessionForm(sessionId, defaults);
 
-  // Sort: current therapist's clients first, then alphabetically
   const sortedClients = [...clients].sort((a, b) => {
     const aName = `${a.last_name} ${a.first_name}`.toLowerCase();
     const bName = `${b.last_name} ${b.first_name}`.toLowerCase();
@@ -103,232 +102,236 @@ export default function SessionFormPage() {
   const today = format(new Date(), "yyyy-MM-dd");
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <PageHeader>
-        <h1 className="text-2xl font-semibold">
-          {isEdit ? "Edit Session" : "Log Session"}
-        </h1>
-      </PageHeader>
+    <div className="h-full flex flex-col gap-6">
+      <div className="max-w-2xl">
+        <PageHeader>
+          <h1 className="text-2xl font-semibold">
+            {isEdit ? "Edit Session" : "Log Session"}
+          </h1>
+        </PageHeader>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8" noValidate>
-        <SaveErrorAlert message={saveError} />
+      <div className="min-h-0 flex-1 overflow-auto">
+        <form id="session-form" onSubmit={handleSubmit} className="max-w-2xl space-y-8" noValidate>
+          <SaveErrorAlert message={saveError} />
 
-        {/* Session Details */}
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Session Details
-          </h2>
-          <div className="grid grid-cols-2 gap-4">
-          <Field label="Client *" error={getError("client_id")} conflictError={getConflictError("client_id")}>
-            <SearchableSelect
-              value={form.client_id}
-              onValueChange={(v) => setClient(v, clients)}
-              aria-label="Client"
-              aria-invalid={!!getError("client_id")}
-              onBlur={() => markTouched("client_id")}
-              placeholder="Select client…"
-              options={sortedClients.map((c) => ({ value: c.id.toString(), label: `${c.first_name} ${c.last_name}` }))}
-            />
-          </Field>
-
-          <Field label="Therapist *" error={getError("therapist_id")} conflictError={getConflictError("therapist_id")}>
-            <SearchableSelect
-              value={form.therapist_id}
-              onValueChange={(v) => set("therapist_id", v)}
-              aria-label="Therapist"
-              aria-invalid={!!getError("therapist_id")}
-              onBlur={() => markTouched("therapist_id")}
-              placeholder="Select therapist…"
-              options={therapists.map((t) => ({ value: t.id.toString(), label: `${t.first_name} ${t.last_name}` }))}
-            />
-          </Field>
-
-          <Field label="Scheduled Date *" error={getError("date")} conflictError={getConflictError("date")}>
-            <Input
-              type="date"
-              aria-label="Scheduled date"
-              value={form.date}
-              onChange={(e) => set("date", e.target.value)}
-              onBlur={() => markTouched("date")}
-              aria-invalid={!!getError("date")}
-            />
-          </Field>
-
-          <Field label="Scheduled Time *" error={getError("time")} conflictError={getConflictError("time")}>
-            <Input
-              type="time"
-              aria-label="Scheduled time"
-              value={form.time ?? ""}
-              onChange={(e) => set("time", e.target.value)}
-              onBlur={() => markTouched("time")}
-              aria-invalid={!!getError("time")}
-            />
-          </Field>
-
-          <Field label="Duration *" error={getError("duration")} conflictError={getConflictError("duration")}>
-            <DurationInput
-              aria-label="Duration"
-              value={form.duration ?? ""}
-              onChange={(v) => set("duration", v)}
-              onBlur={() => markTouched("duration")}
-              aria-invalid={!!getError("duration")}
-            />
-          </Field>
-
-          <Field label="Delivery Method *" error={getError("delivery_method")} conflictError={getConflictError("delivery_method")}>
-            <Select
-              value={form.delivery_method}
-              onValueChange={(v) => set("delivery_method", v as DeliveryMethod)}
-            >
-              <SelectTrigger
-                aria-label="Delivery method"
-                aria-invalid={!!getError("delivery_method")}
-                onBlur={() => markTouched("delivery_method")}
-              >
-                <SelectValue placeholder="Select method…" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.values(DeliveryMethod).map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {DELIVERY_METHOD_NAMES[m]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-
-          <Field label="Session Type *" error={getError("session_type")} conflictError={getConflictError("session_type")}>
-            <Select
-              value={form.session_type}
-              onValueChange={(v) => set("session_type", v as SessionType)}
-            >
-              <SelectTrigger
-                aria-label="Session type"
-                aria-invalid={!!getError("session_type")}
-                onBlur={() => markTouched("session_type")}
-              >
-                <SelectValue placeholder="Select type…" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.values(SessionType).map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {SESSION_TYPE_NAMES[t]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-
-          </div>
-        </section>
-
-        {isPastSession && (
           <section className="space-y-4">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Session Outcome
+              Session Details
             </h2>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Status *" error={getError("status")} conflictError={getConflictError("status")}>
+              <Field label="Client *" error={getError("client_id")} conflictError={getConflictError("client_id")}>
+                <SearchableSelect
+                  value={form.client_id}
+                  onValueChange={(v) => setClient(v, clients)}
+                  aria-label="Client"
+                  aria-invalid={!!getError("client_id")}
+                  onBlur={() => markTouched("client_id")}
+                  placeholder="Select client…"
+                  options={sortedClients.map((c) => ({ value: c.id.toString(), label: `${c.first_name} ${c.last_name}` }))}
+                />
+              </Field>
+
+              <Field label="Therapist *" error={getError("therapist_id")} conflictError={getConflictError("therapist_id")}>
+                <SearchableSelect
+                  value={form.therapist_id}
+                  onValueChange={(v) => set("therapist_id", v)}
+                  aria-label="Therapist"
+                  aria-invalid={!!getError("therapist_id")}
+                  onBlur={() => markTouched("therapist_id")}
+                  placeholder="Select therapist…"
+                  options={therapists.map((t) => ({ value: t.id.toString(), label: `${t.first_name} ${t.last_name}` }))}
+                />
+              </Field>
+
+              <Field label="Scheduled Date *" error={getError("date")} conflictError={getConflictError("date")}>
+                <Input
+                  type="date"
+                  aria-label="Scheduled date"
+                  value={form.date}
+                  onChange={(e) => set("date", e.target.value)}
+                  onBlur={() => markTouched("date")}
+                  aria-invalid={!!getError("date")}
+                />
+              </Field>
+
+              <Field label="Scheduled Time *" error={getError("time")} conflictError={getConflictError("time")}>
+                <Input
+                  type="time"
+                  aria-label="Scheduled time"
+                  value={form.time ?? ""}
+                  onChange={(e) => set("time", e.target.value)}
+                  onBlur={() => markTouched("time")}
+                  aria-invalid={!!getError("time")}
+                />
+              </Field>
+
+              <Field label="Duration *" error={getError("duration")} conflictError={getConflictError("duration")}>
+                <DurationInput
+                  aria-label="Duration"
+                  value={form.duration ?? ""}
+                  onChange={(v) => set("duration", v)}
+                  onBlur={() => markTouched("duration")}
+                  aria-invalid={!!getError("duration")}
+                />
+              </Field>
+
+              <Field label="Delivery Method *" error={getError("delivery_method")} conflictError={getConflictError("delivery_method")}>
                 <Select
-                  value={form.status}
-                  onValueChange={(v) => set("status", v as SessionStatus)}
+                  value={form.delivery_method}
+                  onValueChange={(v) => set("delivery_method", v as DeliveryMethod)}
                 >
                   <SelectTrigger
-                    aria-label="Status"
-                    aria-invalid={!!getError("status")}
-                    onBlur={() => markTouched("status")}
+                    aria-label="Delivery method"
+                    aria-invalid={!!getError("delivery_method")}
+                    onBlur={() => markTouched("delivery_method")}
                   >
-                    <SelectValue placeholder="Select status…" />
+                    <SelectValue placeholder="Select method…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.values(SessionStatus).map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
+                    {Object.values(DeliveryMethod).map((m) => (
+                      <SelectItem key={m} value={m}>
+                        {DELIVERY_METHOD_NAMES[m]}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </Field>
 
-              {showMissedReason && (
-                <Field label="Missed Reason *" error={getError("missed_reason")} conflictError={getConflictError("missed_reason")}>
+              <Field label="Session Type *" error={getError("session_type")} conflictError={getConflictError("session_type")}>
+                <Select
+                  value={form.session_type}
+                  onValueChange={(v) => set("session_type", v as SessionType)}
+                >
+                  <SelectTrigger
+                    aria-label="Session type"
+                    aria-invalid={!!getError("session_type")}
+                    onBlur={() => markTouched("session_type")}
+                  >
+                    <SelectValue placeholder="Select type…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(SessionType).map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {SESSION_TYPE_NAMES[t]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+          </section>
+
+          {isPastSession && (
+            <section className="space-y-4">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Session Outcome
+              </h2>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Status *" error={getError("status")} conflictError={getConflictError("status")}>
                   <Select
-                    value={form.missed_reason ?? ""}
-                    onValueChange={(v) => set("missed_reason", v as MissedReason)}
+                    value={form.status}
+                    onValueChange={(v) => set("status", v as SessionStatus)}
                   >
                     <SelectTrigger
-                      aria-label="Missed reason"
-                      aria-invalid={!!getError("missed_reason")}
-                      onBlur={() => markTouched("missed_reason")}
+                      aria-label="Status"
+                      aria-invalid={!!getError("status")}
+                      onBlur={() => markTouched("status")}
                     >
-                      <SelectValue placeholder="Select reason…" />
+                      <SelectValue placeholder="Select status…" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.values(MissedReason).map((r) => (
-                        <SelectItem key={r} value={r}>
-                          {MISSED_REASON_NAMES[r]}
+                      {Object.values(SessionStatus).map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </Field>
-              )}
 
-              {showOccurred && (
-                <>
-                  <Field
-                    label="Occurred Date *"
-                    error={getError("occurred_date")}
-                    conflictError={getConflictError("occurred_date")}
-                  >
-                    <Input
-                      type="date"
-                      aria-label="Occurred date"
-                      max={today}
-                      value={form.occurred_date ?? ""}
-                      onChange={(e) => set("occurred_date", e.target.value)}
-                      onBlur={() => markTouched("occurred_date")}
-                      aria-invalid={!!getError("occurred_date")}
-                    />
+                {showMissedReason && (
+                  <Field label="Missed Reason *" error={getError("missed_reason")} conflictError={getConflictError("missed_reason")}>
+                    <Select
+                      value={form.missed_reason ?? ""}
+                      onValueChange={(v) => set("missed_reason", v as MissedReason)}
+                    >
+                      <SelectTrigger
+                        aria-label="Missed reason"
+                        aria-invalid={!!getError("missed_reason")}
+                        onBlur={() => markTouched("missed_reason")}
+                      >
+                        <SelectValue placeholder="Select reason…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.values(MissedReason).map((r) => (
+                          <SelectItem key={r} value={r}>
+                            {MISSED_REASON_NAMES[r]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </Field>
+                )}
 
-                  <Field
-                    label="Occurred Time *"
-                    error={getError("occurred_time")}
-                    conflictError={getConflictError("occurred_time")}
-                  >
-                    <Input
-                      type="time"
-                      aria-label="Occurred time"
-                      value={form.occurred_time ?? ""}
-                      onChange={(e) => set("occurred_time", e.target.value)}
-                      onBlur={() => markTouched("occurred_time")}
-                      aria-invalid={!!getError("occurred_time")}
-                    />
-                  </Field>
-                </>
-              )}
-            </div>
-          </section>
-        )}
+                {showOccurred && (
+                  <>
+                    <Field
+                      label="Occurred Date *"
+                      error={getError("occurred_date")}
+                      conflictError={getConflictError("occurred_date")}
+                    >
+                      <Input
+                        type="date"
+                        aria-label="Occurred date"
+                        max={today}
+                        value={form.occurred_date ?? ""}
+                        onChange={(e) => set("occurred_date", e.target.value)}
+                        onBlur={() => markTouched("occurred_date")}
+                        aria-invalid={!!getError("occurred_date")}
+                      />
+                    </Field>
 
-        <Field
-          label={`Notes (${(form.notes ?? "").length}/1000)`}
-          error={getError("notes")}
-          conflictError={getConflictError("notes")}
-        >
-          <Textarea
-            aria-label="Notes"
-            value={form.notes ?? ""}
-            onChange={(e) => set("notes", e.target.value)}
-            onBlur={() => markTouched("notes")}
-            rows={4}
-            aria-invalid={!!getError("notes")}
-          />
-        </Field>
+                    <Field
+                      label="Occurred Time *"
+                      error={getError("occurred_time")}
+                      conflictError={getConflictError("occurred_time")}
+                    >
+                      <Input
+                        type="time"
+                        aria-label="Occurred time"
+                        value={form.occurred_time ?? ""}
+                        onChange={(e) => set("occurred_time", e.target.value)}
+                        onBlur={() => markTouched("occurred_time")}
+                        aria-invalid={!!getError("occurred_time")}
+                      />
+                    </Field>
+                  </>
+                )}
+              </div>
+            </section>
+          )}
 
+          <Field
+            label={`Notes (${(form.notes ?? "").length}/1000)`}
+            error={getError("notes")}
+            conflictError={getConflictError("notes")}
+          >
+            <Textarea
+              aria-label="Notes"
+              value={form.notes ?? ""}
+              onChange={(e) => set("notes", e.target.value)}
+              onBlur={() => markTouched("notes")}
+              rows={4}
+              aria-invalid={!!getError("notes")}
+            />
+          </Field>
+        </form>
+      </div>
+
+      <div className="max-w-2xl border-t pt-4">
         <div className="flex gap-3">
-          <Button type="submit" disabled={formState === FormState.Saving}>
+          <Button type="submit" form="session-form" disabled={formState === FormState.Saving}>
             {formState === FormState.Saving
               ? <><Loader2 className="size-4 animate-spin" /> Saving…</>
               : isEdit
@@ -344,7 +347,7 @@ export default function SessionFormPage() {
             Cancel
           </Button>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

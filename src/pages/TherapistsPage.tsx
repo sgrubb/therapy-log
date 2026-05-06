@@ -90,7 +90,7 @@ function TherapistsPageContent() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex h-full flex-col gap-4">
       <PageHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -126,32 +126,34 @@ function TherapistsPageContent() {
         {isAdmin && <TherapistFilters />}
       </PageHeader>
 
-      {pageError && (
-        <div
-          role="alert"
-          className="border-destructive bg-destructive/10 text-destructive rounded-md border p-3 text-sm"
-        >
-          {pageError}
-        </div>
-      )}
+      <div className="min-h-0 flex-1 overflow-auto">
+        {pageError && (
+          <div
+            role="alert"
+            className="border-destructive bg-destructive/10 text-destructive mb-4 rounded-md border p-3 text-sm"
+          >
+            {pageError}
+          </div>
+        )}
 
-      <DataTable
-        data={therapists}
-        columns={columns}
-        keyFn={(t) => t.id}
-        sortKey={sortKey}
-        sortDir={sortDir}
-        onSort={setSort}
-        onRowClick={isAdmin ? (t) => navigate(`/therapists/${t.id}`) : undefined}
-        emptyMessage="No therapists found."
-      />
+        <DataTable
+          data={therapists}
+          columns={columns}
+          keyFn={(t) => t.id}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onSort={setSort}
+          onRowClick={isAdmin ? (t) => navigate(`/therapists/${t.id}`) : undefined}
+          emptyMessage="No therapists found."
+        />
 
-      <Pagination
-        page={page}
-        pageSize={pageSize}
-        total={totalTherapists}
-        onPageChange={setPage}
-      />
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          total={totalTherapists}
+          onPageChange={setPage}
+        />
+      </div>
     </div>
   );
 }
