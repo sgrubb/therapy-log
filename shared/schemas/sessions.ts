@@ -79,14 +79,14 @@ function validateSessionStatusFields(
     if (data.occurred_at == null) {
       ctx.addIssue({
         code: "custom",
-        message: "Occurred date and time are required when status is Attended.",
+        message: '"occurred_date" and "occurred_time" are required when status is "Attended".',
         path: ["occurred_at"],
       });
     }
     if (data.missed_reason != null) {
       ctx.addIssue({
         code: "custom",
-        message: "Missed reason must not be set when status is Attended.",
+        message: '"missed_reason" must not be set when status is "Attended".',
         path: ["missed_reason"],
       });
     }
@@ -98,10 +98,10 @@ function validateSessionStatusFields(
   if (data.occurred_at != null) {
     const reason = data.status === null
       ? "session is unconfirmed"
-      : `status is ${data.status}`;
+      : `status is "${data.status}"`;
     ctx.addIssue({
       code: "custom",
-      message: `Occurred date and time must not be set when ${reason}.`,
+      message: `"occurred_date" and "occurred_time" must not be set when ${reason}.`,
       path: ["occurred_at"],
     });
   }
@@ -110,7 +110,7 @@ function validateSessionStatusFields(
     if (data.missed_reason != null) {
       ctx.addIssue({
         code: "custom",
-        message: "Missed reason must not be set when session is unconfirmed.",
+        message: '"missed_reason" must not be set when session is unconfirmed.',
         path: ["missed_reason"],
       });
     }
@@ -123,7 +123,7 @@ function validateSessionStatusFields(
   ) {
     ctx.addIssue({
       code: "custom",
-      message: "Missed reason is required when status is DNA or Cancelled.",
+      message: '"missed_reason" is required when status is "DNA" or "Cancelled".',
       path: ["missed_reason"],
     });
   }

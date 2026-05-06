@@ -3,10 +3,10 @@ import Database from "better-sqlite3";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { MIGRATIONS, CURRENT_SCHEMA_VERSION } from "../electron/generated/migrations.generated";
-import { applyMigrations, initializeDatabase } from "../electron/lib/migrations";
+import { MIGRATIONS, CURRENT_SCHEMA_VERSION } from "../../electron/generated/migrations.generated";
+import { applyMigrations, initializeDatabase } from "../../electron/lib/migrations";
 
-const MIGRATIONS_DIR = path.join(__dirname, "..", "prisma", "migrations");
+const MIGRATIONS_DIR = path.join(__dirname, "..", "..", "prisma", "migrations");
 
 const filesToCleanup: string[] = [];
 

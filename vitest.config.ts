@@ -12,6 +12,18 @@ export default defineConfig({
           ],
         },
         test: {
+          name: "shared",
+          environment: "node",
+          include: ["shared-tests/**/*.test.ts"],
+        },
+      },
+      {
+        resolve: {
+          alias: [
+            { find: "@shared", replacement: resolve(__dirname, "shared") },
+          ],
+        },
+        test: {
           name: "node",
           environment: "node",
           include: ["electron-tests/**/*.test.ts"],

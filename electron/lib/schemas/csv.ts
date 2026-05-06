@@ -87,7 +87,10 @@ const reqEnumField = <T extends string>(key: string, values: readonly T[]) =>
     .min(1, `"${key}" is required`)
     .transform((v, ctx) => {
       if (!(values as readonly string[]).includes(v)) {
-        ctx.addIssue({ code: "custom", message: `"${key}" must be one of: ${values.join(", ")}` });
+        ctx.addIssue({
+        code: "custom",
+        message: `"${key}" must be one of: ${values.map((v) => `"${v}"`).join(", ")}`,
+      });
         return z.NEVER;
       }
       return v as T;
@@ -99,7 +102,10 @@ const optEnumField = <T extends string>(key: string, values: readonly T[]) =>
       return null;
     }
     if (!(values as readonly string[]).includes(v)) {
-      ctx.addIssue({ code: "custom", message: `"${key}" must be one of: ${values.join(", ")}` });
+      ctx.addIssue({
+        code: "custom",
+        message: `"${key}" must be one of: ${values.map((v) => `"${v}"`).join(", ")}`,
+      });
       return z.NEVER;
     }
     return v as T;

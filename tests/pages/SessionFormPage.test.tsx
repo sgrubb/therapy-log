@@ -317,27 +317,6 @@ describe("SessionFormPage — new session", () => {
     expect(mockInvoke).not.toHaveBeenCalledWith("session:create", expect.anything());
   });
 
-  it("requires missed_reason when status is DNA", async () => {
-    renderNewForm();
-    await waitFor(() => getStatusSelect());
-
-    fireEvent.change(getClientSelect(), { target: { value: "1" } });
-    fireEvent.change(getTherapistSelect(), { target: { value: "1" } });
-    fireEvent.change(screen.getByLabelText(/^scheduled date$/i), { target: { value: "2026-01-01" } });
-    fireEvent.change(getSessionTypeSelect(), { target: { value: "Child" } });
-    fireEvent.change(getDeliveryMethodSelect(), { target: { value: "FaceToFace" } });
-    fireEvent.change(getStatusSelect(), { target: { value: "DNA" } });
-
-    fireEvent.click(screen.getByRole("button", { name: /log session/i }));
-
-    await waitFor(() => {
-      expect(
-        screen.getByText(/reason is required when session is missed or cancelled/i),
-      ).toBeInTheDocument();
-    });
-    expect(mockInvoke).not.toHaveBeenCalledWith("session:create", expect.anything());
-  });
-
   it("calls session:create with correct payload and navigates to /sessions", async () => {
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {

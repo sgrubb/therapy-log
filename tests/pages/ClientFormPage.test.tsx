@@ -134,31 +134,6 @@ describe("ClientFormPage — new client", () => {
     });
   });
 
-  it("shows contact error when neither phone nor email is provided", async () => {
-    const user = userEvent.setup();
-    renderNewForm();
-
-    await waitFor(() => screen.getByLabelText(/first name/i));
-
-    await user.type(screen.getByLabelText(/first name/i), "Jane");
-    await user.type(screen.getByLabelText(/last name/i), "Smith");
-    await user.type(screen.getByLabelText(/hospital number/i), "HN999");
-    await user.type(screen.getByLabelText(/date of birth/i), "2000-01-01");
-    fireEvent.change(getTherapistSelect(), { target: { value: "1" } });
-
-    fireEvent.click(screen.getByRole("button", { name: /add client/i }));
-
-    await waitFor(() => {
-      expect(
-        screen.getAllByText(/at least one of phone or email/i).length,
-      ).toBeGreaterThan(0);
-    });
-    expect(mockInvoke).not.toHaveBeenCalledWith(
-      "client:create",
-      expect.anything(),
-    );
-  });
-
   it("shows error when notes exceed 1000 characters", async () => {
     const user = userEvent.setup();
     renderNewForm();
