@@ -40,13 +40,15 @@ For shared use, store the database in a synchronised cloud folder (e.g. OneDrive
 3. Select the client and fill in session details
 4. Click **Log Session**
 
-**Shortcut:** Press `Ctrl+N` (Windows) or `Cmd+N` (Mac) from the Sessions page
+**Shortcut:** Press `Ctrl+N` (Windows) or `Cmd+N` (Mac) from the Sessions or Calendar page
 
 ### Managing Therapists (Admin Only)
 
 1. Click **Therapists** in the navigation
 2. Click **Add Therapist**
-3. Enter name and check **Is Admin** if applicable
+3. Enter name, start date, and check **Is Admin** if applicable
+
+**Shortcut:** Press `Ctrl+N` (Windows) or `Cmd+N` (Mac) from the Therapists page
 
 ### Changing Database Location
 
@@ -59,7 +61,7 @@ For shared use, store the database in a synchronised cloud folder (e.g. OneDrive
 
 1. Open the client's detail page
 2. Click **Close Client**
-3. Enter the post-intervention score and outcome
+3. Enter the outcome and any closing notes
 4. Confirm
 
 ## Troubleshooting
@@ -94,6 +96,12 @@ npm run dev
 npm test
 ```
 
+For watch mode during development:
+
+```
+npm run test:watch
+```
+
 ### Building for Production
 
 Before building, place icon files in `assets/`:
@@ -104,7 +112,7 @@ Before building, place icon files in `assets/`:
 ```
 npm run package:win   # Windows NSIS installer
 npm run package:mac   # macOS DMG
-npm run package:all   # Both platforms
+npm run package:all   # Windows + macOS
 npm run package:dir   # Unpacked (for testing without installer)
 ```
 
@@ -113,9 +121,15 @@ Output is written to `dist/`.
 ### Project Structure
 
 ```
-electron/   Main process (Node.js)
-src/        Renderer process (React)
-prisma/     Database schema and migrations
+electron/         Main process (Node.js) — IPC handlers, DB access
+electron-tests/   Integration tests for electron handlers
+src/              Renderer process (React)
+tests/            Renderer unit and integration tests
+shared/           Types, schemas, and enums shared by both processes
+shared-tests/     Tests for shared logic
+prisma/           Database schema and migrations
+scripts/          Build-time code generation scripts
+generated/        Generated migration bundle (committed, do not edit manually)
 ```
 
 ### Database Migrations
@@ -123,7 +137,7 @@ prisma/     Database schema and migrations
 Edit `prisma/schema.prisma`, then:
 
 ```
-npx prisma migrate dev --name describe-your-change
+npm run db:migrate
 ```
 
-This creates a migration file and updates the TypeScript types. The migration is embedded into the app at build time via `npm run generate:migrations`.
+This creates a migration file and updates the TypeScript types. Run `npm run generate:migrations` to re-bundle migrations into `generated/` (this runs automatically as part of the build).

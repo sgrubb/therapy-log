@@ -39,12 +39,12 @@ function AppLayout() {
   useEffect(() => {
     window.electronAPI?.onNavigateToNew(() => {
       const path = locationRef.current;
-      if (path.startsWith("/sessions")) {
-        navigate("/sessions/new");
-      } else if (path.startsWith("/therapists")) {
+      if (path.startsWith("/therapists")) {
         navigate("/therapists/new");
-      } else {
+      } else if (path.startsWith("/clients")) {
         navigate("/clients/new");
+      } else if (path.startsWith("/sessions") || path.startsWith("/calendar")) {
+        navigate("/sessions/new");
       }
     });
   }, [navigate]);
