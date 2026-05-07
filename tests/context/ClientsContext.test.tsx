@@ -39,6 +39,7 @@ beforeEach(() => {
   mockInvoke.mockImplementation((channel: string, params: unknown) => {
     if (channel === "therapist:list-all") { return Promise.resolve(wrapped(mockTherapists)); }
     if (channel === "client:list") { return clientListMock(params); }
+    if (channel === "settings:get-initial-therapist-id") return Promise.resolve(wrapped(null));
     return Promise.resolve(wrapped([]));
   });
 });

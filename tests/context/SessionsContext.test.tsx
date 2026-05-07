@@ -18,6 +18,7 @@ function defaultMock() {
     if (channel === "session:list-range") return Promise.resolve(wrapped([]));
     if (channel === "session:list-expected") return Promise.resolve(wrapped([]));
     if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
+    if (channel === "settings:get-initial-therapist-id") return Promise.resolve(wrapped(null));
     return Promise.resolve(wrapped([]));
   });
 }
@@ -167,6 +168,7 @@ describe("SessionProvider", () => {
       if (channel === "session:list-range") return Promise.resolve(wrapped([unconfirmedSession]));
       if (channel === "session:list-expected") return Promise.resolve(wrapped([]));
       if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
+      if (channel === "settings:get-initial-therapist-id") return Promise.resolve(wrapped(null));
       return Promise.resolve(wrapped([]));
     });
 
@@ -203,6 +205,7 @@ describe("SessionProvider", () => {
       if (channel === "session:list-range") return Promise.resolve(wrapped([sessionA, sessionB]));
       if (channel === "session:list-expected") return Promise.resolve(wrapped([]));
       if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
+      if (channel === "settings:get-initial-therapist-id") return Promise.resolve(wrapped(null));
       return Promise.resolve(wrapped([]));
     });
 
@@ -219,12 +222,11 @@ describe("SessionProvider", () => {
   it("exposes totalSessions and pageSize from paginated response", async () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
-      if (channel === "session:list") {
-        return Promise.resolve(wrapped({ data: mockSessions, total: 100, page: 1, pageSize: 25 }));
-      }
+      if (channel === "session:list") return Promise.resolve(wrapped({ data: mockSessions, total: 100, page: 1, pageSize: 25 }));
       if (channel === "session:list-range") return Promise.resolve(wrapped([]));
       if (channel === "session:list-expected") return Promise.resolve(wrapped([]));
       if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
+      if (channel === "settings:get-initial-therapist-id") return Promise.resolve(wrapped(null));
       return Promise.resolve(wrapped([]));
     });
 
@@ -270,6 +272,7 @@ it("defaults therapist filter to selected therapist", async () => {
         }]));
       }
       if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
+      if (channel === "settings:get-initial-therapist-id") return Promise.resolve(wrapped(null));
       return Promise.resolve(wrapped([]));
     });
 

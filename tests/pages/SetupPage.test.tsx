@@ -82,9 +82,7 @@ describe("SetupPage — create new database", () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "setup:open-save-dialog") return Promise.resolve(wrapped("/tmp/new.db"));
       if (channel === "setup:create-database") return Promise.resolve(wrapped(null));
-      if (channel === "setup:create-first-therapist") {
-        return Promise.resolve({ success: false, error: { code: "UNKNOWN", message: "disk error" } });
-      }
+      if (channel === "setup:create-therapist") return Promise.resolve({ success: false, error: { code: "UNKNOWN", message: "disk error" } });
       return Promise.resolve(wrapped(null));
     });
 
@@ -133,12 +131,11 @@ describe("SetupPage — create new database", () => {
 });
 
 describe("SetupPage — use existing database", () => {
-  it("validates a compatible database and shows the Database Ready screen", async () => {
+  it("validates a compatible database and shows the therapist selection screen", async () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "setup:open-file-dialog") return Promise.resolve(wrapped("/tmp/existing.db"));
-      if (channel === "setup:validate-existing-database") {
-        return Promise.resolve(wrapped({ valid: true, version: 9 }));
-      }
+      if (channel === "setup:validate-existing-database") return Promise.resolve(wrapped({ valid: true, version: 9 }));
+      if (channel === "setup:list-therapists") return Promise.resolve(wrapped([{ id: 1, first_name: "Alice", last_name: "Smith" }]));
       return Promise.resolve(wrapped(null));
     });
 
@@ -146,17 +143,15 @@ describe("SetupPage — use existing database", () => {
     fireEvent.click(screen.getByRole("button", { name: /select database file/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /database ready/i })).toBeInTheDocument();
-      expect(screen.getByText("/tmp/existing.db")).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /who are you/i })).toBeInTheDocument();
+      expect(screen.getByText("Alice Smith")).toBeInTheDocument();
     });
   });
 
   it("shows a version-mismatch screen when the database is older", async () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "setup:open-file-dialog") return Promise.resolve(wrapped("/tmp/old.db"));
-      if (channel === "setup:validate-existing-database") {
-        return Promise.resolve(wrapped({ valid: false, version: 3 }));
-      }
+      if (channel === "setup:validate-existing-database") return Promise.resolve(wrapped({ valid: false, version: 3 }));
       return Promise.resolve(wrapped(null));
     });
 
@@ -173,9 +168,7 @@ describe("SetupPage — use existing database", () => {
   it("the Go Back button on version-mismatch returns to the welcome screen", async () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "setup:open-file-dialog") return Promise.resolve(wrapped("/tmp/old.db"));
-      if (channel === "setup:validate-existing-database") {
-        return Promise.resolve(wrapped({ valid: false, version: 3 }));
-      }
+      if (channel === "setup:validate-existing-database") return Promise.resolve(wrapped({ valid: false, version: 3 }));
       return Promise.resolve(wrapped(null));
     });
 
@@ -225,7 +218,7 @@ describe("SetupPage — Continue from created/validated screens", () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "setup:open-save-dialog") return Promise.resolve(wrapped("/tmp/new.db"));
       if (channel === "setup:create-database") return Promise.resolve(wrapped(null));
-      if (channel === "setup:create-first-therapist") return Promise.resolve(wrapped(null));
+      if (channel === "setup:create-therapist") return Promise.resolve(wrapped({ id: 1 }));
       if (channel === "setup:save-config") return Promise.resolve(wrapped(null));
       if (channel === "setup:complete") return Promise.resolve(wrapped(null));
       return Promise.resolve(wrapped(null));
@@ -240,23 +233,22 @@ describe("SetupPage — Continue from created/validated screens", () => {
 
     await waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith(
-        "setup:create-first-therapist",
-        expect.objectContaining({ firstName: "Alice", lastName: "Smith" }),
+        "setup:create-therapist",
+        expect.objectContaining({ firstName: "Alice", lastName: "Smith", isAdmin: true }),
       );
       expect(mockInvoke).toHaveBeenCalledWith(
         "setup:save-config",
-        { dbPath: "/tmp/new.db", createdByApp: true },
+        { dbPath: "/tmp/new.db", createdByApp: true, initialSelectedTherapistId: 1 },
       );
       expect(mockInvoke).toHaveBeenCalledWith("setup:complete");
     });
   });
 
-  it("calls setup:save-config with createdByApp=false after using existing", async () => {
+  it("selects existing therapist then calls setup:save-config with createdByApp=false and the therapist id", async () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "setup:open-file-dialog") return Promise.resolve(wrapped("/tmp/existing.db"));
-      if (channel === "setup:validate-existing-database") {
-        return Promise.resolve(wrapped({ valid: true, version: 9 }));
-      }
+      if (channel === "setup:validate-existing-database") return Promise.resolve(wrapped({ valid: true, version: 9 }));
+      if (channel === "setup:list-therapists") return Promise.resolve(wrapped([{ id: 7, first_name: "Alice", last_name: "Smith" }]));
       if (channel === "setup:save-config") return Promise.resolve(wrapped(null));
       if (channel === "setup:complete") return Promise.resolve(wrapped(null));
       return Promise.resolve(wrapped(null));
@@ -264,13 +256,47 @@ describe("SetupPage — Continue from created/validated screens", () => {
 
     renderSetup();
     fireEvent.click(screen.getByRole("button", { name: /select database file/i }));
-    await waitFor(() => screen.getByRole("button", { name: /continue/i }));
-    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+    await waitFor(() => screen.getByText("Alice Smith"));
+    fireEvent.click(screen.getByText("Alice Smith"));
 
     await waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith(
         "setup:save-config",
-        { dbPath: "/tmp/existing.db", createdByApp: false },
+        { dbPath: "/tmp/existing.db", createdByApp: false, initialSelectedTherapistId: 7 },
+      );
+      expect(mockInvoke).toHaveBeenCalledWith("setup:complete");
+    });
+  });
+
+  it("creates a non-admin therapist from existing db then calls setup:save-config with the id", async () => {
+    mockInvoke.mockImplementation((channel: string) => {
+      if (channel === "setup:open-file-dialog") return Promise.resolve(wrapped("/tmp/existing.db"));
+      if (channel === "setup:validate-existing-database") return Promise.resolve(wrapped({ valid: true, version: 9 }));
+      if (channel === "setup:list-therapists") return Promise.resolve(wrapped([]));
+      if (channel === "setup:create-therapist") return Promise.resolve(wrapped({ id: 3 }));
+      if (channel === "setup:save-config") return Promise.resolve(wrapped(null));
+      if (channel === "setup:complete") return Promise.resolve(wrapped(null));
+      return Promise.resolve(wrapped(null));
+    });
+
+    renderSetup();
+    fireEvent.click(screen.getByRole("button", { name: /select database file/i }));
+    await waitFor(() => screen.getByRole("button", { name: /i'm not in this list/i }));
+    fireEvent.click(screen.getByRole("button", { name: /i'm not in this list/i }));
+
+    await waitFor(() => screen.getByRole("heading", { name: /create your account/i }));
+    fireEvent.change(screen.getByRole("textbox", { name: /first name/i }), { target: { value: "Bob" } });
+    fireEvent.change(screen.getByRole("textbox", { name: /last name/i }), { target: { value: "Jones" } });
+    fireEvent.click(screen.getByRole("button", { name: /create account/i }));
+
+    await waitFor(() => {
+      expect(mockInvoke).toHaveBeenCalledWith(
+        "setup:create-therapist",
+        expect.objectContaining({ firstName: "Bob", lastName: "Jones" }),
+      );
+      expect(mockInvoke).toHaveBeenCalledWith(
+        "setup:save-config",
+        { dbPath: "/tmp/existing.db", createdByApp: false, initialSelectedTherapistId: 3 },
       );
     });
   });
@@ -279,7 +305,7 @@ describe("SetupPage — Continue from created/validated screens", () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "setup:open-save-dialog") return Promise.resolve(wrapped("/tmp/new.db"));
       if (channel === "setup:create-database") return Promise.resolve(wrapped(null));
-      if (channel === "setup:create-first-therapist") return Promise.resolve(wrapped(null));
+      if (channel === "setup:create-therapist") return Promise.resolve(wrapped({ id: 1 }));
       if (channel === "setup:save-config") return Promise.resolve(errorResponse.unknown);
       return Promise.resolve(wrapped(null));
     });

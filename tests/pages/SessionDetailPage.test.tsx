@@ -38,12 +38,8 @@ function renderDetailPage(sessionOverride?: Partial<SessionWithClientAndTherapis
       : { ...mockSession, ...sessionOverride };
 
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list-all") {
-      return Promise.resolve(wrapped(mockTherapists));
-    }
-    if (channel === "session:get") {
-      return Promise.resolve(sessionData === null ? errorResponse.notFound : wrapped(sessionData));
-    }
+    if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+    if (channel === "session:get") return Promise.resolve(sessionData === null ? errorResponse.notFound : wrapped(sessionData));
     return Promise.resolve(wrapped(null));
   });
 
@@ -109,12 +105,8 @@ describe("SessionDetailPage", () => {
     });
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "session:get") {
-        return sessionPromise.then((d) => wrapped(d));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "session:get") return sessionPromise.then((d) => wrapped(d));
       return Promise.resolve(wrapped(null));
     });
 
@@ -210,12 +202,8 @@ describe("SessionDetailPage", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "session:get") {
-        return Promise.reject(new Error("Network error"));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "session:get") return Promise.reject(new Error("Network error"));
       return Promise.resolve(wrapped(null));
     });
 
@@ -322,15 +310,9 @@ describe("SessionDetailPage — confirm session", () => {
 
   it("calls session:confirm with the right payload on valid submit", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "session:get") {
-        return Promise.resolve(wrapped({ ...mockSession, status: null, occurred_at: null }));
-      }
-      if (channel === "session:confirm") {
-        return Promise.resolve(wrapped({ ...mockSession, status: "Attended" }));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "session:get") return Promise.resolve(wrapped({ ...mockSession, status: null, occurred_at: null }));
+      if (channel === "session:confirm") return Promise.resolve(wrapped({ ...mockSession, status: "Attended" }));
       return Promise.resolve(wrapped(null));
     });
 

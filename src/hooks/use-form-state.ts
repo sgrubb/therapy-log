@@ -76,7 +76,9 @@ export function useFormState<F extends Record<string, unknown>>(
 
   function clearConflictField(field: keyof F) {
     setConflicts((prev) => {
-      if (!(field as string in prev)) return prev;
+      if (!(field as string in prev)) {
+        return prev;
+      }
       const next = { ...prev };
       delete next[field as string];
       return next;

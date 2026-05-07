@@ -2,7 +2,13 @@ import { z } from "zod";
 import { therapistSchema } from "@shared/schemas/therapists";
 import { clientSchema, clientWithTherapistSchema } from "@shared/schemas/clients";
 import { sessionSchema, sessionWithClientAndTherapistSchema, expectedSessionSchema } from "@shared/schemas/sessions";
-import type { SetupSaveConfigParams, ValidateDatabaseResult, SetupCreateFirstTherapistParams } from "@shared/types/setup";
+import type {
+  SetupSaveConfigParams,
+  ValidateDatabaseResult,
+  SetupTherapist,
+  SetupCreateTherapistParams,
+} from "@shared/types/setup";
+import { setupTherapistSchema } from "@shared/schemas/setup";
 import type { MigrationInfo } from "@shared/types/migrations";
 import type { Therapist, CreateTherapist, UpdateTherapist, DeactivateTherapist, ReactivateTherapist, TherapistListParams, TherapistListAllParams } from "@shared/types/therapists";
 import type { Client, ClientWithTherapist, CreateClient, UpdateClient, CloseClient, ReopenClient, ClientListParams, ClientListAllParams } from "@shared/types/clients";
@@ -92,9 +98,14 @@ export const ipc = {
     unwrapResponse(response);
   },
 
-  async setupCreateFirstTherapist(params: SetupCreateFirstTherapistParams): Promise<void> {
-    const response = await window.electronAPI.invoke("setup:create-first-therapist", params);
-    unwrapResponse(response);
+  async setupListTherapists(dbPath: string): Promise<SetupTherapist[]> {
+    const response = await window.electronAPI.invoke("setup:list-therapists", dbPath);
+    return z.array(setupTherapistSchema).parse(unwrapResponse(response));
+  },
+
+  async setupCreateTherapist(params: SetupCreateTherapistParams): Promise<{ id: number }> {
+    const response = await window.electronAPI.invoke("setup:create-therapist", params);
+    return z.object({ id: z.number() }).parse(unwrapResponse(response));
   },
 
   // ── Migration ──────────────────────────────────────────────────────────
@@ -118,6 +129,11 @@ export const ipc = {
   },
 
   // ── Settings ───────────────────────────────────────────────────────────
+  async getInitialTherapistId(): Promise<number | null> {
+    const response = await window.electronAPI.invoke("settings:get-initial-therapist-id");
+    return z.number().nullable().parse(unwrapResponse(response));
+  },
+
   async getDbPath(): Promise<string | null> {
     const response = await window.electronAPI.invoke("settings:get-db-path");
     return z.string().nullable().parse(unwrapResponse(response));

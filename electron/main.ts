@@ -11,7 +11,7 @@ import { registerCsvHandlers } from "./handlers/csv-handlers";
 import { registerSettingsHandlers } from "./handlers/settings-handlers";
 import { registerSetupHandlers } from "./handlers/setup-handlers";
 import { registerMigrationHandlers } from "./handlers/migration-handlers";
-import { resolveDatabaseUrl, getConfiguredDbPath } from "./db-path";
+import { resolveDatabaseUrl, getConfiguredDbPath } from "./lib/app-config";
 import { createSetupWindow } from "./windows/setup";
 import { createMigrationWindow } from "./windows/migration";
 import { checkSchemaVersion, CURRENT_SCHEMA_VERSION } from "./lib/migrations";

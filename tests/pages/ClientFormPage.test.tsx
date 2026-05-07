@@ -24,9 +24,7 @@ beforeEach(() => {
 
 function renderNewForm() {
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list-all") {
-      return Promise.resolve(wrapped(mockTherapists));
-    }
+    if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
     return Promise.resolve(wrapped(null));
   });
 
@@ -54,12 +52,8 @@ function renderNewForm() {
 
 function renderEditForm() {
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list-all") {
-      return Promise.resolve(wrapped(mockTherapists));
-    }
-    if (channel === "client:get") {
-      return Promise.resolve(wrapped(mockClient));
-    }
+    if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+    if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
     return Promise.resolve(wrapped(null));
   });
 
@@ -157,12 +151,8 @@ describe("ClientFormPage — new client", () => {
     const user = userEvent.setup();
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "client:create") {
-        return Promise.resolve(wrapped(mockClient));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:create") return Promise.resolve(wrapped(mockClient));
       return Promise.resolve(wrapped(null));
     });
 
@@ -201,12 +191,8 @@ describe("ClientFormPage — new client", () => {
 
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "client:create") {
-        return Promise.resolve(errorResponse.uniqueConstraint);
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:create") return Promise.resolve(errorResponse.uniqueConstraint);
       return Promise.resolve(wrapped(null));
     });
 
@@ -242,9 +228,7 @@ describe("ClientFormPage — new client", () => {
 
   it("Cancel navigates to location.state.from when coming from detail page", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
       return Promise.resolve(wrapped(null));
     });
 
@@ -284,12 +268,8 @@ describe("ClientFormPage — new client", () => {
     const user = userEvent.setup();
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "client:create") {
-        return Promise.resolve(errorResponse.unknown);
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:create") return Promise.resolve(errorResponse.unknown);
       return Promise.resolve(wrapped(null));
     });
 
@@ -316,12 +296,8 @@ describe("ClientFormPage — new client", () => {
     const user = userEvent.setup();
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "client:create") {
-        return Promise.resolve(wrapped(mockClient));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:create") return Promise.resolve(wrapped(mockClient));
       return Promise.resolve(wrapped(null));
     });
 
@@ -382,12 +358,8 @@ describe("ClientFormPage — new client", () => {
 
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "client:create") {
-        return savePromise.then((data) => wrapped(data));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:create") return savePromise.then((data) => wrapped(data));
       return Promise.resolve(wrapped(null));
     });
 
@@ -432,15 +404,9 @@ describe("ClientFormPage — edit client", () => {
 
     // Override mock after initial load so client:update is handled correctly
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "client:get") {
-        return Promise.resolve(wrapped(mockClient));
-      }
-      if (channel === "client:update") {
-        return Promise.resolve(wrapped(mockClient));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
+      if (channel === "client:update") return Promise.resolve(wrapped(mockClient));
       return Promise.resolve(wrapped(null));
     });
 
@@ -508,15 +474,9 @@ describe("ClientFormPage — edit client", () => {
     await waitFor(() => screen.getByLabelText(/first name/i));
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "client:get") {
-        return Promise.resolve(wrapped(mockClient));
-      }
-      if (channel === "client:update") {
-        return Promise.resolve(errorResponse.unknown);
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") return Promise.resolve(wrapped(mockClient));
+      if (channel === "client:update") return Promise.resolve(errorResponse.unknown);
       return Promise.resolve(wrapped(null));
     });
 
@@ -533,12 +493,8 @@ describe("ClientFormPage — edit client", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "client:get") {
-        return Promise.resolve(errorResponse.notFound);
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") return Promise.resolve(errorResponse.notFound);
       return Promise.resolve(wrapped(null));
     });
 
@@ -573,12 +529,8 @@ describe("ClientFormPage — edit client", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "client:get") {
-        return Promise.reject(new Error("Network error"));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") return Promise.reject(new Error("Network error"));
       return Promise.resolve(wrapped(null));
     });
 
@@ -616,12 +568,8 @@ describe("ClientFormPage — edit client", () => {
     });
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "client:get") {
-        return clientPromise.then((data) => wrapped(data));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:get") return clientPromise.then((data) => wrapped(data));
       return Promise.resolve(wrapped(null));
     });
 
@@ -673,12 +621,8 @@ describe("ClientFormPage — edit client", () => {
     const user = userEvent.setup();
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "client:create") {
-        return Promise.resolve(wrapped(mockClient));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "client:create") return Promise.resolve(wrapped(mockClient));
       return Promise.resolve(wrapped(null));
     });
 
@@ -715,16 +659,12 @@ describe("ClientFormPage — edit client", () => {
 
     let clientGetCount = 0;
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "client:get") {
         clientGetCount++;
         return Promise.resolve(wrapped(clientGetCount === 1 ? mockClient : freshClient));
       }
-      if (channel === "client:update") {
-        return Promise.resolve(errorResponse.conflict);
-      }
+      if (channel === "client:update") return Promise.resolve(errorResponse.conflict);
       return Promise.resolve(wrapped(null));
     });
 
@@ -847,16 +787,12 @@ describe("ClientFormPage — edit client", () => {
 
     let clientGetCount = 0;
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "client:get") {
         clientGetCount++;
         return Promise.resolve(wrapped(clientGetCount === 1 ? mockClient : freshClient));
       }
-      if (channel === "client:update") {
-        return Promise.resolve(errorResponse.conflict);
-      }
+      if (channel === "client:update") return Promise.resolve(errorResponse.conflict);
       return Promise.resolve(wrapped(null));
     });
 

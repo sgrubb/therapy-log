@@ -23,9 +23,7 @@ describe("MigrationPage — loading/ready", () => {
   it("shows a loading state before migration info resolves", () => {
     let resolveInfo!: (v: unknown) => void;
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "migration:get-info") {
-        return new Promise((res) => { resolveInfo = (v) => res(wrapped(v)); });
-      }
+      if (channel === "migration:get-info") return new Promise((res) => { resolveInfo = (v) => res(wrapped(v)); });
       return Promise.resolve(wrapped(null));
     });
 
@@ -36,9 +34,7 @@ describe("MigrationPage — loading/ready", () => {
 
   it("shows the Database Update Required screen with version numbers when ready", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "migration:get-info") {
-        return Promise.resolve(wrapped({ currentVersion: 5, requiredVersion: 9, createdByApp: true }));
-      }
+      if (channel === "migration:get-info") return Promise.resolve(wrapped({ currentVersion: 5, requiredVersion: 9, createdByApp: true }));
       return Promise.resolve(wrapped(null));
     });
 
@@ -55,9 +51,7 @@ describe("MigrationPage — loading/ready", () => {
 
   it("shows a not-created-by-app warning when the database is foreign", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "migration:get-info") {
-        return Promise.resolve(wrapped({ currentVersion: 3, requiredVersion: 9, createdByApp: false }));
-      }
+      if (channel === "migration:get-info") return Promise.resolve(wrapped({ currentVersion: 3, requiredVersion: 9, createdByApp: false }));
       return Promise.resolve(wrapped(null));
     });
 
@@ -70,9 +64,7 @@ describe("MigrationPage — loading/ready", () => {
 
   it("does not show the foreign-db warning when created by the app", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "migration:get-info") {
-        return Promise.resolve(wrapped({ currentVersion: 5, requiredVersion: 9, createdByApp: true }));
-      }
+      if (channel === "migration:get-info") return Promise.resolve(wrapped({ currentVersion: 5, requiredVersion: 9, createdByApp: true }));
       return Promise.resolve(wrapped(null));
     });
 
@@ -88,9 +80,7 @@ describe("MigrationPage — loading/ready", () => {
 describe("MigrationPage — apply migration", () => {
   it("calls migration:apply and migration:complete on Update Database", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "migration:get-info") {
-        return Promise.resolve(wrapped({ currentVersion: 5, requiredVersion: 9, createdByApp: true }));
-      }
+      if (channel === "migration:get-info") return Promise.resolve(wrapped({ currentVersion: 5, requiredVersion: 9, createdByApp: true }));
       if (channel === "migration:apply") return Promise.resolve(wrapped(null));
       if (channel === "migration:complete") return Promise.resolve(wrapped(null));
       return Promise.resolve(wrapped(null));
@@ -110,12 +100,8 @@ describe("MigrationPage — apply migration", () => {
   it("shows the Applying migration… loading text while migration is in flight", async () => {
     let resolveApply!: () => void;
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "migration:get-info") {
-        return Promise.resolve(wrapped({ currentVersion: 5, requiredVersion: 9, createdByApp: true }));
-      }
-      if (channel === "migration:apply") {
-        return new Promise((res) => { resolveApply = () => res(wrapped(null)); });
-      }
+      if (channel === "migration:get-info") return Promise.resolve(wrapped({ currentVersion: 5, requiredVersion: 9, createdByApp: true }));
+      if (channel === "migration:apply") return new Promise((res) => { resolveApply = () => res(wrapped(null)); });
       if (channel === "migration:complete") return Promise.resolve(wrapped(null));
       return Promise.resolve(wrapped(null));
     });
@@ -132,9 +118,7 @@ describe("MigrationPage — apply migration", () => {
 
   it("shows the Migration Failed screen when migration:apply fails", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "migration:get-info") {
-        return Promise.resolve(wrapped({ currentVersion: 5, requiredVersion: 9, createdByApp: true }));
-      }
+      if (channel === "migration:get-info") return Promise.resolve(wrapped({ currentVersion: 5, requiredVersion: 9, createdByApp: true }));
       if (channel === "migration:apply") return Promise.resolve(errorResponse.unknown);
       return Promise.resolve(wrapped(null));
     });
@@ -183,9 +167,7 @@ describe("MigrationPage — error states", () => {
 
   it("calls migration:quit when Quit is clicked from the ready screen", async () => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "migration:get-info") {
-        return Promise.resolve(wrapped({ currentVersion: 5, requiredVersion: 9, createdByApp: true }));
-      }
+      if (channel === "migration:get-info") return Promise.resolve(wrapped({ currentVersion: 5, requiredVersion: 9, createdByApp: true }));
       if (channel === "migration:quit") return Promise.resolve(undefined);
       return Promise.resolve(wrapped(null));
     });

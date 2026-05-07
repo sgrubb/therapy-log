@@ -25,9 +25,7 @@ function renderNewForm() {
   localStorage.setItem("selectedTherapistId", "1"); // admin
 
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list-all") {
-      return Promise.resolve(wrapped(mockTherapists));
-    }
+    if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
     return Promise.resolve(wrapped(null));
   });
 
@@ -57,12 +55,8 @@ function renderEditForm() {
   localStorage.setItem("selectedTherapistId", "1"); // admin
 
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list-all") {
-      return Promise.resolve(wrapped(mockTherapists));
-    }
-    if (channel === "therapist:get") {
-      return Promise.resolve(wrapped(mockTherapist));
-    }
+    if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+    if (channel === "therapist:get") return Promise.resolve(wrapped(mockTherapist));
     return Promise.resolve(wrapped(null));
   });
 
@@ -128,12 +122,8 @@ describe("TherapistFormPage — new therapist", () => {
     renderNewForm();
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "therapist:create") {
-        return Promise.resolve(wrapped(mockTherapist));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:create") return Promise.resolve(wrapped(mockTherapist));
       return Promise.resolve(wrapped(null));
     });
 
@@ -162,12 +152,8 @@ describe("TherapistFormPage — new therapist", () => {
     renderNewForm();
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "therapist:create") {
-        return Promise.resolve(wrapped(mockTherapist));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:create") return Promise.resolve(wrapped(mockTherapist));
       return Promise.resolve(wrapped(null));
     });
 
@@ -192,12 +178,8 @@ describe("TherapistFormPage — new therapist", () => {
     renderNewForm();
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "therapist:create") {
-        return Promise.resolve(errorResponse.unknown);
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:create") return Promise.resolve(errorResponse.unknown);
       return Promise.resolve(wrapped(null));
     });
 
@@ -231,12 +213,8 @@ describe("TherapistFormPage — new therapist", () => {
 
     renderNewForm();
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "therapist:create") {
-        return savePromise.then((data) => wrapped(data));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:create") return savePromise.then((data) => wrapped(data));
       return Promise.resolve(wrapped(null));
     });
 
@@ -296,15 +274,9 @@ describe("TherapistFormPage — edit therapist", () => {
     await waitFor(() => screen.getByLabelText(/first name/i));
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "therapist:get") {
-        return Promise.resolve(wrapped(mockTherapist));
-      }
-      if (channel === "therapist:update") {
-        return Promise.resolve(wrapped(mockTherapist));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:get") return Promise.resolve(wrapped(mockTherapist));
+      if (channel === "therapist:update") return Promise.resolve(wrapped(mockTherapist));
       return Promise.resolve(wrapped(null));
     });
 
@@ -341,16 +313,12 @@ describe("TherapistFormPage — edit therapist", () => {
 
     let therapistGetCount = 0;
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "therapist:get") {
         therapistGetCount++;
         return Promise.resolve(wrapped(therapistGetCount === 1 ? mockTherapist : freshTherapist));
       }
-      if (channel === "therapist:update") {
-        return Promise.resolve(errorResponse.conflict);
-      }
+      if (channel === "therapist:update") return Promise.resolve(errorResponse.conflict);
       return Promise.resolve(wrapped(null));
     });
 
@@ -417,15 +385,9 @@ describe("TherapistFormPage — edit therapist", () => {
     await waitFor(() => screen.getByLabelText(/first name/i));
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "therapist:get") {
-        return Promise.resolve(wrapped(mockTherapist));
-      }
-      if (channel === "therapist:update") {
-        return Promise.resolve(errorResponse.unknown);
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:get") return Promise.resolve(wrapped(mockTherapist));
+      if (channel === "therapist:update") return Promise.resolve(errorResponse.unknown);
       return Promise.resolve(wrapped(null));
     });
 
@@ -455,12 +417,8 @@ describe("TherapistFormPage — edit therapist", () => {
     });
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "therapist:get") {
-        return therapistPromise.then((data) => wrapped(data));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:get") return therapistPromise.then((data) => wrapped(data));
       return Promise.resolve(wrapped(null));
     });
 
@@ -494,12 +452,8 @@ describe("TherapistFormPage — edit therapist", () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "therapist:get") {
-        return Promise.reject(new Error("Network error"));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:get") return Promise.reject(new Error("Network error"));
       return Promise.resolve(wrapped(null));
     });
 
@@ -535,16 +489,12 @@ describe("TherapistFormPage — edit therapist", () => {
 
     let therapistGetCount = 0;
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "therapist:get") {
         therapistGetCount++;
         return Promise.resolve(wrapped(therapistGetCount === 1 ? mockTherapist : freshTherapist));
       }
-      if (channel === "therapist:update") {
-        return Promise.resolve(errorResponse.conflict);
-      }
+      if (channel === "therapist:update") return Promise.resolve(errorResponse.conflict);
       return Promise.resolve(wrapped(null));
     });
 
@@ -582,12 +532,8 @@ describe("TherapistFormPage — edit therapist", () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "therapist:get") {
-        return Promise.resolve(errorResponse.notFound);
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:get") return Promise.resolve(errorResponse.notFound);
       return Promise.resolve(wrapped(null));
     });
 
@@ -625,9 +571,7 @@ describe("TherapistFormPage — non-admin", () => {
     localStorage.setItem("selectedTherapistId", "2"); // Bob Chen, is_admin: false
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
       return Promise.resolve(wrapped(null));
     });
 

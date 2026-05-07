@@ -25,6 +25,7 @@ function defaultMock() {
         : openClients;
       return Promise.resolve(wrappedPaginated(data));
     }
+    if (channel === "settings:get-initial-therapist-id") return Promise.resolve(wrapped(null));
     return Promise.resolve(wrapped([]));
   });
 }
@@ -109,6 +110,7 @@ describe("ClientsPage", () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list-all") { return Promise.resolve(wrapped(mockTherapists)); }
       if (channel === "client:list") { return clientsPromise; }
+      if (channel === "settings:get-initial-therapist-id") return Promise.resolve(wrapped(null));
       return Promise.resolve(wrapped([]));
     });
 
@@ -125,6 +127,7 @@ describe("ClientsPage", () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list-all") { return Promise.resolve(wrapped(mockTherapists)); }
       if (channel === "client:list") { return Promise.reject(new Error("DB error")); }
+      if (channel === "settings:get-initial-therapist-id") return Promise.resolve(wrapped(null));
       return Promise.resolve(wrapped([]));
     });
 
@@ -141,6 +144,7 @@ describe("ClientsPage", () => {
     mockInvoke.mockImplementation((channel: string) => {
       if (channel === "therapist:list-all") { return Promise.resolve(wrapped(mockTherapists)); }
       if (channel === "client:list") { return Promise.resolve(wrappedPaginated([])); }
+      if (channel === "settings:get-initial-therapist-id") return Promise.resolve(wrapped(null));
       return Promise.resolve(wrapped([]));
     });
 

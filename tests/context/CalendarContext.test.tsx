@@ -15,18 +15,11 @@ beforeEach(() => {
   mockInvoke.mockReset();
   window.electronAPI = { invoke: mockInvoke } as never;
   mockInvoke.mockImplementation((channel: string) => {
-    if (channel === "therapist:list-all") {
-      return Promise.resolve(wrapped(mockTherapists));
-    }
-    if (channel === "session:list-range") {
-      return Promise.resolve(wrapped(mockSessions));
-    }
-    if (channel === "session:list-expected") {
-      return Promise.resolve(wrapped([]));
-    }
-    if (channel === "client:list-all") {
-      return Promise.resolve(wrapped(mockClients));
-    }
+    if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+    if (channel === "session:list-range") return Promise.resolve(wrapped(mockSessions));
+    if (channel === "session:list-expected") return Promise.resolve(wrapped([]));
+    if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
+    if (channel === "settings:get-initial-therapist-id") return Promise.resolve(wrapped(null));
     return Promise.resolve(wrapped([]));
   });
 });
@@ -164,6 +157,7 @@ describe("CalendarProvider", () => {
       if (channel === "session:list-range") return Promise.resolve(wrapped([sessionA, sessionB]));
       if (channel === "session:list-expected") return Promise.resolve(wrapped([]));
       if (channel === "client:list-all") return Promise.resolve(wrapped(mockClients));
+      if (channel === "settings:get-initial-therapist-id") return Promise.resolve(wrapped(null));
       return Promise.resolve(wrapped([]));
     });
 

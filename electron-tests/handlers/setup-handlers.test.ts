@@ -4,16 +4,16 @@ import path from "node:path";
 import { describe, it, expect, vi, beforeEach, afterAll, assert } from "vitest";
 import { IpcErrorCode } from "@shared/types/ipc";
 
-// Mock db-path before importing setup-handlers to prevent the top-level
-// `import { app } from "electron"` inside db-path.ts from failing.
-vi.mock("../../electron/db-path", () => ({
+// Mock app-config before importing setup-handlers to prevent the top-level
+// `import { app } from "electron"` inside app-config.ts from failing.
+vi.mock("../../electron/lib/app-config", () => ({
   writeConfig: vi.fn(),
   getConfiguredDbPath: vi.fn(),
   resolveDatabaseUrl: vi.fn(),
 }));
 
 import { registerSetupHandlers } from "../../electron/handlers/setup-handlers";
-import { writeConfig } from "../../electron/db-path";
+import { writeConfig } from "../../electron/lib/app-config";
 import { CURRENT_SCHEMA_VERSION } from "../../electron/lib/migrations";
 
 const mockWriteConfig = vi.mocked(writeConfig);
@@ -160,63 +160,64 @@ describe("setup:validate-existing-database", () => {
 // ── setup:save-config ─────────────────────────────────────────────────────────
 
 describe("setup:save-config", () => {
-  it("calls writeConfig with the correct config object", () => {
-    const result = handlers["setup:save-config"]!({}, { dbPath: "/data/therapy.db", createdByApp: true }) as {
-      success: boolean;
-      data: null;
-    };
+  it("calls writeConfig with the correct config object", async () => {
+    const result = await (handlers["setup:save-config"]!({}, {
+      dbPath: "/data/therapy.db",
+      createdByApp: true,
+    }) as Promise<{ success: boolean; data: null }>);
     assert(result.success);
-    expect(mockWriteConfig).toHaveBeenCalledWith({ databasePath: "/data/therapy.db", createdByApp: true });
+    expect(mockWriteConfig).toHaveBeenCalledWith({
+      databasePath: "/data/therapy.db",
+      createdByApp: true,
+      initialSelectedTherapistId: undefined,
+    });
   });
 
-  it("returns a failure response when writeConfig throws", () => {
+  it("returns a failure response when writeConfig throws", async () => {
     mockWriteConfig.mockImplementation(() => { throw new Error("disk full"); });
-    const result = handlers["setup:save-config"]!({}, { dbPath: "/x.db", createdByApp: false }) as {
-      success: boolean;
-      error?: { message: string };
-    };
+    const result = await (handlers["setup:save-config"]!({}, {
+      dbPath: "/x.db",
+      createdByApp: false,
+    }) as Promise<{ success: boolean; error?: { message: string } }>);
     expect(result.success).toBe(false);
-    expect(result.error!.message).toBe("Failed to save configuration.");
+    expect(result.error!.message).toBe("An unexpected error occurred.");
   });
 });
 
-// ── setup:create-first-therapist ──────────────────────────────────────────────
+// ── setup:create-therapist ────────────────────────────────────────────────────
 
-describe("setup:create-first-therapist", () => {
-  it("creates an admin therapist in the given database", async () => {
+describe("setup:create-therapist", () => {
+  it("creates an admin therapist when isAdmin is true", async () => {
     const dbPath = tempPath();
     await handlers["setup:create-database"]!({}, dbPath);
 
-    const result = await (handlers["setup:create-first-therapist"]!({}, {
+    const result = await (handlers["setup:create-therapist"]!({}, {
       dbPath,
       firstName: "Alice",
       lastName: "Smith",
       startDate: new Date("2026-01-01"),
-    }) as Promise<{ success: boolean; data: null }>);
+      isAdmin: true,
+    }) as Promise<{ success: boolean; data: { id: number } }>);
 
     expect(result.success).toBe(true);
 
-    // Verify the therapist was created with is_admin=true by validating the DB
     const { PrismaClient } = await import("../../generated/prisma/client");
     const { PrismaBetterSqlite3 } = await import("@prisma/adapter-better-sqlite3");
     const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
     const prisma = new PrismaClient({ adapter });
     const therapists = await prisma.therapist.findMany();
     expect(therapists).toHaveLength(1);
-    expect(therapists[0]).toMatchObject({
-      first_name: "Alice",
-      last_name: "Smith",
-      is_admin: true,
-    });
+    expect(therapists[0]).toMatchObject({ first_name: "Alice", last_name: "Smith", is_admin: true });
     await prisma.$disconnect();
   });
 
   it("returns a failure response when the database path is invalid", async () => {
-    const result = await (handlers["setup:create-first-therapist"]!({}, {
+    const result = await (handlers["setup:create-therapist"]!({}, {
       dbPath: "/nonexistent/dir/db.db",
       firstName: "Alice",
       lastName: "Smith",
       startDate: new Date("2026-01-01"),
+      isAdmin: false,
     }) as Promise<{ success: boolean; error?: { message: string } }>);
 
     expect(result.success).toBe(false);

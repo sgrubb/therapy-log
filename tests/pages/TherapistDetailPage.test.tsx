@@ -56,12 +56,8 @@ function renderDetail(options: RenderOptions = {}) {
   localStorage.setItem("selectedTherapistId", String(idToSelect));
 
   mockInvoke.mockImplementation((channel: string, params: unknown) => {
-    if (channel === "therapist:list-all") {
-      return Promise.resolve(wrapped(therapistsForContext));
-    }
-    if (channel === "therapist:get") {
-      return Promise.resolve(wrapped(therapistData));
-    }
+    if (channel === "therapist:list-all") return Promise.resolve(wrapped(therapistsForContext));
+    if (channel === "therapist:get") return Promise.resolve(wrapped(therapistData));
     if (channel === "client:list-all") {
       const { therapistId } = (params ?? {}) as { therapistId?: number };
       const clients = therapistId
@@ -126,6 +122,7 @@ describe("TherapistDetailPage", () => {
       if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
       if (channel === "therapist:get") return Promise.resolve(wrapped(bobData));
       if (channel === "client:list-all") return Promise.resolve(wrapped([]));
+      if (channel === "settings:get-initial-therapist-id") return Promise.resolve(wrapped(null));
       return Promise.resolve(wrapped([]));
     });
     // selectedTherapistId=1 (Alice), viewing therapist id=2 (Bob)
@@ -237,12 +234,8 @@ describe("TherapistDetailPage", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "therapist:list-all") {
-        return Promise.resolve(wrapped(mockTherapists));
-      }
-      if (channel === "therapist:get") {
-        return Promise.resolve(errorResponse.notFound);
-      }
+      if (channel === "therapist:list-all") return Promise.resolve(wrapped(mockTherapists));
+      if (channel === "therapist:get") return Promise.resolve(errorResponse.notFound);
       return Promise.resolve(wrapped(null));
     });
     localStorage.setItem("selectedTherapistId", "1");

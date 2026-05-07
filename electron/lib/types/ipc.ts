@@ -1,7 +1,12 @@
 import type { IpcResponse } from "@shared/types/ipc";
 import type { TherapistId, ClientId, SessionId } from "@shared/types/brands";
 import type { PaginatedResult } from "@shared/types/common";
-import type { SetupSaveConfigParams, ValidateDatabaseResult, SetupCreateFirstTherapistParams } from "@shared/types/setup";
+import type {
+  SetupSaveConfigParams,
+  ValidateDatabaseResult,
+  SetupTherapist,
+  SetupCreateTherapistParams,
+} from "@shared/types/setup";
 import type { MigrationInfo } from "@shared/types/migrations";
 import type { ExpectedSession, SessionWithClientAndTherapist, Session } from "@shared/types/sessions";
 import type { SessionListParams, SessionListRangeParams, SessionListExpectedParams } from "@shared/types/sessions";
@@ -22,25 +27,14 @@ export type IpcApi = {
   "setup:open-save-dialog": { args: void; result: IpcResponse<string | null> };
   "setup:open-file-dialog": { args: void; result: IpcResponse<string | null> };
   "setup:create-database": { args: string; result: IpcResponse<null> };
-  "setup:validate-existing-database": {
-    args: string;
-    result: IpcResponse<ValidateDatabaseResult>;
-  };
-  "setup:save-config": {
-    args: SetupSaveConfigParams;
-    result: IpcResponse<null>;
-  };
+  "setup:validate-existing-database": { args: string; result: IpcResponse<ValidateDatabaseResult> };
+  "setup:list-therapists": { args: string; result: IpcResponse<SetupTherapist[]> };
+  "setup:create-therapist": { args: SetupCreateTherapistParams; result: IpcResponse<{ id: number }> };
+  "setup:save-config": { args: SetupSaveConfigParams; result: IpcResponse<null> };
   "setup:complete": { args: void; result: IpcResponse<null> };
-  "setup:create-first-therapist": {
-    args: SetupCreateFirstTherapistParams;
-    result: IpcResponse<null>;
-  };
 
   // Migration
-  "migration:get-info": {
-    args: void;
-    result: IpcResponse<MigrationInfo>;
-  };
+  "migration:get-info": { args: void; result: IpcResponse<MigrationInfo> };
   "migration:apply": { args: void; result: IpcResponse<null> };
   "migration:complete": { args: void; result: IpcResponse<null> };
   "migration:quit": { args: void; result: void };
@@ -48,132 +42,46 @@ export type IpcApi = {
   // Settings
   "settings:get-db-path": { args: void; result: IpcResponse<string | null> };
   "settings:set-db-path": { args: string; result: IpcResponse<null> };
+  "settings:get-initial-therapist-id": { args: void; result: IpcResponse<number | null> };
   "settings:open-file-dialog": { args: void; result: IpcResponse<string | null> };
 
   // Therapists
-  "therapist:list": {
-    args: TherapistListParams;
-    result: IpcResponse<PaginatedResult<Therapist>>;
-  };
-  "therapist:list-all": {
-    args: TherapistListAllParams;
-    result: IpcResponse<Therapist[]>;
-  };
+  "therapist:list": { args: TherapistListParams; result: IpcResponse<PaginatedResult<Therapist>> };
+  "therapist:list-all": { args: TherapistListAllParams; result: IpcResponse<Therapist[]> };
   "therapist:get": { args: TherapistId; result: IpcResponse<Therapist> };
-  "therapist:create": {
-    args: CreateTherapist;
-    result: IpcResponse<Therapist>;
-  };
-  "therapist:update": {
-    args: { id: TherapistId; data: UpdateTherapist };
-    result: IpcResponse<Therapist>;
-  };
-  "therapist:deactivate": {
-    args: { id: TherapistId; data: DeactivateTherapist };
-    result: IpcResponse<Therapist>;
-  };
-  "therapist:reactivate": {
-    args: { id: TherapistId; data: ReactivateTherapist };
-    result: IpcResponse<Therapist>;
-  };
+  "therapist:create": { args: CreateTherapist; result: IpcResponse<Therapist> };
+  "therapist:update": { args: { id: TherapistId; data: UpdateTherapist }; result: IpcResponse<Therapist> };
+  "therapist:deactivate": { args: { id: TherapistId; data: DeactivateTherapist }; result: IpcResponse<Therapist> };
+  "therapist:reactivate": { args: { id: TherapistId; data: ReactivateTherapist }; result: IpcResponse<Therapist> };
 
   // Clients
-  "client:list": {
-    args: ClientListParams;
-    result: IpcResponse<PaginatedResult<ClientWithTherapist>>;
-  };
-  "client:list-all": {
-    args: ClientListAllParams;
-    result: IpcResponse<ClientWithTherapist[]>;
-  };
-  "client:get": {
-    args: ClientId;
-    result: IpcResponse<ClientWithTherapist>;
-  };
-  "client:create": {
-    args: CreateClient;
-    result: IpcResponse<Client>;
-  };
-  "client:update": {
-    args: { id: ClientId; data: UpdateClient };
-    result: IpcResponse<Client>;
-  };
-  "client:close": {
-    args: { id: ClientId; data: CloseClient };
-    result: IpcResponse<ClientWithTherapist>;
-  };
-  "client:reopen": {
-    args: { id: ClientId; data: ReopenClient };
-    result: IpcResponse<ClientWithTherapist>;
-  };
+  "client:list": { args: ClientListParams; result: IpcResponse<PaginatedResult<ClientWithTherapist>> };
+  "client:list-all": { args: ClientListAllParams; result: IpcResponse<ClientWithTherapist[]> };
+  "client:get": { args: ClientId; result: IpcResponse<ClientWithTherapist> };
+  "client:create": { args: CreateClient; result: IpcResponse<Client> };
+  "client:update": { args: { id: ClientId; data: UpdateClient }; result: IpcResponse<Client> };
+  "client:close": { args: { id: ClientId; data: CloseClient }; result: IpcResponse<ClientWithTherapist> };
+  "client:reopen": { args: { id: ClientId; data: ReopenClient }; result: IpcResponse<ClientWithTherapist> };
 
   // Sessions
-  "session:list": {
-    args: SessionListParams;
-    result: IpcResponse<PaginatedResult<SessionWithClientAndTherapist>>;
-  };
-  "session:list-range": {
-    args: SessionListRangeParams;
-    result: IpcResponse<SessionWithClientAndTherapist[]>;
-  };
-  "session:list-expected": {
-    args: SessionListExpectedParams;
-    result: IpcResponse<ExpectedSession[]>;
-  };
-  "session:get": {
-    args: SessionId;
-    result: IpcResponse<SessionWithClientAndTherapist>;
-  };
-  "session:create": {
-    args: CreateSession;
-    result: IpcResponse<Session>;
-  };
-  "session:update": {
-    args: { id: SessionId; data: UpdateSession };
-    result: IpcResponse<Session>;
-  };
-  "session:confirm": {
-    args: { id: SessionId; data: ConfirmSession };
-    result: IpcResponse<Session>;
-  };
+  "session:list": { args: SessionListParams; result: IpcResponse<PaginatedResult<SessionWithClientAndTherapist>> };
+  "session:list-range": { args: SessionListRangeParams; result: IpcResponse<SessionWithClientAndTherapist[]> };
+  "session:list-expected": { args: SessionListExpectedParams; result: IpcResponse<ExpectedSession[]> };
+  "session:get": { args: SessionId; result: IpcResponse<SessionWithClientAndTherapist> };
+  "session:create": { args: CreateSession; result: IpcResponse<Session> };
+  "session:update": { args: { id: SessionId; data: UpdateSession }; result: IpcResponse<Session> };
+  "session:confirm": { args: { id: SessionId; data: ConfirmSession }; result: IpcResponse<Session> };
 
   // CSV
-  "therapist:export-csv": {
-    args: TherapistExportParams;
-    result: IpcResponse<{ path: string } | null>;
-  };
-  "therapist:import-csv": {
-    args: void;
-    result: IpcResponse<ImportResult | null>;
-  };
-  "client:export-csv": {
-    args: ClientExportParams;
-    result: IpcResponse<{ path: string } | null>;
-  };
-  "client:import-csv": {
-    args: void;
-    result: IpcResponse<ImportResult | null>;
-  };
-  "session:export-csv": {
-    args: SessionExportParams;
-    result: IpcResponse<{ path: string } | null>;
-  };
-  "session:import-csv": {
-    args: void;
-    result: IpcResponse<ImportResult | null>;
-  };
-  "therapist:save-template": {
-    args: void;
-    result: IpcResponse<{ path: string } | null>;
-  };
-  "client:save-template": {
-    args: void;
-    result: IpcResponse<{ path: string } | null>;
-  };
-  "session:save-template": {
-    args: void;
-    result: IpcResponse<{ path: string } | null>;
-  };
+  "therapist:export-csv": { args: TherapistExportParams; result: IpcResponse<{ path: string } | null> };
+  "therapist:import-csv": { args: void; result: IpcResponse<ImportResult | null> };
+  "client:export-csv": { args: ClientExportParams; result: IpcResponse<{ path: string } | null> };
+  "client:import-csv": { args: void; result: IpcResponse<ImportResult | null> };
+  "session:export-csv": { args: SessionExportParams; result: IpcResponse<{ path: string } | null> };
+  "session:import-csv": { args: void; result: IpcResponse<ImportResult | null> };
+  "therapist:save-template": { args: void; result: IpcResponse<{ path: string } | null> };
+  "client:save-template": { args: void; result: IpcResponse<{ path: string } | null> };
+  "session:save-template": { args: void; result: IpcResponse<{ path: string } | null> };
 };
 
 export type IpcChannel = keyof IpcApi;

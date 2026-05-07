@@ -39,14 +39,14 @@ function tempDbPath(): string {
 // ── migration:get-info ────────────────────────────────────────────────────────
 
 describe("migration:get-info", () => {
-  it("returns the currentVersion, requiredVersion, and createdByApp from the provided info", () => {
+  it("returns the currentVersion, requiredVersion, and createdByApp from the provided info", async () => {
     const info = { dbPath: "/ignored.db", currentVersion: 3, createdByApp: true };
     const handlers = buildHandlers(info);
 
-    const result = handlers["migration:get-info"]!({}) as {
+    const result = await (handlers["migration:get-info"]!({}) as Promise<{
       success: boolean;
       data: { currentVersion: number; requiredVersion: number; createdByApp: boolean };
-    };
+    }>);
 
     assert(result.success);
     expect(result.data.currentVersion).toBe(3);
@@ -54,9 +54,9 @@ describe("migration:get-info", () => {
     expect(result.data.createdByApp).toBe(true);
   });
 
-  it("reflects createdByApp = false", () => {
+  it("reflects createdByApp = false", async () => {
     const handlers = buildHandlers({ dbPath: "/ignored.db", currentVersion: 1, createdByApp: false });
-    const result = handlers["migration:get-info"]!({}) as { success: boolean; data: { createdByApp: boolean } };
+    const result = await (handlers["migration:get-info"]!({}) as Promise<{ success: boolean; data: { createdByApp: boolean } }>);
     assert(result.success);
     expect(result.data.createdByApp).toBe(false);
   });
@@ -65,24 +65,24 @@ describe("migration:get-info", () => {
 // ── migration:apply ───────────────────────────────────────────────────────────
 
 describe("migration:apply", () => {
-  it("applies all pending migrations and returns success", () => {
+  it("applies all pending migrations and returns success", async () => {
     const dbPath = tempDbPath();
     const handlers = buildHandlers({ dbPath, currentVersion: 0, createdByApp: true });
 
-    const result = handlers["migration:apply"]!({}) as { success: boolean; data: null };
+    const result = await (handlers["migration:apply"]!({}) as Promise<{ success: boolean; data: null }>);
     assert(result.success);
     expect(result.data).toBeNull();
     expect(fs.existsSync(dbPath)).toBe(true);
   });
 
-  it("returns a failure response when the database path is invalid", () => {
+  it("returns a failure response when the database path is invalid", async () => {
     const handlers = buildHandlers({
       dbPath: "/nonexistent/directory/that/cannot/be/created.db",
       currentVersion: 0,
       createdByApp: true,
     });
 
-    const result = handlers["migration:apply"]!({}) as { success: boolean; error?: { message: string } };
+    const result = await (handlers["migration:apply"]!({}) as Promise<{ success: boolean; error?: { message: string } }>);
     expect(result.success).toBe(false);
     expect(result.error).toBeDefined();
   });

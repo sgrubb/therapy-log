@@ -91,9 +91,7 @@ describe("useClientForm — new client", () => {
 describe("useClientForm — existing client", () => {
   beforeEach(() => {
     mockInvoke.mockImplementation((channel: string) => {
-      if (channel === "client:get") {
-        return Promise.resolve({ success: true, data: RAW_CLIENT });
-      }
+      if (channel === "client:get") return Promise.resolve({ success: true, data: RAW_CLIENT });
       return Promise.resolve({ success: true, data: null });
     });
   });

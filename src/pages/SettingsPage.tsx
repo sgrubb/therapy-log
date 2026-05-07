@@ -39,13 +39,15 @@ export default function SettingsPage() {
       <div className="max-w-lg space-y-6">
         <h2 className="text-xl font-semibold">Settings</h2>
 
-        <section className="space-y-2">
-          <h3 className="text-sm font-medium">Database</h3>
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              Current location:{" "}
-              <span className="font-mono">{dbPath ?? "Not configured"}</span>
-            </p>
+        <section className="space-y-3 rounded-lg border p-4">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Database
+          </h3>
+          <div className="grid grid-cols-[1fr_auto] items-center gap-6">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Database Location</p>
+              <p className="font-mono text-sm text-muted-foreground">{dbPath ?? "Not configured"}</p>
+            </div>
             <Button
               variant="outline"
               size="default"
@@ -54,7 +56,7 @@ export default function SettingsPage() {
             >
               {changing
                 ? <><Loader2 className="size-4 animate-spin" /> Changing…</>
-                : <><FolderOpen className="size-4" /> Change Database Location</>}
+                : <><FolderOpen className="size-4" /> Change Location</>}
             </Button>
           </div>
         </section>

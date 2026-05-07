@@ -1,9 +1,8 @@
 import type { IpcMain, BrowserWindow } from "electron";
 import { app } from "electron";
 import { applyMigrations, CURRENT_SCHEMA_VERSION } from "../lib/migrations";
-import log from "../lib/logger";
-import type { IpcResponse } from "../lib/types/ipc";
-import { IpcErrorCode } from "@shared/types/ipc";
+import { handleIpc } from "../lib/error-handler";
+import type { IpcApi } from "../lib/types/ipc";
 
 interface MigrationInfo {
   dbPath: string;
@@ -17,50 +16,34 @@ export function registerMigrationHandlers(
   info: MigrationInfo,
   onComplete: () => Promise<void>,
 ): void {
-  ipcMain.handle("migration:get-info", (): IpcResponse<{
-    currentVersion: number;
-    requiredVersion: number;
-    createdByApp: boolean;
-  }> => {
-    return {
-      success: true,
-      data: {
+  ipcMain.handle(
+    "migration:get-info",
+    (): Promise<IpcApi["migration:get-info"]["result"]> =>
+      handleIpc("migration:get-info", async () => ({
         currentVersion: info.currentVersion,
         requiredVersion: CURRENT_SCHEMA_VERSION,
         createdByApp: info.createdByApp,
-      },
-    };
-  });
+      })),
+  );
 
-  ipcMain.handle("migration:apply", (): IpcResponse<null> => {
-    try {
-      applyMigrations(info.dbPath, info.currentVersion, CURRENT_SCHEMA_VERSION);
-      return { success: true, data: null };
-    } catch (error) {
-      log.error("migration:apply failed:", error);
-      return {
-        success: false,
-        error: {
-          code: IpcErrorCode.Unknown,
-          message: error instanceof Error ? error.message : "Failed to apply migrations.",
-        },
-      };
-    }
-  });
+  ipcMain.handle(
+    "migration:apply",
+    (): Promise<IpcApi["migration:apply"]["result"]> =>
+      handleIpc("migration:apply", async () => {
+        applyMigrations(info.dbPath, info.currentVersion, CURRENT_SCHEMA_VERSION);
+        return null;
+      }),
+  );
 
-  ipcMain.handle("migration:complete", async (): Promise<IpcResponse<null>> => {
-    try {
-      await onComplete();
-      migrationWin.close();
-      return { success: true, data: null };
-    } catch (error) {
-      log.error("migration:complete failed:", error);
-      return {
-        success: false,
-        error: { code: IpcErrorCode.Unknown, message: "Failed to open the application after migration." },
-      };
-    }
-  });
+  ipcMain.handle(
+    "migration:complete",
+    (): Promise<IpcApi["migration:complete"]["result"]> =>
+      handleIpc("migration:complete", async () => {
+        await onComplete();
+        migrationWin.close();
+        return null;
+      }),
+  );
 
   ipcMain.handle("migration:quit", (): void => {
     app.quit();

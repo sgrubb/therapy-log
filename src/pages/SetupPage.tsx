@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, RotateCcw, Database, FolderOpen, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, RotateCcw, Database, FolderOpen, Loader2, UserPlus } from "lucide-react";
 import { ipc, IpcError } from "@/lib/ipc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import log from "@/lib/logger";
+import type { SetupTherapist } from "@shared/types/setup";
 
 type Step =
   | { type: "idle" }
@@ -13,7 +14,8 @@ type Step =
   | { type: "picking-existing" }
   | { type: "busy"; message: string }
   | { type: "created"; dbPath: string }
-  | { type: "validated"; dbPath: string }
+  | { type: "select-therapist"; dbPath: string; therapists: SetupTherapist[] }
+  | { type: "create-therapist"; dbPath: string; therapists: SetupTherapist[] }
   | { type: "version-mismatch"; dbPath: string; version: number }
   | { type: "error"; message: string };
 
@@ -24,6 +26,12 @@ export default function SetupPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{ firstName?: string; lastName?: string }>({});
+
+  function resetNameForm() {
+    setFirstName("");
+    setLastName("");
+    setFieldErrors({});
+  }
 
   async function handleCreateNew() {
     setStep({ type: "picking-new" });
@@ -59,7 +67,9 @@ export default function SetupPage() {
         setStep({ type: "version-mismatch", dbPath: filePath, version: result.version });
         return;
       }
-      setStep({ type: "validated", dbPath: filePath });
+      setStep({ type: "busy", message: "Loading therapists…" });
+      const therapists = await ipc.setupListTherapists(filePath);
+      setStep({ type: "select-therapist", dbPath: filePath, therapists });
     } catch (err) {
       log.error("Setup use-existing failed:", err);
       setStep({
@@ -69,10 +79,14 @@ export default function SetupPage() {
     }
   }
 
-  async function handleContinue(dbPath: string, createdByApp: boolean) {
+  async function handleContinue(
+    dbPath: string,
+    createdByApp: boolean,
+    initialSelectedTherapistId?: number,
+  ) {
     setStep({ type: "busy", message: "Saving configuration…" });
     try {
-      await ipc.setupSaveConfig({ dbPath, createdByApp });
+      await ipc.setupSaveConfig({ dbPath, createdByApp, initialSelectedTherapistId });
       await ipc.setupComplete();
     } catch (err) {
       log.error("Setup complete failed:", err);
@@ -83,7 +97,7 @@ export default function SetupPage() {
     }
   }
 
-  async function handleCreateFirstTherapist(dbPath: string) {
+  async function handleCreateTherapist(dbPath: string, isAdmin: boolean) {
     const errors: { firstName?: string; lastName?: string } = {};
     if (!firstName.trim()) {
       errors.firstName = "First name is required.";
@@ -97,15 +111,16 @@ export default function SetupPage() {
     }
     setStep({ type: "busy", message: "Creating your account…" });
     try {
-      await ipc.setupCreateFirstTherapist({
+      const { id } = await ipc.setupCreateTherapist({
         dbPath,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         startDate: new Date(),
+        isAdmin,
       });
-      await handleContinue(dbPath, true);
+      await handleContinue(dbPath, isAdmin, id);
     } catch (err) {
-      log.error("Setup create-first-therapist failed:", err);
+      log.error("Setup create-therapist failed:", err);
       setStep({
         type: "error",
         message: err instanceof IpcError ? err.message : "Failed to create therapist.",
@@ -157,7 +172,7 @@ export default function SetupPage() {
               </Field>
             </div>
           </div>
-          <Button onClick={() => handleCreateFirstTherapist(step.dbPath)}>
+          <Button onClick={() => handleCreateTherapist(step.dbPath, true)}>
             <ArrowRight className="size-4" />
             Create Account &amp; Continue
           </Button>
@@ -166,16 +181,109 @@ export default function SetupPage() {
     );
   }
 
-  if (step.type === "validated") {
+  if (step.type === "select-therapist") {
     return (
       <div className="flex h-screen items-center justify-center p-8">
-        <div className="max-w-md space-y-4 text-center">
-          <h1 className="text-xl font-semibold">Database Ready</h1>
-          <p className="text-sm text-muted-foreground break-all">{step.dbPath}</p>
-          <Button onClick={() => handleContinue(step.dbPath, false)}>
-            <ArrowRight className="size-4" />
-            Continue
-          </Button>
+        <div className="max-w-md w-full space-y-6">
+          <div className="space-y-1">
+            <h1 className="text-xl font-semibold">Who are you?</h1>
+            <p className="text-sm text-muted-foreground">
+              Select your name to continue, or create a new account.
+            </p>
+          </div>
+          <div className="space-y-2">
+            {step.therapists.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No therapists found in this database.</p>
+            ) : (
+              step.therapists.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => handleContinue(step.dbPath, false, t.id)}
+                  className={
+                    "w-full text-left rounded-lg border px-4 py-3 text-sm font-medium " +
+                    "hover:bg-accent hover:text-accent-foreground transition-colors"
+                  }
+                >
+                  {t.first_name} {t.last_name}
+                </button>
+              ))
+            )}
+          </div>
+          <div className="border-t pt-4">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                resetNameForm();
+                setStep({ type: "create-therapist", dbPath: step.dbPath, therapists: step.therapists });
+              }}
+            >
+              <UserPlus className="size-4" />
+              I'm not in this list
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (step.type === "create-therapist") {
+    return (
+      <div className="flex h-screen items-center justify-center p-8">
+        <div className="max-w-md space-y-6">
+          <div className="space-y-1">
+            <h1 className="text-xl font-semibold">Create Your Account</h1>
+            <p className="text-sm text-muted-foreground">
+              Enter your name to create an account. An admin can grant you additional permissions
+              later.
+            </p>
+          </div>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="First Name *" error={fieldErrors.firstName}>
+                <Input
+                  aria-label="First name"
+                  value={firstName}
+                  onChange={(e) => {
+                    setFirstName(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, firstName: undefined }));
+                  }}
+                  aria-invalid={!!fieldErrors.firstName}
+                />
+              </Field>
+              <Field label="Last Name *" error={fieldErrors.lastName}>
+                <Input
+                  aria-label="Last name"
+                  value={lastName}
+                  onChange={(e) => {
+                    setLastName(e.target.value);
+                    setFieldErrors((prev) => ({ ...prev, lastName: undefined }));
+                  }}
+                  aria-invalid={!!fieldErrors.lastName}
+                />
+              </Field>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetNameForm();
+                setStep({
+                  type: "select-therapist",
+                  dbPath: step.dbPath,
+                  therapists: step.therapists,
+                });
+              }}
+            >
+              <ArrowLeft className="size-4" />
+              Back
+            </Button>
+            <Button onClick={() => handleCreateTherapist(step.dbPath, false)}>
+              <ArrowRight className="size-4" />
+              Create Account &amp; Continue
+            </Button>
+          </div>
         </div>
       </div>
     );

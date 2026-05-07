@@ -4,6 +4,7 @@ import {
   useState,
   useMemo,
   useEffect,
+  useCallback,
   type ReactNode,
 } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -42,25 +43,37 @@ export function SelectedTherapistProvider({ children }: { children: ReactNode })
     return stored ? therapistId(Number(stored)) : null;
   });
 
-  useEffect(() => {
-    if (selectedTherapistId === null) {
-      return;
-    }
-    const selected = therapists.find((t) => t.id === selectedTherapistId);
-    if (selected && selected.deactivated_date !== null) {
-      setSelectedTherapistIdState(null);
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }, [therapists, selectedTherapistId]);
-
-  function setSelectedTherapistId(id: TherapistId | null) {
+  const setSelectedTherapistId = useCallback((id: TherapistId | null) => {
     setSelectedTherapistIdState(id);
     if (id === null) {
       localStorage.removeItem(STORAGE_KEY);
     } else {
       localStorage.setItem(STORAGE_KEY, String(id));
     }
-  }
+  }, []);
+
+  // On first mount, if nothing is in localStorage, check the config for an initial selection
+  // written by the setup wizard (which runs in a separate window with its own localStorage).
+  useEffect(() => {
+    if (localStorage.getItem(STORAGE_KEY) !== null) {
+      return;
+    }
+    ipc.getInitialTherapistId().then((id) => {
+      if (id !== null) {
+        setSelectedTherapistId(therapistId(id));
+      }
+    });
+  }, [setSelectedTherapistId]);
+
+  useEffect(() => {
+    if (selectedTherapistId === null) {
+      return;
+    }
+    const selected = therapists.find((t) => t.id === selectedTherapistId);
+    if (selected && selected.deactivated_date !== null) {
+      setSelectedTherapistId(null);
+    }
+  }, [therapists, selectedTherapistId, setSelectedTherapistId]);
 
   return (
     <SelectedTherapistCtx.Provider

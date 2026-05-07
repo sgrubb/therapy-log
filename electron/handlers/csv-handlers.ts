@@ -19,7 +19,7 @@ import {
   SESSION_CSV_HEADERS,
   SESSION_REQUIRED_HEADERS,
 } from "@shared/types/csv";
-import { withErrorHandler } from "../lib/error-handler";
+import { handleIpc } from "../lib/error-handler";
 import type { IpcApi } from "../lib/types/ipc";
 import { buildTherapistWhere, buildClientWhere, buildSessionWhere } from "../lib/utils/database";
 import {
@@ -48,7 +48,7 @@ export function registerCsvHandlers(ipcMain: IpcMain, prisma: PrismaClient, dial
   ipcMain.handle(
     "therapist:export-csv",
     (_e, rawParams: unknown): Promise<IpcApi["therapist:export-csv"]["result"]> =>
-      withErrorHandler("therapist:export-csv", async () => {
+      handleIpc("therapist:export-csv", async () => {
         const { status } = therapistExportParamsSchema.parse(rawParams);
         const { filePath, canceled } = await dialog.showSaveDialog({
           title: "Export Therapists",
@@ -72,7 +72,7 @@ export function registerCsvHandlers(ipcMain: IpcMain, prisma: PrismaClient, dial
   ipcMain.handle(
     "therapist:import-csv",
     (_e): Promise<IpcApi["therapist:import-csv"]["result"]> =>
-      withErrorHandler("therapist:import-csv", async () => {
+      handleIpc("therapist:import-csv", async () => {
         const { filePaths, canceled } = await dialog.showOpenDialog({
           title: "Import Therapists",
           filters: [{ name: "CSV", extensions: ["csv"] }],
@@ -111,7 +111,7 @@ export function registerCsvHandlers(ipcMain: IpcMain, prisma: PrismaClient, dial
   ipcMain.handle(
     "client:export-csv",
     (_e, rawParams: unknown): Promise<IpcApi["client:export-csv"]["result"]> =>
-      withErrorHandler("client:export-csv", async () => {
+      handleIpc("client:export-csv", async () => {
         const params = clientExportParamsSchema.parse(rawParams);
         const { filePath, canceled } = await dialog.showSaveDialog({
           title: "Export Clients",
@@ -138,7 +138,7 @@ export function registerCsvHandlers(ipcMain: IpcMain, prisma: PrismaClient, dial
   ipcMain.handle(
     "client:import-csv",
     (_e): Promise<IpcApi["client:import-csv"]["result"]> =>
-      withErrorHandler("client:import-csv", async () => {
+      handleIpc("client:import-csv", async () => {
         const { filePaths, canceled } = await dialog.showOpenDialog({
           title: "Import Clients",
           filters: [{ name: "CSV", extensions: ["csv"] }],
@@ -224,7 +224,7 @@ export function registerCsvHandlers(ipcMain: IpcMain, prisma: PrismaClient, dial
   ipcMain.handle(
     "session:export-csv",
     (_e, rawParams: unknown): Promise<IpcApi["session:export-csv"]["result"]> =>
-      withErrorHandler("session:export-csv", async () => {
+      handleIpc("session:export-csv", async () => {
         const filters = sessionExportParamsSchema.parse(rawParams);
         const { filePath, canceled } = await dialog.showSaveDialog({
           title: "Export Sessions",
@@ -251,7 +251,7 @@ export function registerCsvHandlers(ipcMain: IpcMain, prisma: PrismaClient, dial
   ipcMain.handle(
     "session:import-csv",
     (_e): Promise<IpcApi["session:import-csv"]["result"]> =>
-      withErrorHandler("session:import-csv", async () => {
+      handleIpc("session:import-csv", async () => {
         const { filePaths, canceled } = await dialog.showOpenDialog({
           title: "Import Sessions",
           filters: [{ name: "CSV", extensions: ["csv"] }],
@@ -314,7 +314,7 @@ export function registerCsvHandlers(ipcMain: IpcMain, prisma: PrismaClient, dial
   ipcMain.handle(
     "therapist:save-template",
     (_e): Promise<IpcApi["therapist:save-template"]["result"]> =>
-      withErrorHandler("therapist:save-template", () =>
+      handleIpc("therapist:save-template", () =>
         saveTemplate("Save Therapists Template", "therapists-template.csv", THERAPIST_CSV_HEADERS),
       ),
   );
@@ -322,7 +322,7 @@ export function registerCsvHandlers(ipcMain: IpcMain, prisma: PrismaClient, dial
   ipcMain.handle(
     "client:save-template",
     (_e): Promise<IpcApi["client:save-template"]["result"]> =>
-      withErrorHandler("client:save-template", () =>
+      handleIpc("client:save-template", () =>
         saveTemplate("Save Clients Template", "clients-template.csv", CLIENT_CSV_HEADERS),
       ),
   );
@@ -330,7 +330,7 @@ export function registerCsvHandlers(ipcMain: IpcMain, prisma: PrismaClient, dial
   ipcMain.handle(
     "session:save-template",
     (_e): Promise<IpcApi["session:save-template"]["result"]> =>
-      withErrorHandler("session:save-template", () =>
+      handleIpc("session:save-template", () =>
         saveTemplate("Save Sessions Template", "sessions-template.csv", SESSION_CSV_HEADERS),
       ),
   );

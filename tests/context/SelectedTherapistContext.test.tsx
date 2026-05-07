@@ -12,7 +12,10 @@ const mockInvoke = vi.fn();
 beforeEach(() => {
   localStorage.clear();
   mockInvoke.mockReset();
-  mockInvoke.mockResolvedValue(wrapped(mockTherapists));
+  mockInvoke.mockImplementation((channel: string) => {
+    if (channel === "settings:get-initial-therapist-id") return Promise.resolve(wrapped(null));
+    return Promise.resolve(wrapped(mockTherapists));
+  });
   window.electronAPI = { invoke: mockInvoke } as never;
 });
 
